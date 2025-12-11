@@ -107,7 +107,6 @@ export default function App() {
     localStorage.removeItem('isLoggedIn'); localStorage.removeItem('currentUser');
   };
 
-  // CRUD
   const addExpense = () => {
     if (!newExpense.name || !newExpense.amount || !newExpense.dueDate) return alert('املأ الحقول');
     const exp = { ...newExpense, id: `E${Date.now()}`, amount: parseFloat(newExpense.amount), createdAt: new Date().toISOString(), createdBy: currentUser.username };
@@ -246,11 +245,7 @@ export default function App() {
 
   const totalArchived = (archivedExpenses?.length || 0) + (archivedTasks?.length || 0) + (archivedAccounts?.length || 0);
   const highTasks = tasks.filter(t => t.priority === 'عالية');
-  const kpis = {
-    totalExp: expenses.length, pendingExp: expenses.filter(e => e.status !== 'مدفوع').length,
-    totalTasks: tasks.length, highTasks: highTasks.length, overdue: tasks.filter(t => calcDays(t.dueDate) < 0).length,
-    totalAcc: accounts.length, totalUsers: users.length
-  };
+  const kpis = { totalExp: expenses.length, pendingExp: expenses.filter(e => e.status !== 'مدفوع').length, totalTasks: tasks.length, highTasks: highTasks.length, totalAcc: accounts.length, totalUsers: users.length };
 
   const fontSizes = { small: 'text-sm', medium: 'text-base', large: 'text-lg' };
   const bg = darkMode ? 'bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900' : 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50';
@@ -284,14 +279,10 @@ export default function App() {
 
   return (
     <div className={`min-h-screen ${bg} ${fontSizes[fontSize]}`} dir="rtl">
-      {/* Header */}
       <div className={`${card} border-b px-4 py-3 flex flex-wrap items-center justify-between sticky top-0 z-50 gap-3`}>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold">RKZ</div>
-          <div>
-            <h1 className={`text-lg font-bold ${txt}`}>نظام الإدارة المالية</h1>
-            <p className={`text-xs ${sub}`}>ركائز الأولى للتعمير</p>
-          </div>
+          <div><h1 className={`text-lg font-bold ${txt}`}>نظام الإدارة المالية</h1><p className={`text-xs ${sub}`}>ركائز الأولى للتعمير</p></div>
         </div>
         <span className={`text-xs ${sub}`}>{currentTime.toLocaleDateString('ar-SA')} {currentTime.toLocaleTimeString('ar-SA')} | {quote}</span>
         <div className="flex items-center gap-2">
@@ -318,7 +309,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* Audit Panel */}
       {showAuditPanel && (
         <div className={`absolute left-4 top-16 w-80 ${card} rounded-xl shadow-2xl border z-50 max-h-96 overflow-y-auto`}>
           <div className={`p-3 border-b flex justify-between ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
@@ -337,7 +327,6 @@ export default function App() {
       )}
 
       <div className="flex flex-col md:flex-row">
-        {/* Sidebar */}
         <div className={`w-full md:w-56 ${card} border-b md:border-l p-3`}>
           <nav className="flex md:flex-col gap-1">
             {[
@@ -357,9 +346,7 @@ export default function App() {
           </nav>
         </div>
 
-        {/* Main */}
         <div className="flex-1 p-4 md:p-6">
-          {/* Dashboard */}
           {currentView === 'dashboard' && (
             <div>
               <h2 className={`text-2xl font-bold mb-6 ${txt}`}>لوحة التحكم</h2>
@@ -399,7 +386,6 @@ export default function App() {
             </div>
           )}
 
-          {/* Expenses */}
           {currentView === 'expenses' && (
             <div>
               <div className="flex justify-between mb-6">
@@ -441,7 +427,6 @@ export default function App() {
             </div>
           )}
 
-          {/* Tasks */}
           {currentView === 'tasks' && (
             <div>
               <div className="flex justify-between mb-6">
@@ -493,7 +478,6 @@ export default function App() {
             </div>
           )}
 
-          {/* Accounts */}
           {currentView === 'accounts' && (
             <div>
               <div className="flex justify-between mb-6">
@@ -502,45 +486,37 @@ export default function App() {
               </div>
               {accounts.length === 0 ? <div className={`${card} p-12 rounded-xl border text-center`}><Users className={`w-16 h-16 mx-auto mb-4 ${sub}`} /><p className={sub}>لا توجد حسابات</p></div> : (
                 <div className="space-y-3">
-                  {accounts.map(a => {
-                    const [show, setShow] = useState(false);
-                    return (
-                      <div key={a.id} className={`${card} p-4 rounded-xl border`}>
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className={`text-xs px-2 py-0.5 rounded ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>{a.id}</span>
-                              <h3 className={`font-bold ${txt}`}>{a.name}</h3>
-                            </div>
-                            <p className={`text-sm ${sub}`}>{a.description}</p>
-                            <div className={`grid md:grid-cols-3 gap-2 text-sm mt-2`}>
-                              <div><span className={sub}>الرابط: </span><a href={a.loginUrl} target="_blank" className="text-blue-500">{a.loginUrl}</a></div>
-                              <div><span className={sub}>المستخدم: </span><span className="font-mono text-black">{a.username}</span></div>
-                              <div className="flex items-center gap-2">
-                                <span className={sub}>كلمة المرور: </span>
-                                <span className="font-mono text-black">{show ? a.password : '••••••'}</span>
-                                <button onClick={() => setShow(!show)}>{show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
-                              </div>
-                            </div>
-                            <div className={`flex gap-3 text-xs ${sub} mt-2`}>
-                              <span>الاشتراك: {a.subscriptionDate}</span>
-                              <span className="text-green-500 font-bold">{a.daysRemaining} يوم</span>
-                            </div>
+                  {accounts.map(a => (
+                    <div key={a.id} className={`${card} p-4 rounded-xl border`}>
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-xs px-2 py-0.5 rounded ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>{a.id}</span>
+                            <h3 className={`font-bold ${txt}`}>{a.name}</h3>
                           </div>
-                          <div className="flex gap-2">
-                            <Btn onClick={() => { setEditingItem({ ...a }); setModalType('editAcc'); setShowModal(true); }} icon={Pencil} color="bg-blue-600" title="تعديل" />
-                            <Btn onClick={() => { setSelectedItem(a); setModalType('delAcc'); setShowModal(true); }} icon={Trash2} color="bg-red-600" title="حذف" />
+                          <p className={`text-sm ${sub}`}>{a.description}</p>
+                          <div className={`grid md:grid-cols-3 gap-2 text-sm mt-2`}>
+                            <div><span className={sub}>الرابط: </span><a href={a.loginUrl} target="_blank" rel="noreferrer" className="text-blue-500">{a.loginUrl}</a></div>
+                            <div><span className={sub}>المستخدم: </span><span className="font-mono text-black">{a.username}</span></div>
+                            <div><span className={sub}>كلمة المرور: </span><span className="font-mono text-black">{a.password}</span></div>
+                          </div>
+                          <div className={`flex gap-3 text-xs ${sub} mt-2`}>
+                            <span>الاشتراك: {a.subscriptionDate}</span>
+                            <span className="text-green-500 font-bold">{a.daysRemaining} يوم</span>
                           </div>
                         </div>
+                        <div className="flex gap-2">
+                          <Btn onClick={() => { setEditingItem({ ...a }); setModalType('editAcc'); setShowModal(true); }} icon={Pencil} color="bg-blue-600" title="تعديل" />
+                          <Btn onClick={() => { setSelectedItem(a); setModalType('delAcc'); setShowModal(true); }} icon={Trash2} color="bg-red-600" title="حذف" />
+                        </div>
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
           )}
 
-          {/* Users */}
           {currentView === 'users' && (
             <div>
               <div className="flex justify-between mb-6">
@@ -567,7 +543,6 @@ export default function App() {
             </div>
           )}
 
-          {/* Archive */}
           {currentView === 'archive' && (
             <div>
               <h2 className={`text-2xl font-bold mb-6 ${txt}`}>الأرشيف</h2>
@@ -593,7 +568,6 @@ export default function App() {
             </div>
           )}
 
-          {/* Audit */}
           {currentView === 'audit' && (
             <div>
               <h2 className={`text-2xl font-bold mb-6 ${txt}`}>السجل</h2>
@@ -610,26 +584,20 @@ export default function App() {
         </div>
       </div>
 
-      {/* Modals */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
           <div className={`${card} p-6 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border`}>
-            {/* Delete Confirms */}
             {modalType === 'delExp' && <><h3 className={`text-xl font-bold mb-4 ${txt}`}>حذف مصروف</h3><p className={`mb-6 ${sub}`}>حذف "{selectedItem?.name}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delExpense(selectedItem)} className="px-4 py-2 bg-red-600 text-white rounded-xl">حذف</button></div></>}
             {modalType === 'delTask' && <><h3 className={`text-xl font-bold mb-4 ${txt}`}>حذف مهمة</h3><p className={`mb-6 ${sub}`}>حذف "{selectedItem?.title}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delTask(selectedItem)} className="px-4 py-2 bg-red-600 text-white rounded-xl">حذف</button></div></>}
             {modalType === 'delAcc' && <><h3 className={`text-xl font-bold mb-4 ${txt}`}>حذف حساب</h3><p className={`mb-6 ${sub}`}>حذف "{selectedItem?.name}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delAccount(selectedItem)} className="px-4 py-2 bg-red-600 text-white rounded-xl">حذف</button></div></>}
             {modalType === 'delUser' && <><h3 className={`text-xl font-bold mb-4 ${txt}`}>حذف مستخدم</h3><p className={`mb-6 ${sub}`}>حذف "{selectedItem?.username}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delUser(selectedItem)} className="px-4 py-2 bg-red-600 text-white rounded-xl">حذف</button></div></>}
 
-            {/* Add/Edit Expense */}
             {(modalType === 'addExp' || modalType === 'editExp') && <><h3 className={`text-xl font-bold mb-4 ${txt}`}>{modalType === 'addExp' ? 'إضافة مصروف' : 'تعديل'}</h3><div className="space-y-4"><input placeholder="الاسم *" value={modalType === 'addExp' ? newExpense.name : editingItem?.name || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, name: e.target.value }) : setEditingItem({ ...editingItem, name: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} /><input type="number" placeholder="المبلغ *" value={modalType === 'addExp' ? newExpense.amount : editingItem?.amount || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, amount: e.target.value }) : setEditingItem({ ...editingItem, amount: parseFloat(e.target.value) })} className={`w-full p-3 border rounded-xl ${inp}`} /><input type="date" value={modalType === 'addExp' ? newExpense.dueDate : editingItem?.dueDate || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, dueDate: e.target.value }) : setEditingItem({ ...editingItem, dueDate: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} /><select value={modalType === 'addExp' ? newExpense.type : editingItem?.type || 'شهري'} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, type: e.target.value }) : setEditingItem({ ...editingItem, type: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`}><option value="شهري">شهري</option><option value="سنوي">سنوي</option><option value="مرة واحدة">مرة واحدة</option></select><textarea placeholder="السبب" value={modalType === 'addExp' ? newExpense.reason : editingItem?.reason || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, reason: e.target.value }) : setEditingItem({ ...editingItem, reason: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} rows="2" /></div><div className="flex gap-3 justify-end mt-6"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addExp' ? addExpense : editExpense} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl">{modalType === 'addExp' ? 'إضافة' : 'حفظ'}</button></div></>}
 
-            {/* Add/Edit Task */}
             {(modalType === 'addTask' || modalType === 'editTask') && <><h3 className={`text-xl font-bold mb-4 ${txt}`}>{modalType === 'addTask' ? 'إضافة مهمة' : 'تعديل'}</h3><div className="space-y-4"><input placeholder="العنوان *" value={modalType === 'addTask' ? newTask.title : editingItem?.title || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, title: e.target.value }) : setEditingItem({ ...editingItem, title: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} /><input placeholder="المشروع" value={modalType === 'addTask' ? newTask.project : editingItem?.project || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, project: e.target.value }) : setEditingItem({ ...editingItem, project: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} /><textarea placeholder="الوصف" value={modalType === 'addTask' ? newTask.description : editingItem?.description || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, description: e.target.value }) : setEditingItem({ ...editingItem, description: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} rows="2" /><input type="date" value={modalType === 'addTask' ? newTask.dueDate : editingItem?.dueDate || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, dueDate: e.target.value }) : setEditingItem({ ...editingItem, dueDate: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} /><select value={modalType === 'addTask' ? newTask.assignedTo : editingItem?.assignedTo || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, assignedTo: e.target.value }) : setEditingItem({ ...editingItem, assignedTo: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`}><option value="">المسؤول</option>{users.map(u => <option key={u.id} value={u.username}>{u.username}</option>)}</select><select value={modalType === 'addTask' ? newTask.priority : editingItem?.priority || 'متوسطة'} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, priority: e.target.value }) : setEditingItem({ ...editingItem, priority: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`}><option value="عالية">عالية</option><option value="متوسطة">متوسطة</option><option value="منخفضة">منخفضة</option></select></div><div className="flex gap-3 justify-end mt-6"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addTask' ? addTask : editTask} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl">{modalType === 'addTask' ? 'إضافة' : 'حفظ'}</button></div></>}
 
-            {/* Add/Edit Account */}
-            {(modalType === 'addAcc' || modalType === 'editAcc') && <><h3 className={`text-xl font-bold mb-4 ${txt}`}>{modalType === 'addAcc' ? 'إضافة حساب' : 'تعديل'}</h3><div className="space-y-4"><input placeholder="الاسم *" value={modalType === 'addAcc' ? newAccount.name : editingItem?.name || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, name: e.target.value }) : setEditingItem({ ...editingItem, name: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} /><input placeholder="الوصف" value={modalType === 'addAcc' ? newAccount.description : editingItem?.description || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, description: e.target.value }) : setEditingItem({ ...editingItem, description: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} /><input placeholder="الرابط" value={modalType === 'addAcc' ? newAccount.loginUrl : editingItem?.loginUrl || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, loginUrl: e.target.value }) : setEditingItem({ ...editingItem, loginUrl: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} /><input placeholder="المستخدم *" value={modalType === 'addAcc' ? newAccount.username : editingItem?.username || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, username: e.target.value }) : setEditingItem({ ...editingItem, username: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} /><input placeholder="كلمة المرور" value={modalType === 'addAcc' ? newAccount.password : editingItem?.password || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, password: e.target.value }) : setEditingItem({ ...editingItem, password: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} /><input type="date" placeholder="الاشتراك" value={modalType === 'addAcc' ? newAccount.subscriptionDate : editingItem?.subscriptionDate || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, subscriptionDate: e.target.value }) : setEditingItem({ ...editingItem, subscriptionDate: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} /><input type="number" placeholder="الأيام المتبقية" value={modalType === 'addAcc' ? newAccount.daysRemaining : editingItem?.daysRemaining || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, daysRemaining: parseInt(e.target.value) }) : setEditingItem({ ...editingItem, daysRemaining: parseInt(e.target.value) })} className={`w-full p-3 border rounded-xl ${inp}`} /></div><div className="flex gap-3 justify-end mt-6"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addAcc' ? addAccount : editAccount} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl">{modalType === 'addAcc' ? 'إضافة' : 'حفظ'}</button></div></>}
+            {(modalType === 'addAcc' || modalType === 'editAcc') && <><h3 className={`text-xl font-bold mb-4 ${txt}`}>{modalType === 'addAcc' ? 'إضافة حساب' : 'تعديل'}</h3><div className="space-y-4"><input placeholder="الاسم *" value={modalType === 'addAcc' ? newAccount.name : editingItem?.name || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, name: e.target.value }) : setEditingItem({ ...editingItem, name: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} /><input placeholder="الوصف" value={modalType === 'addAcc' ? newAccount.description : editingItem?.description || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, description: e.target.value }) : setEditingItem({ ...editingItem, description: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} /><input placeholder="الرابط" value={modalType === 'addAcc' ? newAccount.loginUrl : editingItem?.loginUrl || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, loginUrl: e.target.value }) : setEditingItem({ ...editingItem, loginUrl: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} /><input placeholder="المستخدم *" value={modalType === 'addAcc' ? newAccount.username : editingItem?.username || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, username: e.target.value }) : setEditingItem({ ...editingItem, username: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} /><input placeholder="كلمة المرور" value={modalType === 'addAcc' ? newAccount.password : editingItem?.password || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, password: e.target.value }) : setEditingItem({ ...editingItem, password: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} /><input type="date" value={modalType === 'addAcc' ? newAccount.subscriptionDate : editingItem?.subscriptionDate || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, subscriptionDate: e.target.value }) : setEditingItem({ ...editingItem, subscriptionDate: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} /><input type="number" placeholder="الأيام المتبقية" value={modalType === 'addAcc' ? newAccount.daysRemaining : editingItem?.daysRemaining || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, daysRemaining: parseInt(e.target.value) }) : setEditingItem({ ...editingItem, daysRemaining: parseInt(e.target.value) })} className={`w-full p-3 border rounded-xl ${inp}`} /></div><div className="flex gap-3 justify-end mt-6"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addAcc' ? addAccount : editAccount} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl">{modalType === 'addAcc' ? 'إضافة' : 'حفظ'}</button></div></>}
 
-            {/* Add/Edit User */}
             {(modalType === 'addUser' || modalType === 'editUser') && <><h3 className={`text-xl font-bold mb-4 ${txt}`}>{modalType === 'addUser' ? 'إضافة مستخدم' : 'تعديل'}</h3><div className="space-y-4"><input placeholder="الاسم *" value={modalType === 'addUser' ? newUser.username : editingItem?.username || ''} onChange={e => modalType === 'addUser' ? setNewUser({ ...newUser, username: e.target.value }) : setEditingItem({ ...editingItem, username: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} /><input placeholder="كلمة المرور *" value={modalType === 'addUser' ? newUser.password : editingItem?.password || ''} onChange={e => modalType === 'addUser' ? setNewUser({ ...newUser, password: e.target.value }) : setEditingItem({ ...editingItem, password: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} /><select value={modalType === 'addUser' ? newUser.role : editingItem?.role || 'user'} onChange={e => modalType === 'addUser' ? setNewUser({ ...newUser, role: e.target.value }) : setEditingItem({ ...editingItem, role: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`}><option value="owner">مالك</option><option value="user">مستخدم</option></select><label className={`flex items-center gap-2 ${txt}`}><input type="checkbox" checked={modalType === 'addUser' ? newUser.active : editingItem?.active !== false} onChange={e => modalType === 'addUser' ? setNewUser({ ...newUser, active: e.target.checked }) : setEditingItem({ ...editingItem, active: e.target.checked })} className="w-5 h-5" />نشط</label></div><div className="flex gap-3 justify-end mt-6"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addUser' ? addUser : editUser} className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl">{modalType === 'addUser' ? 'إضافة' : 'حفظ'}</button></div></>}
           </div>
         </div>
