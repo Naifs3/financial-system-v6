@@ -42,11 +42,30 @@ const AccountCard = ({ account, cardClass }) => {
   );
 };
 
+// Helper functions for localStorage
+const saveToStorage = (key, data) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (e) {
+    console.error('Error saving to localStorage:', e);
+  }
+};
+
+const loadFromStorage = (key, defaultValue) => {
+  try {
+    const saved = localStorage.getItem(key);
+    return saved ? JSON.parse(saved) : defaultValue;
+  } catch (e) {
+    console.error('Error loading from localStorage:', e);
+    return defaultValue;
+  }
+};
+
 export default function FinancialManagementSystem() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const [darkMode, setDarkMode] = useState(false);
-  const [fontSize, setFontSize] = useState('medium');
+  const [darkMode, setDarkMode] = useState(() => loadFromStorage('darkMode', false));
+  const [fontSize, setFontSize] = useState(() => loadFromStorage('fontSize', 'medium'));
   const [currentView, setCurrentView] = useState('dashboard');
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
@@ -56,28 +75,61 @@ export default function FinancialManagementSystem() {
   const [currentTime, setCurrentTime] = useState(new Date());
   
   const [users] = useState([
-    { id: 1, username: 'نايف', password: '123456', role: 'owner' },
-    { id: 2, username: 'منوّر', password: '123456', role: 'owner' }
+    { id: 1, username: 'نايف', password: '@Lion12345', role: 'owner' },
+    { id: 2, username: 'منوّر', password: '@Lion12345', role: 'owner' }
   ]);
   
-  const [expenses, setExpenses] = useState([
+  const defaultExpenses = [
     { id: 'EXP001', name: 'استضافة الموقع', amount: 500, currency: 'ريال', dueDate: '2025-12-15', type: 'شهري', reason: 'استضافة موقع الشركة', status: 'قيد الانتظار' },
     { id: 'EXP002', name: 'اشتراك Adobe', amount: 200, currency: 'ريال', dueDate: '2025-12-20', type: 'شهري', reason: 'برامج التصميم', status: 'قيد الانتظار' }
-  ]);
+  ];
   
-  const [tasks, setTasks] = useState([
+  const defaultTasks = [
     { id: 'TASK001', title: 'مراجعة التقارير', description: 'مراجعة جميع التقارير', type: 'شهري', dueDate: '2025-12-10', assignedTo: 'نايف', priority: 'عالية', status: 'قيد التنفيذ', updates: [] }
-  ]);
+  ];
   
-  const [accounts, setAccounts] = useState([
+  const defaultAccounts = [
     { id: 'ACC001', name: 'حساب AWS', description: 'استضافة السحابية', loginUrl: 'https://aws.amazon.com', username: 'admin@company.com', password: 'pass123', subscriptionDate: '2025-01-01', daysRemaining: 387 }
-  ]);
+  ];
+
+  const [expenses, setExpenses] = useState(() => loadFromStorage('expenses', defaultExpenses));
+  const [tasks, setTasks] = useState(() => loadFromStorage('tasks', defaultTasks));
+  const [accounts, setAccounts] = useState(() => loadFromStorage('accounts', defaultAccounts));
+  const [auditLog, setAuditLog] = useState(() => loadFromStorage('auditLog', []));
+  const [archivedExpenses, setArchivedExpenses] = useState(() => loadFromStorage('archivedExpenses', []));
   
-  const [auditLog, setAuditLog] = useState([]);
-  const [archivedExpenses, setArchivedExpenses] = useState([]);
   const [newExpense, setNewExpense] = useState({ name: '', amount: '', currency: 'ريال', dueDate: '', type: 'شهري', reason: '', status: 'قيد الانتظار' });
   const [newTask, setNewTask] = useState({ title: '', description: '', type: 'شهري', dueDate: '', assignedTo: 'نايف', priority: 'متوسطة', status: 'قيد الانتظار' });
   const [newAccount, setNewAccount] = useState({ name: '', description: '', loginUrl: '', username: '', password: '', subscriptionDate: '', daysRemaining: 365 });
+
+  // Save to localStorage whenever data changes
+  useEffect(() => {
+    saveToStorage('expenses', expenses);
+  }, [expenses]);
+
+  useEffect(() => {
+    saveToStorage('tasks', tasks);
+  }, [tasks]);
+
+  useEffect(() => {
+    saveToStorage('accounts', accounts);
+  }, [accounts]);
+
+  useEffect(() => {
+    saveToStorage('auditLog', auditLog);
+  }, [auditLog]);
+
+  useEffect(() => {
+    saveToStorage('archivedExpenses', archivedExpenses);
+  }, [archivedExpenses]);
+
+  useEffect(() => {
+    saveToStorage('darkMode', darkMode);
+  }, [darkMode]);
+
+  useEffect(() => {
+    saveToStorage('fontSize', fontSize);
+  }, [fontSize]);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -198,11 +250,6 @@ export default function FinancialManagementSystem() {
             </div>
             <button type="submit" className="w-full bg-blue-600 text-white p-3 rounded-lg font-bold hover:bg-blue-700">دخول</button>
           </form>
-          <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <p className="font-bold mb-2 text-center text-sm">للتجربة:</p>
-            <button onClick={() => { setCurrentUser(users[0]); setIsLoggedIn(true); }} className="w-full bg-green-600 text-white p-2 rounded-lg hover:bg-green-700 mb-2 text-sm">دخول كـ نايف</button>
-            <button onClick={() => { setCurrentUser(users[1]); setIsLoggedIn(true); }} className="w-full bg-purple-600 text-white p-2 rounded-lg hover:bg-purple-700 text-sm">دخول كـ منوّر</button>
-          </div>
         </div>
       </div>
     );
