@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
@@ -103,7 +102,9 @@ const FinancialPattern = () => (
     </defs>
     <rect width="100%" height="100%" fill="url(#fin-pattern)" />
   </svg>
-);export default function App() {
+);
+
+export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('isLoggedIn') === 'true');
   const [currentUser, setCurrentUser] = useState(() => { const s = localStorage.getItem('currentUser'); return s ? JSON.parse(s) : null; });
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true');
@@ -242,7 +243,10 @@ const FinancialPattern = () => (
     <button onClick={onClick} disabled={disabled} className={`p-2 rounded-lg ${color || accent.color} text-white ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80'} transition-all`} title={title}>
       <Icon className="w-4 h-4" />
     </button>
-  );const handleLogin = (e) => {
+  );
+
+
+  const handleLogin = (e) => {
     e.preventDefault();
     const u = e.target.username.value.trim(), p = e.target.password.value.trim();
     const user = users.find(x => x.username === u && x.password === p && x.active !== false);
@@ -415,7 +419,10 @@ const FinancialPattern = () => (
 
   const filteredTasks = projectFilter ? tasks.filter(t => t.projectId === projectFilter) : tasks;
 
-  if (loading) return <div className={`min-h-screen ${bg} flex items-center justify-center`} dir="rtl"><Loader className="w-16 h-16 text-blue-500 animate-spin" /></div>;if (!isLoggedIn) return (
+  if (loading) return <div className={`min-h-screen ${bg} flex items-center justify-center`} dir="rtl"><Loader className="w-16 h-16 text-blue-500 animate-spin" /></div>;
+
+
+  if (!isLoggedIn) return (
     <div className={`min-h-screen ${bg} flex items-center justify-center p-4 relative`} style={{ fontFamily: currentFont.value }} dir="rtl">
       <FinancialPattern />
       <div className={`${card} p-8 rounded-2xl shadow-2xl w-full max-w-md border relative z-10`}>
@@ -550,7 +557,10 @@ const FinancialPattern = () => (
 
           <button onClick={logout} className="p-2 bg-red-600 text-white rounded-lg hover:bg-red-700"><Power className="w-5 h-5" /></button>
         </div>
-      </div><div className="flex flex-col md:flex-row">
+      </div>
+
+
+      <div className="flex flex-col md:flex-row">
         <div className={`w-full md:w-48 ${card} border-b md:border-l p-3`}>
           <nav className="flex md:flex-col gap-1 flex-wrap">
             {[{ id: 'dashboard', icon: Activity, label: 'الرئيسية' },{ id: 'expenses', icon: Calendar, label: 'المصروفات', perm: 'expenses' },{ id: 'tasks', icon: CheckSquare, label: 'المهام', perm: 'tasks' },{ id: 'projects', icon: FolderOpen, label: 'المشاريع', perm: 'projects' },{ id: 'accounts', icon: Users, label: 'الحسابات', perm: 'accounts' },{ id: 'users', icon: UserCog, label: 'المستخدمين', perm: 'users' },{ id: 'archive', icon: Archive, label: 'الأرشيف' },{ id: 'audit', icon: History, label: 'السجل' }].map(item => {
@@ -739,3 +749,315 @@ const FinancialPattern = () => (
               </div>
             </div>
           )}
+
+
+          {currentView === 'accounts' && (
+            <div>
+              <div className="flex justify-between mb-6 flex-wrap gap-2">
+                <h2 className={`text-2xl font-bold ${txt}`}>الحسابات</h2>
+                {hasPermission('accounts', 'add') && <button onClick={() => { setModalType('addAcc'); setShowModal(true); }} className={`flex items-center gap-2 bg-gradient-to-r ${accent.gradient} text-white px-4 py-2 rounded-xl`}><Plus className="w-5 h-5" />إضافة</button>}
+              </div>
+              {accounts.length === 0 ? <div className={`${card} p-12 rounded-xl border text-center`}><Users className={`w-16 h-16 mx-auto mb-4 ${sub}`} /><p className={sub}>لا توجد حسابات</p></div> : (
+                <div className="space-y-3">{accounts.map(a => (
+                  <div key={a.id} className={`${card} p-4 rounded-xl border`}>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                      <div className="flex-1">
+                        <h3 className={`font-bold ${txt}`}>{a.name}</h3><p className={`text-sm ${sub}`}>{a.description}</p>
+                        <div className={`grid md:grid-cols-3 gap-2 text-sm mt-2`}>
+                          <div><span className={sub}>الرابط: </span><a href={a.loginUrl} target="_blank" rel="noreferrer" className={accent.text}>{a.loginUrl || '-'}</a></div>
+                          <div><span className={sub}>المستخدم: </span><span className={`font-mono ${txt}`}>{a.username}</span></div>
+                          <div><span className={sub}>كلمة المرور: </span><span className={`font-mono ${txt}`}>{a.password}</span></div>
+                        </div>
+                        <div className="flex gap-3 mt-2 flex-wrap">
+                          <span className={`text-xs px-2 py-1 rounded ${darkMode ? 'bg-gray-700' : 'bg-gray-100'} ${txt}`}>الاشتراك: {a.subscriptionDate || '-'}</span>
+                          <span className="text-xs px-2 py-1 rounded bg-green-500 text-white">{a.daysRemaining} يوم متبقي</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        {hasPermission('accounts', 'edit') && <IconBtn onClick={() => { setEditingItem({ ...a }); setModalType('editAcc'); setShowModal(true); }} icon={Pencil} title="تعديل" />}
+                        {hasPermission('accounts', 'delete') && <IconBtn onClick={() => { setSelectedItem(a); setModalType('delAcc'); setShowModal(true); }} icon={Trash2} color="bg-red-600" title="حذف" />}
+                      </div>
+                    </div>
+                  </div>
+                ))}</div>
+              )}
+            </div>
+          )}
+
+          {currentView === 'users' && (
+            <div>
+              <div className="flex justify-between mb-6 flex-wrap gap-2">
+                <h2 className={`text-2xl font-bold ${txt}`}>المستخدمين</h2>
+                {hasPermission('users', 'add') && <button onClick={() => { setModalType('addUser'); setShowModal(true); }} className={`flex items-center gap-2 bg-gradient-to-r ${accent.gradient} text-white px-4 py-2 rounded-xl`}><Plus className="w-5 h-5" />إضافة</button>}
+              </div>
+              <div className="space-y-3">{users.map(u => (
+                <div key={u.id} className={`${card} p-4 rounded-xl border`}>
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-12 h-12 bg-gradient-to-br ${accent.gradient} rounded-full flex items-center justify-center text-white font-bold`}>{u.username.charAt(0)}</div>
+                      <div>
+                        <h3 className={`font-bold ${txt}`}>{u.username}</h3>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs px-2 py-0.5 rounded ${u.role === 'owner' ? 'bg-amber-500' : u.role === 'manager' ? 'bg-blue-500' : 'bg-gray-500'} text-white`}>{u.role === 'owner' ? 'مالك' : u.role === 'manager' ? 'مدير' : 'عضو'}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded ${u.active !== false ? 'bg-green-500' : 'bg-red-500'} text-white`}>{u.active !== false ? 'نشط' : 'معطل'}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      {hasPermission('users', 'edit') && <IconBtn onClick={() => { setEditingItem({ ...u }); setModalType('editUser'); setShowModal(true); }} icon={Pencil} title="تعديل" />}
+                      {hasPermission('users', 'delete') && u.role !== 'owner' && <IconBtn onClick={() => { setSelectedItem(u); setModalType('delUser'); setShowModal(true); }} icon={Trash2} color="bg-red-600" title="حذف" />}
+                    </div>
+                  </div>
+                </div>
+              ))}</div>
+            </div>
+          )}
+
+          {currentView === 'archive' && (
+            <div>
+              <h2 className={`text-2xl font-bold mb-6 ${txt}`}>الأرشيف</h2>
+              {totalArchived === 0 ? <div className={`${card} p-12 rounded-xl border text-center`}><Archive className={`w-16 h-16 mx-auto mb-4 ${sub}`} /><p className={sub}>الأرشيف فارغ</p></div> : (
+                <div className="space-y-6">
+                  {archivedExpenses?.length > 0 && <div><h3 className={`font-bold mb-3 ${txt}`}>المصروفات ({archivedExpenses.length})</h3>{archivedExpenses.map(e => (<div key={e.id} className={`${card} p-4 rounded-xl border mb-2`}><div className="flex justify-between items-center"><div><h4 className={`font-bold ${txt}`}>{e.name}</h4><p className={txt}>{e.amount} ر.س</p><p className={`text-xs ${sub}`}>حذف بواسطة: {e.archivedBy} - {new Date(e.archivedAt).toLocaleString('ar-SA')}</p></div><IconBtn onClick={() => restoreExpense(e)} icon={RotateCcw} color="bg-green-600" title="استعادة" /></div></div>))}</div>}
+                  {archivedTasks?.length > 0 && <div><h3 className={`font-bold mb-3 ${txt}`}>المهام ({archivedTasks.length})</h3>{archivedTasks.map(t => (<div key={t.id} className={`${card} p-4 rounded-xl border mb-2`}><div className="flex justify-between items-center"><div><h4 className={`font-bold ${txt}`}>{t.title}</h4><p className={`text-sm ${sub}`}>{t.description}</p><p className={`text-xs ${sub}`}>حذف بواسطة: {t.archivedBy} - {new Date(t.archivedAt).toLocaleString('ar-SA')}</p></div><IconBtn onClick={() => restoreTask(t)} icon={RotateCcw} color="bg-green-600" title="استعادة" /></div></div>))}</div>}
+                  {archivedProjects?.length > 0 && <div><h3 className={`font-bold mb-3 ${txt}`}>المشاريع ({archivedProjects.length})</h3>{archivedProjects.map(p => (<div key={p.id} className={`${card} p-4 rounded-xl border mb-2`}><div className="flex justify-between items-center"><div><h4 className={`font-bold ${txt}`}>{p.name}</h4><p className={`text-sm ${sub}`}>{p.description}</p><p className={`text-xs ${sub}`}>حذف بواسطة: {p.archivedBy} - {new Date(p.archivedAt).toLocaleString('ar-SA')}</p></div><IconBtn onClick={() => restoreProject(p)} icon={RotateCcw} color="bg-green-600" title="استعادة" /></div></div>))}</div>}
+                  {archivedAccounts?.length > 0 && <div><h3 className={`font-bold mb-3 ${txt}`}>الحسابات ({archivedAccounts.length})</h3>{archivedAccounts.map(a => (<div key={a.id} className={`${card} p-4 rounded-xl border mb-2`}><div className="flex justify-between items-center"><div><h4 className={`font-bold ${txt}`}>{a.name}</h4><p className={`text-sm ${sub}`}>{a.description}</p><p className={`text-xs ${sub}`}>حذف بواسطة: {a.archivedBy} - {new Date(a.archivedAt).toLocaleString('ar-SA')}</p></div><IconBtn onClick={() => restoreAccount(a)} icon={RotateCcw} color="bg-green-600" title="استعادة" /></div></div>))}</div>}
+                </div>
+              )}
+            </div>
+          )}
+
+          {currentView === 'audit' && (
+            <div>
+              <h2 className={`text-2xl font-bold mb-6 ${txt}`}>السجل</h2>
+              <div className="flex gap-2 mb-6">
+                <button onClick={() => setAuditFilter('all')} className={`px-4 py-2 rounded-xl transition-all ${auditFilter === 'all' ? `${accent.color} text-white` : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>الكل</button>
+                <button onClick={() => setAuditFilter('login')} className={`px-4 py-2 rounded-xl transition-all ${auditFilter === 'login' ? `${accent.color} text-white` : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>تسجيل الدخول</button>
+                <button onClick={() => setAuditFilter('operations')} className={`px-4 py-2 rounded-xl transition-all ${auditFilter === 'operations' ? `${accent.color} text-white` : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>العمليات</button>
+              </div>
+              <div className={`${card} rounded-xl border overflow-hidden`}>
+                <table className="w-full">
+                  <thead className={darkMode ? 'bg-gray-700' : 'bg-gray-100'}>
+                    <tr>
+                      <th className={`p-3 text-right ${txt}`}>الوقت</th>
+                      <th className={`p-3 text-right ${txt}`}>المستخدم</th>
+                      <th className={`p-3 text-right ${txt}`}>النوع</th>
+                      <th className={`p-3 text-right ${txt}`}>الوصف</th>
+                      {auditFilter !== 'operations' && <th className={`p-3 text-right ${txt}`}>المدة</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredAuditLog.slice(0, 50).map((l, i) => (
+                      <tr key={l.id} className={`${i % 2 === 0 ? (darkMode ? 'bg-gray-800/50' : 'bg-gray-50') : ''} cursor-pointer hover:${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`} onClick={() => { if (!l.isLogin && l.action === 'delete') setCurrentView('archive'); }}>
+                        <td className={`p-3 text-sm ${sub}`}>{new Date(l.timestamp).toLocaleString('ar-SA')}</td>
+                        <td className={`p-3 ${txt}`}>{l.user}</td>
+                        <td className="p-3">
+                          <span className={`px-2 py-1 rounded text-xs ${l.isLogin ? (l.action === 'دخول' ? 'bg-green-500' : 'bg-red-500') : accent.color} text-white`}>
+                            {l.isLogin ? l.action : l.action === 'add' ? 'إضافة' : l.action === 'edit' ? 'تعديل' : l.action === 'delete' ? 'حذف' : l.action === 'restore' ? 'استعادة' : l.action === 'pay' ? 'دفع' : l.action}
+                          </span>
+                        </td>
+                        <td className={`p-3 text-sm ${sub}`}>{l.description || (l.isLogin ? `${l.user} قام بـ${l.action}` : '-')}</td>
+                        {auditFilter !== 'operations' && <td className={`p-3 text-sm ${sub}`}>{l.duration ? `${l.duration} دقيقة` : '-'}</td>}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <div className={`text-center py-4 ${sub}`} style={{ fontSize: `${uiFontSize - 2}px` }}>
+            <span>ركائز الأولى للتعمير | </span>
+            <button onClick={() => setShowVersions(true)} className={`hover:${accent.text}`}>v{APP_VERSION}</button>
+          </div>
+        </div>
+      </div>
+
+
+      {showVersions && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowVersions(false)}>
+          <div className={`${card} p-6 rounded-2xl max-w-md w-full border`} onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-4"><h3 className={`text-xl font-bold ${txt}`}>سجل النسخ</h3><button onClick={() => setShowVersions(false)} className={sub}><X className="w-5 h-5" /></button></div>
+            <div className="space-y-4 max-h-96 overflow-y-auto">{versionHistory.map((v, i) => (<div key={v.version} className={`p-4 rounded-xl ${i === 0 ? `${accent.color}/20 border ${accent.border}` : darkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`}><div className="flex justify-between items-center mb-2"><span className={`font-bold ${txt}`}>v{v.version}</span><span className={`text-xs ${sub}`}>{v.date}</span></div><ul className={`text-sm ${sub} space-y-1`}>{v.changes.map((c, j) => <li key={j}>• {c}</li>)}</ul></div>))}</div>
+          </div>
+        </div>
+      )}
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+          <div className={`${card} p-6 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border`}>
+            
+            {modalType === 'delExp' && <><h3 className={`text-xl font-bold mb-4 ${txt}`}>حذف مصروف</h3><p className={`mb-6 ${sub}`}>هل تريد حذف "{selectedItem?.name}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delExpense(selectedItem)} className="px-4 py-2 bg-red-600 text-white rounded-xl">حذف</button></div></>}
+            
+            {modalType === 'delTask' && <><h3 className={`text-xl font-bold mb-4 ${txt}`}>حذف مهمة</h3><p className={`mb-6 ${sub}`}>هل تريد حذف "{selectedItem?.title}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delTask(selectedItem)} className="px-4 py-2 bg-red-600 text-white rounded-xl">حذف</button></div></>}
+            
+            {modalType === 'delProject' && <><h3 className={`text-xl font-bold mb-4 ${txt}`}>حذف مشروع</h3><p className={`mb-6 ${sub}`}>هل تريد حذف "{selectedItem?.name}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => { delProject(selectedItem); setSelectedProject(null); }} className="px-4 py-2 bg-red-600 text-white rounded-xl">حذف</button></div></>}
+            
+            {modalType === 'delAcc' && <><h3 className={`text-xl font-bold mb-4 ${txt}`}>حذف حساب</h3><p className={`mb-6 ${sub}`}>هل تريد حذف "{selectedItem?.name}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delAccount(selectedItem)} className="px-4 py-2 bg-red-600 text-white rounded-xl">حذف</button></div></>}
+            
+            {modalType === 'delUser' && <><h3 className={`text-xl font-bold mb-4 ${txt}`}>حذف مستخدم</h3><p className={`mb-6 ${sub}`}>هل تريد حذف "{selectedItem?.username}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delUser(selectedItem)} className="px-4 py-2 bg-red-600 text-white rounded-xl">حذف</button></div></>}
+
+            {(modalType === 'addExp' || modalType === 'editExp') && (
+              <>
+                <h3 className={`text-xl font-bold mb-4 ${txt}`}>{modalType === 'addExp' ? 'إضافة مصروف' : 'تعديل مصروف'}</h3>
+                <div className="space-y-4">
+                  <input placeholder="اسم المصروف *" value={modalType === 'addExp' ? newExpense.name : editingItem?.name || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, name: e.target.value }) : setEditingItem({ ...editingItem, name: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} />
+                  <input type="number" placeholder="المبلغ *" value={modalType === 'addExp' ? newExpense.amount : editingItem?.amount || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, amount: e.target.value }) : setEditingItem({ ...editingItem, amount: parseFloat(e.target.value) })} className={`w-full p-3 border rounded-xl ${inp}`} />
+                  <div>
+                    <label className={`block text-sm mb-1 ${sub}`}>تاريخ الاستحقاق *</label>
+                    <input type="date" value={modalType === 'addExp' ? newExpense.dueDate : editingItem?.dueDate || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, dueDate: e.target.value }) : setEditingItem({ ...editingItem, dueDate: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} />
+                  </div>
+                  <select value={modalType === 'addExp' ? newExpense.type : editingItem?.type || 'شهري'} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, type: e.target.value }) : setEditingItem({ ...editingItem, type: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`}>
+                    <option value="شهري">شهري</option><option value="سنوي">سنوي</option><option value="مرة واحدة">مرة واحدة</option>
+                  </select>
+                  <textarea placeholder="السبب / الوصف" value={modalType === 'addExp' ? newExpense.reason : editingItem?.reason || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, reason: e.target.value }) : setEditingItem({ ...editingItem, reason: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} rows="2" />
+                </div>
+                <div className="flex gap-3 justify-end mt-6">
+                  <button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button>
+                  <button onClick={modalType === 'addExp' ? addExpense : editExpense} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl`}>{modalType === 'addExp' ? 'إضافة' : 'حفظ'}</button>
+                </div>
+              </>
+            )}
+
+            {(modalType === 'addTask' || modalType === 'editTask') && (
+              <>
+                <h3 className={`text-xl font-bold mb-4 ${txt}`}>{modalType === 'addTask' ? 'إضافة مهمة' : 'تعديل مهمة'}</h3>
+                <div className="space-y-4">
+                  <input placeholder="عنوان المهمة *" value={modalType === 'addTask' ? newTask.title : editingItem?.title || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, title: e.target.value }) : setEditingItem({ ...editingItem, title: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} />
+                  <select value={modalType === 'addTask' ? newTask.projectId : editingItem?.projectId || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, projectId: e.target.value }) : setEditingItem({ ...editingItem, projectId: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`}>
+                    <option value="">بدون مشروع</option>
+                    {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                  <textarea placeholder="وصف المهمة" value={modalType === 'addTask' ? newTask.description : editingItem?.description || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, description: e.target.value }) : setEditingItem({ ...editingItem, description: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} rows="2" />
+                  <div>
+                    <label className={`block text-sm mb-1 ${sub}`}>تاريخ التسليم *</label>
+                    <input type="date" value={modalType === 'addTask' ? newTask.dueDate : editingItem?.dueDate || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, dueDate: e.target.value }) : setEditingItem({ ...editingItem, dueDate: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} />
+                  </div>
+                  <select value={modalType === 'addTask' ? newTask.assignedTo : editingItem?.assignedTo || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, assignedTo: e.target.value }) : setEditingItem({ ...editingItem, assignedTo: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`}>
+                    <option value="">اختر المسؤول</option>
+                    {users.map(u => <option key={u.id} value={u.username}>{u.username}</option>)}
+                  </select>
+                  <select value={modalType === 'addTask' ? newTask.priority : editingItem?.priority || 'متوسطة'} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, priority: e.target.value }) : setEditingItem({ ...editingItem, priority: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`}>
+                    <option value="عالية">عالية</option><option value="متوسطة">متوسطة</option><option value="منخفضة">منخفضة</option>
+                  </select>
+                </div>
+                <div className="flex gap-3 justify-end mt-6">
+                  <button onClick={() => { setShowModal(false); setEditingItem(null); setNewTask({ ...newTask, projectId: '' }); }} className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button>
+                  <button onClick={modalType === 'addTask' ? addTask : editTask} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl`}>{modalType === 'addTask' ? 'إضافة' : 'حفظ'}</button>
+                </div>
+              </>
+            )}
+
+            {(modalType === 'addProject' || modalType === 'editProject') && (
+              <>
+                <h3 className={`text-xl font-bold mb-4 ${txt}`}>{modalType === 'addProject' ? 'إضافة مشروع' : 'تعديل مشروع'}</h3>
+                <div className="space-y-4">
+                  <input placeholder="اسم المشروع *" value={modalType === 'addProject' ? newProject.name : editingItem?.name || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, name: e.target.value }) : setEditingItem({ ...editingItem, name: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} />
+                  <textarea placeholder="وصف المشروع" value={modalType === 'addProject' ? newProject.description : editingItem?.description || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, description: e.target.value }) : setEditingItem({ ...editingItem, description: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} rows="2" />
+                  <input placeholder="اسم العميل" value={modalType === 'addProject' ? newProject.client : editingItem?.client || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, client: e.target.value }) : setEditingItem({ ...editingItem, client: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} />
+                  <input placeholder="رقم الهاتف" value={modalType === 'addProject' ? newProject.phone : editingItem?.phone || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, phone: e.target.value }) : setEditingItem({ ...editingItem, phone: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} />
+                  <input placeholder="الموقع / العنوان" value={modalType === 'addProject' ? newProject.location : editingItem?.location || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, location: e.target.value }) : setEditingItem({ ...editingItem, location: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} />
+                  <input placeholder="رابط خرائط قوقل" value={modalType === 'addProject' ? newProject.mapUrl : editingItem?.mapUrl || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, mapUrl: e.target.value }) : setEditingItem({ ...editingItem, mapUrl: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={`block text-sm mb-1 ${sub}`}>تاريخ البدء</label>
+                      <input type="date" value={modalType === 'addProject' ? newProject.startDate : editingItem?.startDate || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, startDate: e.target.value }) : setEditingItem({ ...editingItem, startDate: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} />
+                    </div>
+                    <div>
+                      <label className={`block text-sm mb-1 ${sub}`}>تاريخ الانتهاء</label>
+                      <input type="date" value={modalType === 'addProject' ? newProject.endDate : editingItem?.endDate || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, endDate: e.target.value }) : setEditingItem({ ...editingItem, endDate: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} />
+                    </div>
+                  </div>
+                  <input type="number" placeholder="الميزانية (ر.س)" value={modalType === 'addProject' ? newProject.budget : editingItem?.budget || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, budget: e.target.value }) : setEditingItem({ ...editingItem, budget: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} />
+                  <select value={modalType === 'addProject' ? newProject.status : editingItem?.status || 'جاري'} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, status: e.target.value }) : setEditingItem({ ...editingItem, status: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`}>
+                    <option value="جاري">جاري</option><option value="متوقف">متوقف</option><option value="مكتمل">مكتمل</option>
+                  </select>
+                </div>
+                <div className="flex gap-3 justify-end mt-6">
+                  <button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button>
+                  <button onClick={modalType === 'addProject' ? addProject : editProject} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl`}>{modalType === 'addProject' ? 'إضافة' : 'حفظ'}</button>
+                </div>
+              </>
+            )}
+
+            {(modalType === 'addAcc' || modalType === 'editAcc') && (
+              <>
+                <h3 className={`text-xl font-bold mb-4 ${txt}`}>{modalType === 'addAcc' ? 'إضافة حساب' : 'تعديل حساب'}</h3>
+                <div className="space-y-4">
+                  <input placeholder="اسم الحساب *" value={modalType === 'addAcc' ? newAccount.name : editingItem?.name || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, name: e.target.value }) : setEditingItem({ ...editingItem, name: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} />
+                  <input placeholder="الوصف" value={modalType === 'addAcc' ? newAccount.description : editingItem?.description || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, description: e.target.value }) : setEditingItem({ ...editingItem, description: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} />
+                  <input placeholder="رابط الدخول" value={modalType === 'addAcc' ? newAccount.loginUrl : editingItem?.loginUrl || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, loginUrl: e.target.value }) : setEditingItem({ ...editingItem, loginUrl: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} />
+                  <input placeholder="اسم المستخدم *" value={modalType === 'addAcc' ? newAccount.username : editingItem?.username || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, username: e.target.value }) : setEditingItem({ ...editingItem, username: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} />
+                  <input placeholder="كلمة المرور" value={modalType === 'addAcc' ? newAccount.password : editingItem?.password || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, password: e.target.value }) : setEditingItem({ ...editingItem, password: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} />
+                  <div>
+                    <label className={`block text-sm mb-1 ${sub}`}>تاريخ الاشتراك</label>
+                    <input type="date" value={modalType === 'addAcc' ? newAccount.subscriptionDate : editingItem?.subscriptionDate || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, subscriptionDate: e.target.value }) : setEditingItem({ ...editingItem, subscriptionDate: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} />
+                  </div>
+                  <input type="number" placeholder="الأيام المتبقية" value={modalType === 'addAcc' ? newAccount.daysRemaining : editingItem?.daysRemaining || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, daysRemaining: parseInt(e.target.value) }) : setEditingItem({ ...editingItem, daysRemaining: parseInt(e.target.value) })} className={`w-full p-3 border rounded-xl ${inp}`} />
+                </div>
+                <div className="flex gap-3 justify-end mt-6">
+                  <button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button>
+                  <button onClick={modalType === 'addAcc' ? addAccount : editAccount} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl`}>{modalType === 'addAcc' ? 'إضافة' : 'حفظ'}</button>
+                </div>
+              </>
+            )}
+
+            {(modalType === 'addUser' || modalType === 'editUser') && (
+              <>
+                <h3 className={`text-xl font-bold mb-4 ${txt}`}>{modalType === 'addUser' ? 'إضافة مستخدم' : 'تعديل مستخدم'}</h3>
+                <div className="space-y-4">
+                  <input placeholder="اسم المستخدم *" value={modalType === 'addUser' ? newUser.username : editingItem?.username || ''} onChange={e => modalType === 'addUser' ? setNewUser({ ...newUser, username: e.target.value }) : setEditingItem({ ...editingItem, username: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} />
+                  <input placeholder="كلمة المرور *" type="password" value={modalType === 'addUser' ? newUser.password : editingItem?.password || ''} onChange={e => modalType === 'addUser' ? setNewUser({ ...newUser, password: e.target.value }) : setEditingItem({ ...editingItem, password: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} />
+                  <select value={modalType === 'addUser' ? newUser.role : editingItem?.role || 'member'} onChange={e => modalType === 'addUser' ? setNewUser({ ...newUser, role: e.target.value }) : setEditingItem({ ...editingItem, role: e.target.value })} className={`w-full p-3 border rounded-xl ${inp}`} disabled={editingItem?.role === 'owner'}>
+                    <option value="owner">مالك</option>
+                    <option value="manager">مدير</option>
+                    <option value="member">عضو</option>
+                  </select>
+                  <label className={`flex items-center gap-2 ${txt}`}>
+                    <input type="checkbox" checked={modalType === 'addUser' ? newUser.active : editingItem?.active !== false} onChange={e => modalType === 'addUser' ? setNewUser({ ...newUser, active: e.target.checked }) : setEditingItem({ ...editingItem, active: e.target.checked })} className="w-5 h-5 rounded" />
+                    <span>نشط</span>
+                  </label>
+                  
+                  {(modalType === 'addUser' ? newUser.role : editingItem?.role) === 'member' && (
+                    <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                      <h4 className={`font-bold mb-3 ${txt}`}>الصلاحيات</h4>
+                      {['expenses', 'tasks', 'projects', 'accounts'].map(section => (
+                        <div key={section} className="mb-3">
+                          <p className={`text-sm mb-2 ${sub}`}>{section === 'expenses' ? 'المصروفات' : section === 'tasks' ? 'المهام' : section === 'projects' ? 'المشاريع' : 'الحسابات'}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {['view', 'add', 'edit', 'delete'].map(perm => {
+                              const perms = modalType === 'addUser' ? newUser.permissions[section] : editingItem?.permissions?.[section] || [];
+                              const checked = perms.includes(perm);
+                              return (
+                                <label key={perm} className={`flex items-center gap-1 text-xs px-2 py-1 rounded ${checked ? accent.color + ' text-white' : darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-700'}`}>
+                                  <input type="checkbox" checked={checked} onChange={e => {
+                                    const newPerms = e.target.checked ? [...perms, perm] : perms.filter(p => p !== perm);
+                                    if (modalType === 'addUser') {
+                                      setNewUser({ ...newUser, permissions: { ...newUser.permissions, [section]: newPerms } });
+                                    } else {
+                                      setEditingItem({ ...editingItem, permissions: { ...editingItem.permissions, [section]: newPerms } });
+                                    }
+                                  }} className="w-3 h-3" />
+                                  {perm === 'view' ? 'عرض' : perm === 'add' ? 'إضافة' : perm === 'edit' ? 'تعديل' : 'حذف'}
+                                </label>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-3 justify-end mt-6">
+                  <button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button>
+                  <button onClick={modalType === 'addUser' ? addUser : editUser} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl`}>{modalType === 'addUser' ? 'إضافة' : 'حفظ'}</button>
+                </div>
+              </>
+            )}
+
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
