@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
-import { Calendar, CheckSquare, Users, Moon, Sun, Monitor, Plus, Archive, Clock, Activity, History, Loader, Power, Pencil, Trash2, RotateCcw, UserCog, ChevronLeft, ChevronDown, ChevronUp, FolderOpen, FileText, MapPin, User, X, Phone, Settings, Layers, CreditCard, DollarSign, Wallet, FolderPlus, AlertTriangle, Image, Map, Type, Search, Repeat, Shield, CircleCheck, CircleX, Palette } from 'lucide-react';
+import { Calendar, CheckSquare, Users, Moon, Sun, Monitor, Plus, Archive, Clock, Activity, History, Loader, Power, Pencil, Trash2, RotateCcw, UserCog, ChevronLeft, ChevronDown, ChevronUp, FolderOpen, FileText, MapPin, User, X, Phone, Settings, Layers, CreditCard, DollarSign, Wallet, FolderPlus, AlertTriangle, Image, Map, Type, Search, RefreshCw, Shield, CheckCircle, XCircle } from 'lucide-react';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDpzPCma5c4Tuxd5htRHOvm4aYLRbj8Qkg",
@@ -929,13 +929,13 @@ export default function App() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
                               <h3 className={`font-bold ${txt}`}>{e.name}</h3>
-                              {e.status === 'مدفوع' && <span className={`text-xs ${txtSm}`}><CircleCheck className="w-3 h-3 inline ml-1 text-green-500" />مدفوع</span>}
+                              {e.status === 'مدفوع' && <span className={`text-xs ${txtSm}`}><CheckCircle className="w-3 h-3 inline ml-1 text-green-500" />مدفوع</span>}
                             </div>
                             <p className={`text-xl font-bold ${txt} mb-2`}>{formatNumber(e.amount)} ريال</p>
                             {e.reason && <p className={`text-xs ${txtSm} mb-2`}>{e.reason}</p>}
                             
                             <div className={`text-xs ${txtSm} flex flex-wrap items-center gap-x-3 gap-y-1`}>
-                              <InfoItem icon={Repeat}>{e.type}</InfoItem>
+                              <InfoItem icon={RefreshCw}>{e.type}</InfoItem>
                               {e.dueDate && <InfoItem icon={Calendar}>{e.dueDate}</InfoItem>}
                               {d !== null && <InfoItem icon={Clock}>{d < 0 ? `متأخر ${formatNumber(Math.abs(d))} يوم` : `${formatNumber(d)} يوم متبقي`}</InfoItem>}
                               <InfoItem icon={User}>{e.createdBy}</InfoItem>
