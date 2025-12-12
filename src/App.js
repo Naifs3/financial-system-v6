@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
-import { Calendar, CheckSquare, Users, Moon, Sun, Monitor, Plus, Archive, Clock, Activity, History, Loader, Power, Pencil, Trash2, RotateCcw, UserCog, ChevronLeft, ChevronDown, ChevronUp, FolderOpen, FileText, MapPin, User, X, Phone, Settings, Layers, CreditCard, DollarSign, Wallet, FolderPlus, AlertTriangle, Image, Map, Type, Search, RefreshCw, Shield, CheckCircle, XCircle, Copy, ExternalLink, Eye, EyeOff, Folder } from 'lucide-react';
+import { Calendar, CheckSquare, Users, Moon, Sun, Monitor, Plus, Archive, Clock, Activity, History, Loader, Power, Pencil, Trash2, RotateCcw, UserCog, ChevronLeft, ChevronDown, ChevronUp, FolderOpen, FileText, MapPin, User, X, Phone, Settings, Layers, CreditCard, DollarSign, Wallet, FolderPlus, AlertTriangle, Image, Map, Type, Search, RefreshCw, Shield, CheckCircle, XCircle, Copy, ExternalLink, Eye, EyeOff, Folder, BookOpen } from 'lucide-react';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDpzPCma5c4Tuxd5htRHOvm4aYLRbj8Qkg",
@@ -851,7 +851,16 @@ export default function App() {
 
   return (
     <div className={`min-h-screen ${bg} relative overflow-x-hidden pb-16`} style={{ fontSize: `${fontSize}px`, fontFamily: currentFont.value, ...hideScrollbar }} dir="rtl">
-      <style>{`*::-webkit-scrollbar { display: none; } * { scrollbar-width: none; -ms-overflow-style: none; } input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; } input[type=number] { -moz-appearance: textfield; }`}</style>
+      <style>{`
+        *::-webkit-scrollbar { display: none; } 
+        * { scrollbar-width: none; -ms-overflow-style: none; } 
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; } 
+        input[type=number] { -moz-appearance: textfield; }
+        input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; ${darkMode ? 'filter: invert(1);' : ''} }
+        ${darkMode ? `input[type="date"] { color-scheme: dark; }` : ''}
+        input[type="date"]:not(:valid):before { content: "أدخل التاريخ"; color: ${darkMode ? '#9ca3af' : '#6b7280'}; }
+        input[type="date"]:focus:before { content: none; }
+      `}</style>
       <FinancialPattern />
       
       {showMapPicker && <MapPicker darkMode={darkMode} onClose={() => setShowMapPicker(false)} onSelect={handleMapSelect} />}
@@ -1116,34 +1125,26 @@ export default function App() {
                                        d !== null && d <= 30 ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400' : 
                                        'bg-green-500/20 border-green-500/50 text-green-400';
                     return (
-                      <div key={e.id} className={`${card} p-4 rounded-xl border ${isUrgent || isOverdue ? 'border-red-500/30' : ''}`}>
-                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+                      <div key={e.id} className={`${card} p-3 rounded-xl border ${isUrgent || isOverdue ? 'border-red-500/30' : ''}`}>
+                        <div className="flex items-center justify-between gap-3">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
                               <h3 className={`font-bold ${txt}`}>{e.name}</h3>
                               {d !== null && e.type !== 'مرة واحدة' && <span className={`px-2 py-0.5 rounded-lg text-xs border ${badgeColor}`}>{daysText}</span>}
                             </div>
-                            <p className={`text-xl font-bold ${txt} mb-2`}>{formatNumber(e.amount)} ريال</p>
-                            {e.reason && <p className={`${txtSm} mb-2`}>{e.reason}</p>}
                             
-                            <div className={`${txtSm} flex flex-wrap items-center gap-x-3 gap-y-1 mb-2`}>
-                              <InfoItem icon={RefreshCw}>{e.type}</InfoItem>
-                              {e.dueDate && <InfoItem icon={Calendar}>{e.dueDate}</InfoItem>}
+                            <div className={`${txtSm} flex flex-wrap items-center gap-x-3 gap-y-1`}>
+                              <span className={txt}><Wallet className="w-3.5 h-3.5 inline ml-1" />{e.type === 'شهري' ? 'شهرياً' : e.type === 'سنوي' ? 'سنوياً' : 'مرة واحدة'}: <span className="font-bold">{formatNumber(e.amount)}</span></span>
+                              {e.type !== 'مرة واحدة' && <span className={txt}><CreditCard className="w-3.5 h-3.5 inline ml-1" />الإجمالي: <span className="font-bold">{formatNumber(e.totalSpent || 0)}</span></span>}
+                              {e.createdAt && <InfoItem icon={Calendar}>إنشاء: {new Date(e.createdAt).toLocaleDateString('en-GB')}</InfoItem>}
+                              {e.dueDate && <InfoItem icon={Clock}>استحقاق: {e.dueDate}</InfoItem>}
                               <InfoItem icon={User}>{e.createdBy}</InfoItem>
                               {e.location && <InfoItem icon={MapPin} href={e.mapUrl}>{e.location}</InfoItem>}
                             </div>
-                            
-                            <div className={`${txt} mb-2`}>
-                              <DollarSign className="w-3.5 h-3.5 inline ml-1" />
-                              إجمالي المنفق: <span className="font-bold">{formatNumber(e.totalSpent || 0)} ريال</span>
-                            </div>
-                            
-                            <button onClick={() => setShowExpenseHistory(showExpenseHistory === e.id ? null : e.id)} className={`${accent.text} hover:underline`}>
-                              <History className="w-3.5 h-3.5 inline ml-1" />العمليات السابقة ({e.paymentHistory?.length || 0})
-                            </button>
                           </div>
                           
                           <div className="flex gap-1">
+                            <IconBtn onClick={() => setShowExpenseHistory(showExpenseHistory === e.id ? null : e.id)} icon={BookOpen} title="السجل" />
                             {e.type !== 'مرة واحدة' && (
                               <IconBtn onClick={() => {
                                 const newDueDate = new Date(e.dueDate);
@@ -1166,13 +1167,13 @@ export default function App() {
 
                         {showExpenseHistory === e.id && (
                           <div className={`mt-3 pt-3 border-t ${darkMode ? 'border-white/20' : 'border-gray-200'}`}>
-                            <p className={`font-bold mb-2 ${txt}`}>العمليات السابقة:</p>
+                            <p className={`font-bold mb-2 ${txt}`}>سجل العمليات:</p>
                             {e.paymentHistory?.length > 0 ? (
                               <div className="space-y-2">
                                 {e.paymentHistory.map((p, i) => (
                                   <div key={i} className={`p-2 rounded-lg flex flex-wrap gap-3 ${darkMode ? 'bg-white/5' : 'bg-gray-100'}`}>
-                                    <InfoItem icon={DollarSign}>{formatNumber(p.amount)} ريال</InfoItem>
-                                    <InfoItem icon={Calendar}>{new Date(p.date).toLocaleDateString('en-US')}</InfoItem>
+                                    <InfoItem icon={Wallet}>{formatNumber(p.amount)} ريال</InfoItem>
+                                    <InfoItem icon={Calendar}>{new Date(p.date).toLocaleDateString('en-GB')}</InfoItem>
                                     <InfoItem icon={Clock}>{formatTime12(new Date(p.date))}</InfoItem>
                                     {p.note && <span className={txtSm}>{p.note}</span>}
                                     <InfoItem icon={User}>{p.by || p.paidBy}</InfoItem>
@@ -1245,8 +1246,8 @@ export default function App() {
                     const isOverdue = d !== null && d < 0;
                     const daysText = d !== null ? (d < 0 ? `مضى ${formatNumber(Math.abs(d))} يوم` : `متبقي ${formatNumber(d)} يوم`) : null;
                     return (
-                      <div key={t.id} className={`${card} p-4 rounded-xl border ${isOverdue ? 'border-red-500/30' : ''}`}>
-                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+                      <div key={t.id} className={`${card} p-3 rounded-xl border ${isOverdue ? 'border-red-500/30' : ''}`}>
+                        <div className="flex items-center justify-between gap-3">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
                               <h3 className={`font-bold ${txt}`}>{t.title}</h3>
@@ -1258,9 +1259,10 @@ export default function App() {
                             <div className={`${txtSm} flex flex-wrap items-center gap-x-3 gap-y-1`}>
                               {project && <button onClick={() => { setSelectedProject(project); setCurrentView('projects'); }} className={`inline-flex items-center gap-1 hover:underline ${accent.text}`}><FolderOpen className="w-3.5 h-3.5" />{project.name}</button>}
                               {section && <InfoItem icon={Layers}>{section.name}</InfoItem>}
-                              {t.assignedTo && <InfoItem icon={User}>{t.assignedTo}</InfoItem>}
-                              {t.dueDate && <InfoItem icon={Calendar}>{t.dueDate}</InfoItem>}
-                              <InfoItem icon={User}>{t.createdBy}</InfoItem>
+                              <InfoItem icon={User}>أنشئ بواسطة: {t.createdBy}</InfoItem>
+                              {t.assignedTo && <InfoItem icon={UserCog}>المنفذ: {t.assignedTo}</InfoItem>}
+                              {t.createdAt && <InfoItem icon={Calendar}>أنشئ: {new Date(t.createdAt).toLocaleDateString('en-GB')}</InfoItem>}
+                              {t.dueDate && <InfoItem icon={Clock}>تنفيذ: {t.dueDate}</InfoItem>}
                               {t.location && <InfoItem icon={MapPin} href={t.mapUrl}>{t.location}</InfoItem>}
                             </div>
                           </div>
