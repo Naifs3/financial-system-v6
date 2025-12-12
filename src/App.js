@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
-import { Calendar, CheckSquare, Users, Moon, Sun, Monitor, Plus, Archive, Clock, Activity, History, Loader, Power, Pencil, Trash2, RotateCcw, UserCog, ChevronLeft, ChevronDown, ChevronUp, FolderOpen, FileText, MapPin, User, X, Phone, Settings, Layers, CreditCard, DollarSign, Wallet, FolderPlus, AlertTriangle, Image, Map, Type, Search } from 'lucide-react';
+import { Calendar, CheckSquare, Users, Moon, Sun, Monitor, Plus, Archive, Clock, Activity, History, Loader, Power, Pencil, Trash2, RotateCcw, UserCog, ChevronLeft, ChevronDown, ChevronUp, FolderOpen, FileText, MapPin, User, X, Phone, Settings, Layers, CreditCard, DollarSign, Wallet, FolderPlus, AlertTriangle, Image, Map, Type, Search, Repeat, Shield, CircleCheck, CircleX, Palette } from 'lucide-react';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDpzPCma5c4Tuxd5htRHOvm4aYLRbj8Qkg",
@@ -14,22 +14,33 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const APP_VERSION = "4.3.1";
+const APP_VERSION = "4.4.0";
 
 const formatNumber = (num) => {
-  return new Intl.NumberFormat('en-US').format(num);
+  if (num === null || num === undefined) return '0';
+  return Number(num).toLocaleString('en-US');
 };
 
-const SAR = () => (
-  <svg viewBox="0 0 1124 1256" className="inline-block w-4 h-4 mr-1" fill="currentColor">
-    <path d="M699.7 1160.3c-2.5 0-4.6-.8-6.4-2.5-1.8-1.8-2.6-3.9-2.6-6.4v-108.6c0-24.8-8.8-46-26.3-63.5s-38.7-26.3-63.5-26.3H217.4c-2.5 0-4.6-.8-6.4-2.6-1.8-1.7-2.6-3.9-2.6-6.4V836.1c0-2.5.9-4.6 2.6-6.4 1.8-1.7 3.9-2.6 6.4-2.6h383.5c71.5 0 132.5 25.3 183.2 75.9 50.6 50.6 75.9 111.7 75.9 183.2v64.9c0 2.5-.9 4.6-2.6 6.4-1.8 1.7-3.9 2.5-6.4 2.5H699.7v.3zM519.4 720.5c-2.5 0-4.6-.8-6.4-2.6-1.7-1.7-2.6-3.9-2.6-6.4V602.9c0-24.8-8.8-46-26.3-63.5-17.5-17.5-38.7-26.3-63.5-26.3H217.4c-2.5 0-4.6-.9-6.4-2.6-1.8-1.8-2.6-3.9-2.6-6.4V396.2c0-2.5.9-4.6 2.6-6.4 1.8-1.7 3.9-2.6 6.4-2.6h203.2c71.5 0 132.5 25.3 183.2 75.9 50.6 50.6 75.9 111.7 75.9 183.2v64.9c0 2.5-.8 4.6-2.6 6.4-1.7 1.7-3.9 2.6-6.4 2.6H519.4v.3zM308.6 280.6c-2.5 0-4.6-.9-6.4-2.6-1.7-1.8-2.6-3.9-2.6-6.4V162.9c0-24.8-8.8-46-26.3-63.5-17.5-17.5-38.7-26.3-63.5-26.3H107.4c-2.5 0-4.6-.8-6.4-2.6-1.8-1.7-2.6-3.9-2.6-6.4V-43.8c0-2.5.9-4.6 2.6-6.4 1.8-1.7 3.9-2.6 6.4-2.6h102.4c71.5 0 132.5 25.3 183.2 75.9 50.6 50.6 75.9 111.7 75.9 183.2v64.9c0 2.5-.8 4.6-2.6 6.4-1.7 1.7-3.9 2.6-6.4 2.6H308.6v.4z"/>
-  </svg>
-);
+const fonts = [
+  { id: 'cairo', name: 'Cairo', value: "'Cairo', sans-serif", url: 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap' },
+  { id: 'tajawal', name: 'Tajawal', value: "'Tajawal', sans-serif", url: 'https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap' },
+  { id: 'almarai', name: 'Almarai', value: "'Almarai', sans-serif", url: 'https://fonts.googleapis.com/css2?family=Almarai:wght@400;700&display=swap' },
+  { id: 'noto', name: 'Noto Kufi', value: "'Noto Kufi Arabic', sans-serif", url: 'https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700&display=swap' },
+  { id: 'rubik', name: 'Rubik', value: "'Rubik', sans-serif", url: 'https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap' },
+];
+
+const textColors = [
+  { id: 'default', name: 'افتراضي', light: 'text-gray-900', dark: 'text-white' },
+  { id: 'blue', name: 'أزرق', light: 'text-blue-900', dark: 'text-blue-100' },
+  { id: 'green', name: 'أخضر', light: 'text-green-900', dark: 'text-green-100' },
+  { id: 'purple', name: 'بنفسجي', light: 'text-purple-900', dark: 'text-purple-100' },
+  { id: 'amber', name: 'ذهبي', light: 'text-amber-900', dark: 'text-amber-100' },
+];
 
 const versionHistory = [
-  { version: "4.3.1", date: "2024-12-14", changes: ["رمز ريال جديد", "تصميم خريطة حديث", "إزالة الفقاعات", "بطاقات المستخدمين", "إخفاء شريط التمرير"] },
+  { version: "4.4.0", date: "2024-12-14", changes: ["بيانات متجاورة بأيقونات", "اقتراحات بحث الخريطة", "خيارات الخطوط", "روابط تفاعلية"] },
+  { version: "4.3.1", date: "2024-12-14", changes: ["رمز ريال جديد", "تصميم خريطة حديث", "إزالة الفقاعات"] },
   { version: "4.3.0", date: "2024-12-14", changes: ["خريطة تفاعلية مع بحث", "تحسين عرض البيانات"] },
-  { version: "4.2.0", date: "2024-12-14", changes: ["إصلاح الوقت والعبارات", "تحكم بأحجام الخط"] },
 ];
 
 const quotes = [
@@ -79,25 +90,40 @@ const FinancialPattern = () => (
 const MapPicker = ({ onSelect, onClose, darkMode }) => {
   const [search, setSearch] = useState('');
   const [searching, setSearching] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [position, setPosition] = useState({ lat: 24.7136, lng: 46.6753 });
   const [locationName, setLocationName] = useState('الرياض');
   const mapRef = useRef(null);
+  const searchTimeout = useRef(null);
 
-  const searchLocation = async () => {
-    if (!search.trim()) return;
-    setSearching(true);
+  const searchSuggestions = async (query) => {
+    if (!query.trim() || query.length < 2) {
+      setSuggestions([]);
+      return;
+    }
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(search)}&limit=1`);
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`);
       const data = await response.json();
-      if (data && data.length > 0) {
-        const result = data[0];
-        setPosition({ lat: parseFloat(result.lat), lng: parseFloat(result.lon) });
-        setLocationName(result.display_name.split(',')[0]);
-      }
+      setSuggestions(data || []);
+      setShowSuggestions(true);
     } catch (error) {
       console.error('Search error:', error);
     }
-    setSearching(false);
+  };
+
+  const handleSearchInput = (value) => {
+    setSearch(value);
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    searchTimeout.current = setTimeout(() => searchSuggestions(value), 300);
+  };
+
+  const selectSuggestion = (item) => {
+    setPosition({ lat: parseFloat(item.lat), lng: parseFloat(item.lon) });
+    setLocationName(item.display_name.split(',').slice(0, 2).join('، '));
+    setSearch(item.display_name.split(',')[0]);
+    setSuggestions([]);
+    setShowSuggestions(false);
   };
 
   const handleConfirm = () => {
@@ -114,22 +140,40 @@ const MapPicker = ({ onSelect, onClose, darkMode }) => {
         </div>
         
         <div className="p-4">
-          <div className="flex gap-2 mb-4">
-            <input 
-              type="text" 
-              placeholder="ابحث عن موقع (مثال: برج المملكة، الرياض)" 
-              value={search} 
-              onChange={e => setSearch(e.target.value)}
-              onKeyPress={e => e.key === 'Enter' && searchLocation()}
-              className={`flex-1 p-3 rounded-xl border text-sm ${darkMode ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'}`}
-            />
-            <button 
-              onClick={searchLocation} 
-              disabled={searching}
-              className={`px-4 rounded-xl ${darkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white flex items-center gap-2`}
-            >
-              {searching ? <Loader className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-            </button>
+          <div className="relative mb-4">
+            <div className="flex gap-2">
+              <div className="flex-1 relative">
+                <input 
+                  type="text" 
+                  placeholder="ابحث عن موقع (مثال: برج المملكة، الرياض)" 
+                  value={search} 
+                  onChange={e => handleSearchInput(e.target.value)}
+                  onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                  className={`w-full p-3 rounded-xl border text-sm ${darkMode ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-500' : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-400'}`}
+                />
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className={`absolute top-full left-0 right-0 mt-1 rounded-xl border shadow-lg z-50 max-h-48 overflow-y-auto ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                    {suggestions.map((item, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => selectSuggestion(item)}
+                        className={`w-full text-right p-3 flex items-center gap-2 ${darkMode ? 'hover:bg-gray-700 text-gray-200' : 'hover:bg-gray-50 text-gray-700'} ${idx !== suggestions.length - 1 ? (darkMode ? 'border-b border-gray-700' : 'border-b border-gray-100') : ''}`}
+                      >
+                        <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                        <span className="text-sm truncate">{item.display_name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button 
+                onClick={() => searchSuggestions(search)} 
+                disabled={searching}
+                className={`px-4 rounded-xl ${darkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600'} text-white flex items-center gap-2`}
+              >
+                {searching ? <Loader className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
           
           <div className="relative rounded-xl overflow-hidden border-2 border-gray-300" style={{ height: '300px' }}>
@@ -177,6 +221,8 @@ export default function App() {
     return mode === 'dark';
   });
   const [fontSize, setFontSize] = useState(() => parseInt(localStorage.getItem('fontSize')) || 16);
+  const [fontIndex, setFontIndex] = useState(() => parseInt(localStorage.getItem('fontIndex')) || 0);
+  const [textColorIndex, setTextColorIndex] = useState(() => parseInt(localStorage.getItem('textColorIndex')) || 0);
   const [bgIndex, setBgIndex] = useState(() => parseInt(localStorage.getItem('bgIndex')) || 0);
   const [accentIndex, setAccentIndex] = useState(() => parseInt(localStorage.getItem('accentIndex')) || 0);
   const [currentView, setCurrentView] = useState('dashboard');
@@ -264,6 +310,8 @@ export default function App() {
   useEffect(() => { localStorage.setItem('bgIndex', bgIndex); }, [bgIndex]);
   useEffect(() => { localStorage.setItem('accentIndex', accentIndex); }, [accentIndex]);
   useEffect(() => { localStorage.setItem('fontSize', fontSize); }, [fontSize]);
+  useEffect(() => { localStorage.setItem('fontIndex', fontIndex); }, [fontIndex]);
+  useEffect(() => { localStorage.setItem('textColorIndex', textColorIndex); }, [textColorIndex]);
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'data', 'main'), (snap) => {
@@ -523,12 +571,15 @@ export default function App() {
 
   const accent = accentColors[accentIndex];
   const currentBg = backgrounds[bgIndex];
+  const currentFont = fonts[fontIndex];
+  const currentTextColor = textColors[textColorIndex];
   const bg = `bg-gradient-to-br ${darkMode ? currentBg.dark : currentBg.light}`;
   const card = darkMode ? 'bg-gray-800/90 border-gray-700' : 'bg-white/90 border-gray-200';
   const inp = darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400';
-  const txt = darkMode ? 'text-white' : 'text-gray-900';
+  const txt = darkMode ? currentTextColor.dark : currentTextColor.light;
   const txtMd = darkMode ? 'text-gray-200' : 'text-gray-700';
   const txtSm = darkMode ? 'text-gray-400' : 'text-gray-500';
+  const iconClass = `w-3.5 h-3.5 ${txtSm}`;
 
   const totalArchived = (archivedExpenses?.length || 0) + (archivedTasks?.length || 0) + (archivedAccounts?.length || 0) + (archivedProjects?.length || 0);
   const urgentExpenses = expenses.filter(e => e.status !== 'مدفوع' && e.type !== 'مرة واحدة' && calcDays(e.dueDate) <= 15 && calcDays(e.dueDate) !== null);
@@ -537,6 +588,32 @@ export default function App() {
   const monthlyExpenses = expenses.filter(e => e.type === 'شهري').reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
   const yearlyExpenses = expenses.filter(e => e.type === 'سنوي').reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
   const onceExpenses = expenses.filter(e => e.type === 'مرة واحدة').reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+
+  const formatTime12 = (date) => {
+    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  };
+
+  const InfoItem = ({ icon: Icon, children, href, phone }) => {
+    if (href) {
+      return (
+        <a href={href} target="_blank" rel="noreferrer" className={`inline-flex items-center gap-1 ${txtSm} hover:underline`}>
+          <Icon className={iconClass} />{children}
+        </a>
+      );
+    }
+    if (phone) {
+      return (
+        <a href={`tel:${phone}`} className={`inline-flex items-center gap-1 ${txtSm} hover:underline`}>
+          <Icon className={iconClass} />{children}
+        </a>
+      );
+    }
+    return (
+      <span className={`inline-flex items-center gap-1 ${txtSm}`}>
+        <Icon className={iconClass} />{children}
+      </span>
+    );
+  };
 
   const Label = ({ children }) => <span className={`text-xs ${txtSm}`}>{children}</span>;
   const Priority = ({ level }) => (
@@ -591,20 +668,23 @@ export default function App() {
       
       {showMapPicker && <MapPicker darkMode={darkMode} onClose={() => setShowMapPicker(false)} onSelect={handleMapSelect} />}
       
-      <div className={`${card} border-b px-4 py-3 flex flex-wrap items-center justify-between sticky top-0 z-50 gap-3`}>
+      <link href={currentFont.url} rel="stylesheet" />
+      
+      <div className={`${card} border-b px-4 py-3 flex flex-wrap items-center justify-between sticky top-0 z-50 gap-3`} style={{ fontFamily: currentFont.value }}>
         <div className="flex items-center gap-3">
           <button onClick={() => { setCurrentView('dashboard'); setSelectedProject(null); }} className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-700 font-bold text-xs" style={{ backgroundColor: '#dcdddc' }}>RKZ</button>
           <div>
             <h1 className={`font-bold ${txt}`}>نظام الإدارة المالية</h1>
             <p className={`text-xs ${txtSm}`}>ركائز الأولى للتعمير</p>
-            <p className={`text-xs ${txtSm}`}>{currentTime.toLocaleDateString('en-US')} | {currentTime.toLocaleTimeString('en-US', { hour12: false })} | {quote}</p>
+            <p className={`text-xs ${txtSm}`}>{currentTime.toLocaleDateString('en-US')} | {formatTime12(currentTime)} | {quote}</p>
           </div>
         </div>
         
         <div className="flex items-center gap-2 flex-wrap">
           <span className={`text-xs ${txt}`}>{greeting}</span>
-          <span className={`text-xs px-2 py-0.5 rounded ${currentUser.role === 'owner' ? 'bg-amber-500' : currentUser.role === 'manager' ? 'bg-blue-500' : 'bg-gray-500'} text-white`}>
-            {currentUser.role === 'owner' ? 'صلاحية: المالك' : currentUser.role === 'manager' ? 'صلاحية: مدير' : 'صلاحية: عضو'}
+          <span className={`text-xs ${txtSm}`}>
+            <Shield className="w-3 h-3 inline ml-1" />
+            {currentUser.role === 'owner' ? 'المالك' : currentUser.role === 'manager' ? 'مدير' : 'عضو'}
           </span>
           <span className={`text-xs ${txtSm}`}>({formatNumber(getSessionMinutes())} د)</span>
           
@@ -657,7 +737,7 @@ export default function App() {
               <Settings className={`w-5 h-5 ${txtMd}`} />
             </button>
             {showSettingsPanel && (
-              <div className={`absolute left-0 top-12 w-72 ${card} rounded-xl shadow-2xl border z-50 p-4 max-h-96 overflow-y-auto ${hideScrollbarClass}`} style={hideScrollbar}>
+              <div className={`absolute left-0 top-12 w-80 ${card} rounded-xl shadow-2xl border z-50 p-4 max-h-[80vh] overflow-y-auto ${hideScrollbarClass}`} style={hideScrollbar}>
                 <h4 className={`font-bold text-sm mb-3 ${txt}`}>الإعدادات</h4>
                 
                 <div className="mb-4">
@@ -673,6 +753,17 @@ export default function App() {
                 </div>
 
                 <div className="mb-4">
+                  <p className={`text-xs mb-2 ${txtSm}`}>نوع الخط</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {fonts.map((f, i) => (
+                      <button key={f.id} onClick={() => setFontIndex(i)} className={`p-2 rounded-lg text-xs ${fontIndex === i ? accent.color + ' text-white' : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'}`} style={{ fontFamily: f.value }}>
+                        {f.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mb-4">
                   <p className={`text-xs mb-2 ${txtSm}`}>حجم الخط</p>
                   <div className="flex items-center gap-2">
                     <button onClick={() => setFontSize(f => Math.max(12, f - 2))} className={`w-8 h-8 rounded-lg flex items-center justify-center ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200'}`}>
@@ -682,6 +773,17 @@ export default function App() {
                     <button onClick={() => setFontSize(f => Math.min(24, f + 2))} className={`w-8 h-8 rounded-lg flex items-center justify-center ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200'}`}>
                       <Type className="w-5 h-5" />
                     </button>
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <p className={`text-xs mb-2 ${txtSm}`}>لون الخط</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {textColors.map((c, i) => (
+                      <button key={c.id} onClick={() => setTextColorIndex(i)} className={`px-3 py-1.5 rounded-lg text-xs ${textColorIndex === i ? accent.color + ' text-white' : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
+                        {c.name}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -745,9 +847,9 @@ export default function App() {
                         <div key={e.id} className="bg-red-500/10 border border-red-500/30 p-3 rounded-lg">
                           <div className="flex justify-between items-center">
                             <span className={`text-sm font-bold ${txt}`}>{e.name}</span>
-                            <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded">{d < 0 ? `متأخر ${formatNumber(Math.abs(d))} يوم` : `${formatNumber(d)} يوم`}</span>
+                            <span className={`text-xs ${txtSm}`}><Clock className="w-3 h-3 inline ml-1" />{d < 0 ? `متأخر ${formatNumber(Math.abs(d))} يوم` : `${formatNumber(d)} يوم`}</span>
                           </div>
-                          <p className={`text-lg font-bold ${txt}`}>{formatNumber(e.amount)} <SAR /></p>
+                          <p className={`text-lg font-bold ${txt}`}>{formatNumber(e.amount)} ريال</p>
                         </div>
                       );
                     })}
@@ -757,7 +859,7 @@ export default function App() {
                           <span className={`text-sm font-bold ${txt}`}>{t.title}</span>
                           <Priority level={t.priority} />
                         </div>
-                        <p className={`text-xs ${txtSm}`}>المسؤول: {t.assignedTo || 'غير محدد'}</p>
+                        <span className={`text-xs ${txtSm}`}><User className="w-3 h-3 inline ml-1" />{t.assignedTo || 'غير محدد'}</span>
                       </div>
                     ))}
                   </div>
@@ -772,8 +874,8 @@ export default function App() {
                       const d = calcDays(e.dueDate);
                       return (
                         <div key={e.id} className={`p-2 rounded-lg mb-2 ${d !== null && d < 0 ? 'bg-red-500/20' : d !== null && d < 7 ? 'bg-orange-500/20' : 'bg-green-500/20'}`}>
-                          <div className="flex justify-between"><span className={`text-xs ${txt}`}>{e.name}</span><span className={`text-xs font-bold ${txt}`}>{formatNumber(e.amount)} <SAR /></span></div>
-                          {d !== null && <span className={`text-xs ${txtSm}`}>{d < 0 ? `متأخر ${formatNumber(Math.abs(d))} يوم` : `${formatNumber(d)} يوم`}</span>}
+                          <div className="flex justify-between"><span className={`text-xs ${txt}`}>{e.name}</span><span className={`text-xs font-bold ${txt}`}>{formatNumber(e.amount)} ريال</span></div>
+                          {d !== null && <span className={`text-xs ${txtSm}`}><Clock className="w-3 h-3 inline ml-1" />{d < 0 ? `متأخر ${formatNumber(Math.abs(d))} يوم` : `${formatNumber(d)} يوم`}</span>}
                         </div>
                       );
                     })}
@@ -783,8 +885,8 @@ export default function App() {
                   {projects.filter(p => p.status === 'جاري').length === 0 ? <p className={`text-center py-6 text-xs ${txtSm}`}>لا توجد مشاريع</p> : 
                     projects.filter(p => p.status === 'جاري').slice(0, 4).map(p => (
                       <div key={p.id} className={`p-2 rounded-lg mb-2 border ${darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-                        <div className="flex justify-between"><span className={`text-xs ${txt}`}>{p.name}</span><span className={`text-xs ${accent.color} text-white px-2 rounded`}>{p.status}</span></div>
-                        <span className={`text-xs ${txtSm}`}>العميل: {p.client || 'غير محدد'}</span>
+                        <div className="flex justify-between"><span className={`text-xs ${txt}`}>{p.name}</span><span className={`text-xs ${txtSm}`}><Activity className="w-3 h-3 inline ml-1" />{p.status}</span></div>
+                        <span className={`text-xs ${txtSm}`}><User className="w-3 h-3 inline ml-1" />{p.client || 'غير محدد'}</span>
                       </div>
                     ))}
                 </div>
@@ -806,7 +908,7 @@ export default function App() {
                   { label: 'مرة واحدة', value: onceExpenses, icon: CreditCard, color: 'from-orange-500 to-orange-600' }].map((s, i) => (
                   <div key={i} className={`bg-gradient-to-br ${s.color} p-3 rounded-xl text-white`}>
                     <div className="flex items-center gap-2 mb-1"><s.icon className="w-4 h-4 opacity-80" /><span className="text-xs opacity-80">{s.label}</span></div>
-                    <p className="text-lg font-bold">{formatNumber(s.value)} <SAR /></p>
+                    <p className="text-lg font-bold">{formatNumber(s.value)} ريال</p>
                   </div>
                 ))}
               </div>
@@ -827,22 +929,19 @@ export default function App() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
                               <h3 className={`font-bold ${txt}`}>{e.name}</h3>
-                              {e.status === 'مدفوع' && <span className="text-xs px-2 py-0.5 rounded bg-green-500 text-white">مدفوع</span>}
+                              {e.status === 'مدفوع' && <span className={`text-xs ${txtSm}`}><CircleCheck className="w-3 h-3 inline ml-1 text-green-500" />مدفوع</span>}
                             </div>
-                            <p className={`text-xl font-bold ${txt} mb-2`}>{formatNumber(e.amount)} <SAR /></p>
+                            <p className={`text-xl font-bold ${txt} mb-2`}>{formatNumber(e.amount)} ريال</p>
                             {e.reason && <p className={`text-xs ${txtSm} mb-2`}>{e.reason}</p>}
                             
-                            <div className={`text-xs ${txtSm} space-y-1`}>
-                              <p>النوع: {e.type} {e.dueDate && `| الاستحقاق: ${e.dueDate}`} {d !== null && `| ${d < 0 ? `متأخر ${formatNumber(Math.abs(d))} يوم` : `${formatNumber(d)} يوم متبقي`}`}</p>
-                              <p>أنشئ بواسطة: {e.createdBy} | {new Date(e.createdAt).toLocaleDateString('en-US')}</p>
-                              {e.location && <p>الموقع: {e.location}</p>}
+                            <div className={`text-xs ${txtSm} flex flex-wrap items-center gap-x-3 gap-y-1`}>
+                              <InfoItem icon={Repeat}>{e.type}</InfoItem>
+                              {e.dueDate && <InfoItem icon={Calendar}>{e.dueDate}</InfoItem>}
+                              {d !== null && <InfoItem icon={Clock}>{d < 0 ? `متأخر ${formatNumber(Math.abs(d))} يوم` : `${formatNumber(d)} يوم متبقي`}</InfoItem>}
+                              <InfoItem icon={User}>{e.createdBy}</InfoItem>
+                              <InfoItem icon={Calendar}>{new Date(e.createdAt).toLocaleDateString('en-US')}</InfoItem>
+                              {e.location && <InfoItem icon={MapPin} href={e.mapUrl}>{e.location}</InfoItem>}
                             </div>
-
-                            {e.mapUrl && (
-                              <a href={e.mapUrl} target="_blank" rel="noreferrer" className={`text-xs ${accent.text} mt-2 inline-flex items-center gap-1`}>
-                                <Map className="w-3 h-3" />فتح في الخريطة
-                              </a>
-                            )}
                           </div>
                           
                           <div className="flex gap-1">
@@ -860,10 +959,11 @@ export default function App() {
                             <p className={`text-xs font-bold mb-2 ${txt}`}>سجل الدفعات:</p>
                             <div className="space-y-2">
                               {e.paymentHistory.map((p, i) => (
-                                <div key={i} className={`text-xs p-2 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                                  <span className={txt}>{formatNumber(p.amount)} <SAR /></span>
-                                  <span className={`mr-2 ${txtSm}`}>- {new Date(p.date).toLocaleString('en-US')}</span>
-                                  <span className={`mr-2 ${txtSm}`}>بواسطة: {p.paidBy}</span>
+                                <div key={i} className={`text-xs p-2 rounded-lg flex flex-wrap gap-3 ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                                  <InfoItem icon={DollarSign}>{formatNumber(p.amount)} ريال</InfoItem>
+                                  <InfoItem icon={Calendar}>{new Date(p.date).toLocaleDateString('en-US')}</InfoItem>
+                                  <InfoItem icon={Clock}>{formatTime12(new Date(p.date))}</InfoItem>
+                                  <InfoItem icon={User}>{p.paidBy}</InfoItem>
                                 </div>
                               ))}
                             </div>
@@ -922,20 +1022,15 @@ export default function App() {
                             <div className="mb-2"><Priority level={t.priority} /></div>
                             {t.description && <p className={`text-xs ${txtSm} mb-2`}>{t.description}</p>}
                             
-                            <div className={`text-xs ${txtSm} space-y-1`}>
-                              {project && <p>المشروع: {project.name}</p>}
-                              {section && <p>القسم: {section.name}</p>}
-                              {t.assignedTo && <p>المسؤول: {t.assignedTo}</p>}
-                              {t.dueDate && <p>التسليم: {t.dueDate} {d !== null && `| ${d < 0 ? `متأخر ${formatNumber(Math.abs(d))} يوم` : `${formatNumber(d)} يوم`}`}</p>}
-                              <p>أنشئ بواسطة: {t.createdBy}</p>
-                              {t.location && <p>الموقع: {t.location}</p>}
+                            <div className={`text-xs ${txtSm} flex flex-wrap items-center gap-x-3 gap-y-1`}>
+                              {project && <InfoItem icon={FolderOpen}>{project.name}</InfoItem>}
+                              {section && <InfoItem icon={Layers}>{section.name}</InfoItem>}
+                              {t.assignedTo && <InfoItem icon={User}>{t.assignedTo}</InfoItem>}
+                              {t.dueDate && <InfoItem icon={Calendar}>{t.dueDate}</InfoItem>}
+                              {d !== null && <InfoItem icon={Clock}>{d < 0 ? `متأخر ${formatNumber(Math.abs(d))} يوم` : `${formatNumber(d)} يوم`}</InfoItem>}
+                              <InfoItem icon={User}>{t.createdBy}</InfoItem>
+                              {t.location && <InfoItem icon={MapPin} href={t.mapUrl}>{t.location}</InfoItem>}
                             </div>
-
-                            {t.mapUrl && (
-                              <a href={t.mapUrl} target="_blank" rel="noreferrer" className={`text-xs ${accent.text} mt-2 inline-flex items-center gap-1`}>
-                                <Map className="w-3 h-3" />فتح في الخريطة
-                              </a>
-                            )}
                           </div>
                           <div className="flex gap-1">
                             <IconBtn onClick={() => { setEditingItem({ ...t }); setModalType('editTask'); setShowModal(true); }} icon={Pencil} title="تعديل" />
@@ -970,17 +1065,17 @@ export default function App() {
                       <div key={p.id} onClick={() => setSelectedProject(p)} className={`${card} p-4 rounded-xl border cursor-pointer hover:shadow-lg transition-all`}>
                         <div className="flex justify-between items-start mb-2">
                           <h3 className={`font-bold ${txt}`}>{p.name}</h3>
-                          <span className={`text-xs px-2 py-0.5 rounded ${p.status === 'جاري' ? `${accent.color} text-white` : p.status === 'مكتمل' ? 'bg-green-500 text-white' : 'bg-gray-500 text-white'}`}>{p.status}</span>
+                          <span className={`text-xs ${txtSm}`}><Activity className="w-3 h-3 inline ml-1" />{p.status}</span>
                         </div>
                         {p.description && <p className={`text-xs ${txtSm} mb-3 line-clamp-2`}>{p.description}</p>}
                         
-                        <div className={`text-xs ${txtSm} space-y-1`}>
-                          {p.client && <p>العميل: {p.client}</p>}
-                          {p.phone && <p>الهاتف: {p.phone}</p>}
-                          {p.budget && <p>الميزانية: {formatNumber(p.budget)} <SAR /></p>}
-                          <p>المهام: {formatNumber(projectTasks.length)}</p>
-                          <p>من: {p.startDate || '-'} | إلى: {p.endDate || '-'}</p>
-                          <p>أنشئ بواسطة: {p.createdBy}</p>
+                        <div className={`text-xs ${txtSm} flex flex-wrap items-center gap-x-3 gap-y-1`}>
+                          {p.client && <InfoItem icon={User}>{p.client}</InfoItem>}
+                          {p.phone && <InfoItem icon={Phone} phone={p.phone}>{p.phone}</InfoItem>}
+                          {p.budget && <InfoItem icon={DollarSign}>{formatNumber(p.budget)} ريال</InfoItem>}
+                          <InfoItem icon={CheckSquare}>{formatNumber(projectTasks.length)} مهمة</InfoItem>
+                          {p.startDate && <InfoItem icon={Calendar}>{p.startDate}</InfoItem>}
+                          <InfoItem icon={User}>{p.createdBy}</InfoItem>
                         </div>
                       </div>
                     );
@@ -998,7 +1093,7 @@ export default function App() {
                 <div className="flex justify-between items-start mb-4 flex-wrap gap-2">
                   <div>
                     <h2 className={`text-lg font-bold ${txt}`}>{selectedProject.name}</h2>
-                    <span className={`text-xs px-2 py-0.5 rounded ${selectedProject.status === 'جاري' ? `${accent.color} text-white` : 'bg-green-500 text-white'}`}>{selectedProject.status}</span>
+                    <span className={`text-xs ${txtSm}`}><Activity className="w-3 h-3 inline ml-1" />{selectedProject.status}</span>
                   </div>
                   <div className="flex gap-1">
                     <IconBtn onClick={() => { setEditingItem({ ...selectedProject }); setModalType('editProject'); setShowModal(true); }} icon={Pencil} title="تعديل" />
@@ -1008,20 +1103,15 @@ export default function App() {
 
                 {selectedProject.description && <p className={`text-xs ${txtSm} mb-4`}>{selectedProject.description}</p>}
 
-                <div className={`text-xs ${txtSm} space-y-1 mb-4`}>
-                  {selectedProject.client && <p>العميل: {selectedProject.client}</p>}
-                  {selectedProject.phone && <p>الهاتف: {selectedProject.phone}</p>}
-                  {selectedProject.location && <p>الموقع: {selectedProject.location}</p>}
-                  {selectedProject.budget && <p>الميزانية: {formatNumber(selectedProject.budget)} <SAR /></p>}
-                  <p>من: {selectedProject.startDate || '-'} | إلى: {selectedProject.endDate || '-'}</p>
-                  <p>أنشئ بواسطة: {selectedProject.createdBy}</p>
+                <div className={`text-xs ${txtSm} flex flex-wrap items-center gap-x-3 gap-y-1 mb-4`}>
+                  {selectedProject.client && <InfoItem icon={User}>{selectedProject.client}</InfoItem>}
+                  {selectedProject.phone && <InfoItem icon={Phone} phone={selectedProject.phone}>{selectedProject.phone}</InfoItem>}
+                  {selectedProject.location && <InfoItem icon={MapPin} href={selectedProject.mapUrl}>{selectedProject.location}</InfoItem>}
+                  {selectedProject.budget && <InfoItem icon={DollarSign}>{formatNumber(selectedProject.budget)} ريال</InfoItem>}
+                  {selectedProject.startDate && <InfoItem icon={Calendar}>من: {selectedProject.startDate}</InfoItem>}
+                  {selectedProject.endDate && <InfoItem icon={Calendar}>إلى: {selectedProject.endDate}</InfoItem>}
+                  <InfoItem icon={User}>{selectedProject.createdBy}</InfoItem>
                 </div>
-
-                {selectedProject.mapUrl && (
-                  <a href={selectedProject.mapUrl} target="_blank" rel="noreferrer" className={`text-xs ${accent.text} inline-flex items-center gap-1`}>
-                    <Map className="w-3 h-3" />فتح في خرائط قوقل
-                  </a>
-                )}
               </div>
 
               <div className={`${card} p-4 rounded-xl border mb-4`}>
@@ -1136,7 +1226,7 @@ export default function App() {
                 <div className={`${card} p-8 rounded-xl border text-center`}><Archive className={`w-12 h-12 mx-auto mb-3 ${txtSm}`} /><p className={txtSm}>الأرشيف فارغ</p></div>
               ) : (
                 <div className="space-y-4">
-                  {archivedExpenses?.length > 0 && <div><h3 className={`font-bold text-sm mb-2 ${txt}`}>المصروفات ({formatNumber(archivedExpenses.length)})</h3>{archivedExpenses.map(e => (<div key={e.id} className={`${card} p-3 rounded-xl border mb-2 flex justify-between items-center`}><div><span className={`font-bold text-sm ${txt}`}>{e.name}</span><span className={`mr-2 ${txt}`}>{formatNumber(e.amount)} <SAR /></span><p className={`text-xs ${txtSm}`}>حذف بواسطة: {e.archivedBy}</p></div><IconBtn onClick={() => restoreExpense(e)} icon={RotateCcw} title="إستعادة" /></div>))}</div>}
+                  {archivedExpenses?.length > 0 && <div><h3 className={`font-bold text-sm mb-2 ${txt}`}>المصروفات ({formatNumber(archivedExpenses.length)})</h3>{archivedExpenses.map(e => (<div key={e.id} className={`${card} p-3 rounded-xl border mb-2 flex justify-between items-center`}><div><span className={`font-bold text-sm ${txt}`}>{e.name}</span><span className={`mr-2 ${txt}`}>{formatNumber(e.amount)} ريال</span><p className={`text-xs ${txtSm}`}>حذف بواسطة: {e.archivedBy}</p></div><IconBtn onClick={() => restoreExpense(e)} icon={RotateCcw} title="إستعادة" /></div>))}</div>}
                   {archivedTasks?.length > 0 && <div><h3 className={`font-bold text-sm mb-2 ${txt}`}>المهام ({formatNumber(archivedTasks.length)})</h3>{archivedTasks.map(t => (<div key={t.id} className={`${card} p-3 rounded-xl border mb-2 flex justify-between items-center`}><div><span className={`font-bold text-sm ${txt}`}>{t.title}</span><p className={`text-xs ${txtSm}`}>حذف بواسطة: {t.archivedBy}</p></div><IconBtn onClick={() => restoreTask(t)} icon={RotateCcw} title="إستعادة" /></div>))}</div>}
                   {archivedProjects?.length > 0 && <div><h3 className={`font-bold text-sm mb-2 ${txt}`}>المشاريع ({formatNumber(archivedProjects.length)})</h3>{archivedProjects.map(p => (<div key={p.id} className={`${card} p-3 rounded-xl border mb-2 flex justify-between items-center`}><div><span className={`font-bold text-sm ${txt}`}>{p.name}</span><p className={`text-xs ${txtSm}`}>حذف بواسطة: {p.archivedBy}</p></div><IconBtn onClick={() => restoreProject(p)} icon={RotateCcw} title="إستعادة" /></div>))}</div>}
                   {archivedAccounts?.length > 0 && <div><h3 className={`font-bold text-sm mb-2 ${txt}`}>الحسابات ({formatNumber(archivedAccounts.length)})</h3>{archivedAccounts.map(a => (<div key={a.id} className={`${card} p-3 rounded-xl border mb-2 flex justify-between items-center`}><div><span className={`font-bold text-sm ${txt}`}>{a.name}</span><p className={`text-xs ${txtSm}`}>حذف بواسطة: {a.archivedBy}</p></div><IconBtn onClick={() => restoreAccount(a)} icon={RotateCcw} title="إستعادة" /></div>))}</div>}
