@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
-import { Calendar, CheckSquare, Users, Moon, Sun, Monitor, Plus, Archive, Clock, Activity, History, Loader, Power, Pencil, Trash2, RotateCcw, UserCog, ChevronLeft, ChevronDown, ChevronUp, FolderOpen, FileText, MapPin, User, X, Phone, Settings, Layers, CreditCard, TrendingUp, DollarSign, Wallet, Eye, FolderPlus, AlertTriangle, Image } from 'lucide-react';
+import { Calendar, CheckSquare, Users, Moon, Sun, Monitor, Plus, Archive, Clock, Activity, History, Loader, Power, Pencil, Trash2, RotateCcw, UserCog, ChevronLeft, ChevronDown, ChevronUp, FolderOpen, FileText, MapPin, User, X, Phone, Settings, Layers, CreditCard, TrendingUp, DollarSign, Wallet, FolderPlus, AlertTriangle, Image, Globe, Type } from 'lucide-react';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDpzPCma5c4Tuxd5htRHOvm4aYLRbj8Qkg",
@@ -14,12 +14,19 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const APP_VERSION = "4.1.0";
+const APP_VERSION = "4.2.0";
 
 const versionHistory = [
-  { version: "4.1.0", date: "2024-12-14", changes: ["ترحيب ديناميكي حسب الوقت والجو", "خريطة جوجل تفاعلية", "سجل الدفعات للمصروفات", "أقسام الملفات في المشاريع", "بطاقات إحصائيات مالية", "ثيم تلقائي حسب الجهاز"] },
-  { version: "4.0.0", date: "2024-12-13", changes: ["نظام صلاحيات متقدم", "تخصيص الألوان الكامل", "تتبع نشاط الأعضاء"] },
-  { version: "3.0.0", date: "2024-12-13", changes: ["خلفيات متعددة", "نظام المشاريع", "50 عبارة تحفيزية"] },
+  { version: "4.2.0", date: "2024-12-14", changes: ["إصلاح الوقت والعبارات التشجيعية", "خريطة تفاعلية مع دبوس", "تحكم بأحجام الخط", "تحسينات الواجهة"] },
+  { version: "4.1.0", date: "2024-12-14", changes: ["ترحيب ديناميكي", "سجل الدفعات", "بطاقات إحصائيات"] },
+  { version: "4.0.0", date: "2024-12-13", changes: ["نظام صلاحيات متقدم", "تخصيص الألوان"] },
+];
+
+const quotes = [
+  "النجاح يبدأ بخطوة 🚀", "استثمر وقتك بحكمة ⏰", "التخطيط المالي مفتاح النجاح 💰", "كل يوم فرصة جديدة 🌟",
+  "الإصرار يصنع المستحيل 💪", "فكر كبيراً وابدأ صغيراً 🎯", "المثابرة طريق التميز ⭐", "النظام أساس النجاح 📊",
+  "استثمر في نفسك أولاً 📚", "الجودة قبل الكمية ✅", "خطط اليوم لغد أفضل 📅", "العمل الجاد يؤتي ثماره 🌱",
+  "كن إيجابياً دائماً 😊", "النجاح رحلة وليس وجهة 🛤️", "تعلم من كل تجربة 🧠", "الوقت أثمن الموارد ⌛"
 ];
 
 const getGreeting = (username, hour) => {
@@ -57,14 +64,60 @@ const FinancialPattern = () => (
         <text x="350" y="220" fontSize="50" fill="currentColor" transform="rotate(-20 350 220)">$</text>
         <text x="120" y="280" fontSize="46" fill="currentColor" transform="rotate(12 120 280)">€</text>
         <text x="280" y="320" fontSize="42" fill="currentColor" transform="rotate(-35 280 320)">£</text>
-        <text x="40" y="360" fontSize="54" fill="currentColor" transform="rotate(22 40 360)">¥</text>
-        <text x="200" y="380" fontSize="36" fill="currentColor" transform="rotate(-10 200 380)">ر.س</text>
       </pattern>
     </defs>
     <rect width="100%" height="100%" fill="url(#fin-pattern)" />
   </svg>
 );
 
+const MapPicker = ({ value, onChange, onClose, darkMode }) => {
+  const [search, setSearch] = useState('');
+  const [position, setPosition] = useState({ lat: 21.4858, lng: 39.1925 });
+  
+  const handleMapClick = () => {
+    const url = `https://www.google.com/maps?q=${position.lat},${position.lng}`;
+    onChange(url, `${position.lat.toFixed(4)}, ${position.lng.toFixed(4)}`);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[100] p-4">
+      <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl w-full max-w-2xl overflow-hidden`}>
+        <div className={`p-4 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} flex justify-between items-center`}>
+          <h3 className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>تحديد الموقع على الخريطة</h3>
+          <button onClick={onClose} className={darkMode ? 'text-gray-400' : 'text-gray-500'}><X className="w-5 h-5" /></button>
+        </div>
+        <div className="p-4">
+          <input 
+            type="text" 
+            placeholder="ابحث عن موقع..." 
+            value={search} 
+            onChange={e => setSearch(e.target.value)}
+            className={`w-full p-3 rounded-xl border mb-4 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+          />
+          <div className="relative h-64 bg-gray-200 rounded-xl overflow-hidden cursor-pointer" onClick={handleMapClick}>
+            <iframe
+              src={`https://maps.google.com/maps?q=${position.lat},${position.lng}&t=k&z=15&output=embed`}
+              width="100%"
+              height="100%"
+              style={{ border: 0 }}
+              allowFullScreen
+              loading="lazy"
+            />
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <MapPin className="w-10 h-10 text-red-500 drop-shadow-lg" />
+            </div>
+          </div>
+          <p className={`text-xs mt-2 text-center ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>اضغط على الخريطة لتحديد الموقع</p>
+        </div>
+        <div className={`p-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'} flex gap-3 justify-end`}>
+          <button onClick={onClose} className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200'}`}>إلغاء</button>
+          <button onClick={handleMapClick} className="px-4 py-2 bg-blue-500 text-white rounded-xl">تأكيد الموقع</button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default function App() {
   const getSystemTheme = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -77,6 +130,7 @@ export default function App() {
     if (mode === 'auto') return getSystemTheme();
     return mode === 'dark';
   });
+  const [fontSize, setFontSize] = useState(() => parseInt(localStorage.getItem('fontSize')) || 16);
   const [bgIndex, setBgIndex] = useState(() => parseInt(localStorage.getItem('bgIndex')) || 0);
   const [accentIndex, setAccentIndex] = useState(() => parseInt(localStorage.getItem('accentIndex')) || 0);
   const [currentView, setCurrentView] = useState('dashboard');
@@ -87,6 +141,7 @@ export default function App() {
   const [projectFilter, setProjectFilter] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loading, setLoading] = useState(true);
+  const [quote, setQuote] = useState(quotes[0]);
   const [newNotifications, setNewNotifications] = useState(0);
   const [archiveNotifications, setArchiveNotifications] = useState(0);
   const [showAuditPanel, setShowAuditPanel] = useState(false);
@@ -97,6 +152,8 @@ export default function App() {
   const [auditFilter, setAuditFilter] = useState('all');
   const [sessionStart, setSessionStart] = useState(null);
   const [expandedExpense, setExpandedExpense] = useState(null);
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [mapPickerTarget, setMapPickerTarget] = useState(null);
 
   const auditRef = useRef(null);
   const archiveRef = useRef(null);
@@ -120,12 +177,20 @@ export default function App() {
   const [archivedProjects, setArchivedProjects] = useState([]);
   const [loginLog, setLoginLog] = useState([]);
 
-  const [newExpense, setNewExpense] = useState({ name: '', amount: '', currency: 'ر.س', dueDate: '', type: 'شهري', reason: '', status: 'قيد الانتظار', location: '', mapUrl: '' });
-  const [newTask, setNewTask] = useState({ title: '', description: '', dueDate: '', assignedTo: '', priority: 'متوسطة', status: 'قيد الانتظار', projectId: '', sectionId: '', location: '', mapUrl: '' });
-  const [newProject, setNewProject] = useState({ name: '', description: '', client: '', location: '', phone: '', startDate: '', endDate: '', budget: '', status: 'جاري', mapUrl: '', files: { images: [], documents: [], others: [] } });
-  const [newAccount, setNewAccount] = useState({ name: '', description: '', loginUrl: '', username: '', password: '', subscriptionDate: '', daysRemaining: 365 });
-  const [newUser, setNewUser] = useState({ username: '', password: '', role: 'member', active: true });
-  const [newSection, setNewSection] = useState({ name: '', color: 'blue' });
+  const emptyExpense = { name: '', amount: '', currency: 'ر.س', dueDate: '', type: 'شهري', reason: '', status: 'قيد الانتظار', location: '', mapUrl: '' };
+  const emptyTask = { title: '', description: '', dueDate: '', assignedTo: '', priority: 'متوسطة', status: 'قيد الانتظار', projectId: '', sectionId: '', location: '', mapUrl: '' };
+  const emptyProject = { name: '', description: '', client: '', location: '', phone: '', startDate: '', endDate: '', budget: '', status: 'جاري', mapUrl: '', files: { images: [], documents: [], others: [] } };
+  const emptyAccount = { name: '', description: '', loginUrl: '', username: '', password: '', subscriptionDate: '', daysRemaining: 365 };
+  const emptyUser = { username: '', password: '', role: 'member', active: true };
+  const emptySection = { name: '', color: 'blue' };
+
+  const [newExpense, setNewExpense] = useState(emptyExpense);
+  const [newTask, setNewTask] = useState(emptyTask);
+  const [newProject, setNewProject] = useState(emptyProject);
+  const [newAccount, setNewAccount] = useState(emptyAccount);
+  const [newUser, setNewUser] = useState(emptyUser);
+  const [newSection, setNewSection] = useState(emptySection);
+
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -153,6 +218,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('isLoggedIn', isLoggedIn); if (currentUser) localStorage.setItem('currentUser', JSON.stringify(currentUser)); }, [isLoggedIn, currentUser]);
   useEffect(() => { localStorage.setItem('bgIndex', bgIndex); }, [bgIndex]);
   useEffect(() => { localStorage.setItem('accentIndex', accentIndex); }, [accentIndex]);
+  useEffect(() => { localStorage.setItem('fontSize', fontSize); }, [fontSize]);
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'data', 'main'), (snap) => {
@@ -178,6 +244,7 @@ export default function App() {
 
   useEffect(() => { const t = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(t); }, []);
   useEffect(() => { if (isLoggedIn && !sessionStart) setSessionStart(Date.now()); }, [isLoggedIn]);
+  useEffect(() => { setQuote(quotes[Math.floor(Math.random() * quotes.length)]); }, [currentView]);
 
   const save = async (d) => { 
     try { 
@@ -206,12 +273,6 @@ export default function App() {
   const calcDays = (d) => d ? Math.ceil((new Date(d) - new Date()) / 86400000) : null;
   const getSessionMinutes = () => sessionStart ? Math.floor((Date.now() - sessionStart) / 60000) : 0;
 
-  const hasPermission = (section, action) => {
-    if (!currentUser) return false;
-    if (currentUser.role === 'owner' || currentUser.role === 'manager') return true;
-    return false;
-  };
-
   const navigateToItem = (log) => {
     if (log.action === 'delete') {
       setCurrentView('archive');
@@ -224,24 +285,6 @@ export default function App() {
     }
     setShowAuditPanel(false);
   };
-
-  const accent = accentColors[accentIndex];
-  const currentBg = backgrounds[bgIndex];
-  const bg = `bg-gradient-to-br ${darkMode ? currentBg.dark : currentBg.light}`;
-  const card = darkMode ? 'bg-gray-800/90 border-gray-700' : 'bg-white/90 border-gray-200';
-  const inp = darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900';
-  const txt = darkMode ? 'text-white' : 'text-gray-900';
-  const txtMd = darkMode ? 'text-gray-200' : 'text-gray-700';
-  const txtSm = darkMode ? 'text-gray-400' : 'text-gray-500';
-
-  const totalArchived = (archivedExpenses?.length || 0) + (archivedTasks?.length || 0) + (archivedAccounts?.length || 0) + (archivedProjects?.length || 0);
-  const urgentExpenses = expenses.filter(e => e.status !== 'مدفوع' && e.type !== 'مرة واحدة' && calcDays(e.dueDate) <= 15 && calcDays(e.dueDate) !== null);
-  const urgentTasks = tasks.filter(t => t.priority === 'عالية' || (calcDays(t.dueDate) !== null && calcDays(t.dueDate) < 0));
-  const totalExpenses = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
-  const monthlyExpenses = expenses.filter(e => e.type === 'شهري').reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
-  const yearlyExpenses = expenses.filter(e => e.type === 'سنوي').reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
-  const onceExpenses = expenses.filter(e => e.type === 'مرة واحدة').reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
-
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -267,7 +310,7 @@ export default function App() {
     const exp = { ...newExpense, id: `E${Date.now()}`, amount: parseFloat(newExpense.amount), createdAt: new Date().toISOString(), createdBy: currentUser.username, paymentHistory: [] };
     const ne = [...expenses, exp]; const al = addLog('add', 'مصروف', exp.name, exp.id);
     setExpenses(ne); save({ expenses: ne, auditLog: al });
-    setNewExpense({ name: '', amount: '', currency: 'ر.س', dueDate: '', type: 'شهري', reason: '', status: 'قيد الانتظار', location: '', mapUrl: '' }); setShowModal(false);
+    setNewExpense(emptyExpense); setShowModal(false);
   };
 
   const editExpense = () => {
@@ -304,7 +347,7 @@ export default function App() {
     const t = { ...newTask, id: `T${Date.now()}`, createdAt: new Date().toISOString(), createdBy: currentUser.username };
     const nt = [...tasks, t]; const al = addLog('add', 'مهمة', t.title, t.id);
     setTasks(nt); save({ tasks: nt, auditLog: al });
-    setNewTask({ title: '', description: '', dueDate: '', assignedTo: '', priority: 'متوسطة', status: 'قيد الانتظار', projectId: '', sectionId: '', location: '', mapUrl: '' }); setShowModal(false);
+    setNewTask(emptyTask); setShowModal(false);
   };
 
   const editTask = () => {
@@ -333,7 +376,7 @@ export default function App() {
     const s = { id: `S${Date.now()}`, name: newSection.name, color: newSection.color, createdAt: new Date().toISOString(), createdBy: currentUser.username };
     const ns = [...taskSections, s]; const al = addLog('add', 'قسم', s.name, s.id);
     setTaskSections(ns); save({ taskSections: ns, auditLog: al });
-    setNewSection({ name: '', color: 'blue' }); setShowModal(false);
+    setNewSection(emptySection); setShowModal(false);
   };
 
   const addProject = () => {
@@ -341,7 +384,7 @@ export default function App() {
     const p = { ...newProject, id: `P${Date.now()}`, createdAt: new Date().toISOString(), createdBy: currentUser.username };
     const np = [...projects, p]; const al = addLog('add', 'مشروع', p.name, p.id);
     setProjects(np); save({ projects: np, auditLog: al });
-    setNewProject({ name: '', description: '', client: '', location: '', phone: '', startDate: '', endDate: '', budget: '', status: 'جاري', mapUrl: '', files: { images: [], documents: [], others: [] } }); setShowModal(false);
+    setNewProject(emptyProject); setShowModal(false);
   };
 
   const editProject = () => {
@@ -370,7 +413,7 @@ export default function App() {
     const a = { ...newAccount, id: `A${Date.now()}`, createdAt: new Date().toISOString(), createdBy: currentUser.username };
     const na = [...accounts, a]; const al = addLog('add', 'حساب', a.name, a.id);
     setAccounts(na); save({ accounts: na, auditLog: al });
-    setNewAccount({ name: '', description: '', loginUrl: '', username: '', password: '', subscriptionDate: '', daysRemaining: 365 }); setShowModal(false);
+    setNewAccount(emptyAccount); setShowModal(false);
   };
 
   const editAccount = () => {
@@ -400,7 +443,7 @@ export default function App() {
     const u = { ...newUser, id: Date.now(), createdAt: new Date().toISOString(), createdBy: currentUser.username };
     const nu = [...users, u]; const al = addLog('add', 'مستخدم', u.username, u.id);
     setUsers(nu); save({ users: nu, auditLog: al });
-    setNewUser({ username: '', password: '', role: 'member', active: true }); setShowModal(false);
+    setNewUser(emptyUser); setShowModal(false);
   };
 
   const editUser = () => {
@@ -416,6 +459,39 @@ export default function App() {
     const nu = users.filter(x => x.id !== u.id); const al = addLog('delete', 'مستخدم', u.username, u.id);
     setUsers(nu); save({ users: nu, auditLog: al }); setShowModal(false);
   };
+
+  const openMapPicker = (target) => {
+    setMapPickerTarget(target);
+    setShowMapPicker(true);
+  };
+
+  const handleMapSelect = (url, location) => {
+    if (mapPickerTarget === 'newExpense') setNewExpense({ ...newExpense, mapUrl: url, location });
+    else if (mapPickerTarget === 'editExpense') setEditingItem({ ...editingItem, mapUrl: url, location });
+    else if (mapPickerTarget === 'newTask') setNewTask({ ...newTask, mapUrl: url, location });
+    else if (mapPickerTarget === 'editTask') setEditingItem({ ...editingItem, mapUrl: url, location });
+    else if (mapPickerTarget === 'newProject') setNewProject({ ...newProject, mapUrl: url, location });
+    else if (mapPickerTarget === 'editProject') setEditingItem({ ...editingItem, mapUrl: url, location });
+    setShowMapPicker(false);
+  };
+
+  const accent = accentColors[accentIndex];
+  const currentBg = backgrounds[bgIndex];
+  const bg = `bg-gradient-to-br ${darkMode ? currentBg.dark : currentBg.light}`;
+  const card = darkMode ? 'bg-gray-800/90 border-gray-700' : 'bg-white/90 border-gray-200';
+  const inp = darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400';
+  const txt = darkMode ? 'text-white' : 'text-gray-900';
+  const txtMd = darkMode ? 'text-gray-200' : 'text-gray-700';
+  const txtSm = darkMode ? 'text-gray-400' : 'text-gray-500';
+  const scrollbar = darkMode ? '[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-800 [&::-webkit-scrollbar-thumb]:bg-gray-600 [&::-webkit-scrollbar-thumb]:rounded-full' : '[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300 [&::-webkit-scrollbar-thumb]:rounded-full';
+
+  const totalArchived = (archivedExpenses?.length || 0) + (archivedTasks?.length || 0) + (archivedAccounts?.length || 0) + (archivedProjects?.length || 0);
+  const urgentExpenses = expenses.filter(e => e.status !== 'مدفوع' && e.type !== 'مرة واحدة' && calcDays(e.dueDate) <= 15 && calcDays(e.dueDate) !== null);
+  const urgentTasks = tasks.filter(t => t.priority === 'عالية' || (calcDays(t.dueDate) !== null && calcDays(t.dueDate) < 0));
+  const totalExpenses = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+  const monthlyExpenses = expenses.filter(e => e.type === 'شهري').reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+  const yearlyExpenses = expenses.filter(e => e.type === 'سنوي').reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
+  const onceExpenses = expenses.filter(e => e.type === 'مرة واحدة').reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
 
   const Chip = ({ children, color }) => (
     <span className={`text-xs px-2 py-1 rounded-full ${color || (darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600')}`}>{children}</span>
@@ -435,7 +511,7 @@ export default function App() {
       <FinancialPattern />
       <div className={`${card} p-8 rounded-2xl shadow-2xl w-full max-w-md border relative z-10`}>
         <div className="text-center mb-8">
-          <div className={`w-20 h-20 mx-auto mb-4 bg-gradient-to-br ${accent.gradient} rounded-2xl flex items-center justify-center text-white text-2xl font-bold`}>RKZ</div>
+          <div className="w-20 h-20 mx-auto mb-4 bg-amber-100 rounded-2xl flex items-center justify-center text-amber-800 text-2xl font-bold">RKZ</div>
           <h1 className={`text-xl font-bold ${txt}`}>نظام الإدارة المالية</h1>
           <p className={`text-sm ${txtSm}`}>ركائز الأولى للتعمير</p>
         </div>
@@ -448,9 +524,9 @@ export default function App() {
       </div>
       {showVersions && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowVersions(false)}>
-          <div className={`${card} p-6 rounded-2xl max-w-md w-full border`} onClick={e => e.stopPropagation()}>
+          <div className={`${card} p-6 rounded-2xl max-w-md w-full border ${scrollbar}`} onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4"><h3 className={`text-lg font-bold ${txt}`}>سجل النسخ</h3><button onClick={() => setShowVersions(false)} className={txtSm}><X className="w-5 h-5" /></button></div>
-            <div className="space-y-3 max-h-80 overflow-y-auto">{versionHistory.map((v, i) => (<div key={v.version} className={`p-3 rounded-xl ${i === 0 ? `${accent.color}/20` : darkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`}><div className="flex justify-between mb-2"><span className={`font-bold text-sm ${txt}`}>v{v.version}</span><span className={`text-xs ${txtSm}`}>{v.date}</span></div><ul className={`text-xs ${txtSm} space-y-1`}>{v.changes.map((c, j) => <li key={j}>• {c}</li>)}</ul></div>))}</div>
+            <div className={`space-y-3 max-h-80 overflow-y-auto ${scrollbar}`}>{versionHistory.map((v, i) => (<div key={v.version} className={`p-3 rounded-xl ${i === 0 ? `${accent.color}/20` : darkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`}><div className="flex justify-between mb-2"><span className={`font-bold text-sm ${txt}`}>v{v.version}</span><span className={`text-xs ${txtSm}`}>{v.date}</span></div><ul className={`text-xs ${txtSm} space-y-1`}>{v.changes.map((c, j) => <li key={j}>• {c}</li>)}</ul></div>))}</div>
           </div>
         </div>
       )}
@@ -460,20 +536,23 @@ export default function App() {
   const greeting = getGreeting(currentUser.username, currentTime.getHours());
 
   return (
-    <div className={`min-h-screen ${bg} relative text-sm`} dir="rtl">
+    <div className={`min-h-screen ${bg} relative`} style={{ fontSize: `${fontSize}px` }} dir="rtl">
       <FinancialPattern />
+      
+      {showMapPicker && <MapPicker darkMode={darkMode} onClose={() => setShowMapPicker(false)} onChange={handleMapSelect} />}
       
       <div className={`${card} border-b px-4 py-3 flex flex-wrap items-center justify-between sticky top-0 z-50 gap-3`}>
         <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 bg-gradient-to-br ${accent.gradient} rounded-xl flex items-center justify-center text-white font-bold text-xs`}>RKZ</div>
+          <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center text-amber-800 font-bold text-xs">RKZ</div>
           <div>
             <h1 className={`font-bold ${txt}`}>نظام الإدارة المالية</h1>
-            <p className={`text-xs ${txtSm}`}>{greeting}</p>
+            <p className={`text-xs ${txtSm}`}>ركائز الأولى للتعمير</p>
+            <p className={`text-xs ${txtSm}`}>{currentTime.toLocaleDateString('ar-SA')} | {currentTime.toLocaleTimeString('ar-SA')} | {quote}</p>
           </div>
         </div>
         
         <div className="flex items-center gap-2 flex-wrap">
-          <span className={`text-xs ${txtMd}`}>{currentUser.username}</span>
+          <span className={`text-xs ${txt}`}>{greeting}</span>
           <span className={`text-xs px-2 py-0.5 rounded ${currentUser.role === 'owner' ? 'bg-amber-500' : currentUser.role === 'manager' ? 'bg-blue-500' : 'bg-gray-500'} text-white`}>
             {currentUser.role === 'owner' ? 'صلاحية: المالك' : currentUser.role === 'manager' ? 'صلاحية: مدير' : 'صلاحية: عضو'}
           </span>
@@ -485,7 +564,7 @@ export default function App() {
               {newNotifications > 0 && <span className={`absolute -top-1 -right-1 w-4 h-4 ${accent.color} text-white text-xs rounded-full flex items-center justify-center`}>{newNotifications}</span>}
             </button>
             {showAuditPanel && (
-              <div className={`absolute left-0 top-12 w-80 ${card} rounded-xl shadow-2xl border z-50 max-h-80 overflow-y-auto`}>
+              <div className={`absolute left-0 top-12 w-80 ${card} rounded-xl shadow-2xl border z-50 max-h-80 overflow-y-auto ${scrollbar}`}>
                 <div className={`p-3 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} flex justify-between`}>
                   <span className={`font-bold text-sm ${txt}`}>آخر العمليات</span>
                   <button onClick={() => { setCurrentView('audit'); setShowAuditPanel(false); }} className={`text-xs ${accent.text}`}>عرض الكل</button>
@@ -506,7 +585,7 @@ export default function App() {
               {archiveNotifications > 0 && <span className={`absolute -top-1 -right-1 w-4 h-4 ${accent.color} text-white text-xs rounded-full flex items-center justify-center`}>{archiveNotifications}</span>}
             </button>
             {showArchivePanel && (
-              <div className={`absolute left-0 top-12 w-64 ${card} rounded-xl shadow-2xl border z-50`}>
+              <div className={`absolute left-0 top-12 w-64 ${card} rounded-xl shadow-2xl border z-50 ${scrollbar}`}>
                 <div className={`p-3 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'} flex justify-between`}>
                   <span className={`font-bold text-sm ${txt}`}>الأرشيف</span>
                   <button onClick={() => { setCurrentView('archive'); setShowArchivePanel(false); }} className={`text-xs ${accent.text}`}>عرض الكل</button>
@@ -528,7 +607,7 @@ export default function App() {
               <Settings className={`w-5 h-5 ${txtMd}`} />
             </button>
             {showSettingsPanel && (
-              <div className={`absolute left-0 top-12 w-64 ${card} rounded-xl shadow-2xl border z-50 p-4`}>
+              <div className={`absolute left-0 top-12 w-72 ${card} rounded-xl shadow-2xl border z-50 p-4 max-h-96 overflow-y-auto ${scrollbar}`}>
                 <h4 className={`font-bold text-sm mb-3 ${txt}`}>الإعدادات</h4>
                 
                 <div className="mb-4">
@@ -540,6 +619,19 @@ export default function App() {
                         <span className="text-xs">{t.label}</span>
                       </button>
                     ))}
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <p className={`text-xs mb-2 ${txtSm}`}>حجم الخط</p>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => setFontSize(f => Math.max(12, f - 2))} className={`w-8 h-8 rounded-lg flex items-center justify-center ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200'}`}>
+                      <Type className="w-3 h-3" />
+                    </button>
+                    <span className={`text-sm ${txt} flex-1 text-center`}>{fontSize}px</span>
+                    <button onClick={() => setFontSize(f => Math.min(24, f + 2))} className={`w-8 h-8 rounded-lg flex items-center justify-center ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200'}`}>
+                      <Type className="w-5 h-5" />
+                    </button>
                   </div>
                 </div>
 
@@ -578,7 +670,7 @@ export default function App() {
             <div>
               <h2 className={`text-lg font-bold mb-4 ${txt}`}>لوحة التحكم</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                {[{ label: 'المصروفات', value: expenses.length, sub: `${expenses.filter(e => e.status !== 'مدفوع').length} قيد الانتظار`, gradient: accent.gradient, view: 'expenses' },
+                {[{ label: 'المصروفات', value: expenses.length, sub: `${expenses.filter(e => e.status !== 'مدفوع').length} قيد الانتظار`, gradient: 'from-blue-500 to-blue-600', view: 'expenses' },
                   { label: 'المهام', value: tasks.length, sub: `${tasks.filter(t => t.priority === 'عالية').length} عالية`, gradient: 'from-green-500 to-green-600', view: 'tasks' },
                   { label: 'المشاريع', value: projects.length, sub: `${projects.filter(p => p.status === 'جاري').length} جاري`, gradient: 'from-purple-500 to-purple-600', view: 'projects' },
                   { label: 'الحسابات', value: accounts.length, sub: 'حساب', gradient: 'from-orange-500 to-orange-600', view: 'accounts' }].map((k, i) => (
@@ -650,12 +742,11 @@ export default function App() {
             </div>
           )}
 
-
           {currentView === 'expenses' && (
             <div>
               <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
                 <h2 className={`text-lg font-bold ${txt}`}>المصروفات</h2>
-                <button onClick={() => { setModalType('addExp'); setShowModal(true); }} className={`flex items-center gap-1 bg-gradient-to-r ${accent.gradient} text-white px-3 py-2 rounded-xl text-xs`}><Plus className="w-4 h-4" />إضافة</button>
+                <button onClick={() => { setNewExpense(emptyExpense); setModalType('addExp'); setShowModal(true); }} className={`flex items-center gap-1 bg-gradient-to-r ${accent.gradient} text-white px-3 py-2 rounded-xl text-xs`}><Plus className="w-4 h-4" />إضافة</button>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
@@ -702,7 +793,7 @@ export default function App() {
 
                             {e.mapUrl && (
                               <a href={e.mapUrl} target="_blank" rel="noreferrer" className={`text-xs ${accent.text} mt-2 inline-flex items-center gap-1`}>
-                                <MapPin className="w-3 h-3" />فتح في الخريطة
+                                <Globe className="w-3 h-3" />فتح في الخريطة
                               </a>
                             )}
                           </div>
@@ -745,10 +836,10 @@ export default function App() {
               <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
                 <h2 className={`text-lg font-bold ${txt}`}>المهام</h2>
                 <div className="flex gap-2">
-                  <button onClick={() => { setModalType('addSection'); setShowModal(true); }} className={`flex items-center gap-1 ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'} px-3 py-2 rounded-xl text-xs`}>
+                  <button onClick={() => { setNewSection(emptySection); setModalType('addSection'); setShowModal(true); }} className={`flex items-center gap-1 ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'} px-3 py-2 rounded-xl text-xs`}>
                     <Layers className="w-4 h-4" />إضافة قسم
                   </button>
-                  <button onClick={() => { setModalType('addTask'); setShowModal(true); }} className={`flex items-center gap-1 bg-gradient-to-r ${accent.gradient} text-white px-3 py-2 rounded-xl text-xs`}>
+                  <button onClick={() => { setNewTask(emptyTask); setModalType('addTask'); setShowModal(true); }} className={`flex items-center gap-1 bg-gradient-to-r ${accent.gradient} text-white px-3 py-2 rounded-xl text-xs`}>
                     <Plus className="w-4 h-4" />إضافة مهمة
                   </button>
                 </div>
@@ -761,16 +852,6 @@ export default function App() {
                     <button key={p.id} onClick={() => setProjectFilter(projectFilter === p.id ? null : p.id)} className={`px-3 py-1.5 rounded-lg text-xs ${projectFilter === p.id ? accent.color + ' text-white' : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
                       {p.name} ({tasks.filter(t => t.projectId === p.id).length})
                     </button>
-                  ))}
-                </div>
-              )}
-
-              {taskSections.length > 0 && (
-                <div className="flex gap-2 mb-4 flex-wrap">
-                  {taskSections.map(s => (
-                    <span key={s.id} className={`text-xs px-2 py-1 rounded-lg ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>
-                      {s.name}
-                    </span>
                   ))}
                 </div>
               )}
@@ -803,13 +884,12 @@ export default function App() {
                               {t.dueDate && <Chip>التسليم: {t.dueDate}</Chip>}
                               {d !== null && <Chip color={d < 0 ? 'bg-red-500 text-white' : 'bg-green-500 text-white'}>{d < 0 ? `متأخر ${Math.abs(d)} يوم` : `${d} يوم`}</Chip>}
                               <Chip>أنشئ بواسطة: {t.createdBy}</Chip>
-                              <Chip>{new Date(t.createdAt).toLocaleDateString('ar-SA')}</Chip>
                               {t.location && <Chip><MapPin className="w-3 h-3 inline ml-1" />{t.location}</Chip>}
                             </div>
 
                             {t.mapUrl && (
                               <a href={t.mapUrl} target="_blank" rel="noreferrer" className={`text-xs ${accent.text} mt-2 inline-flex items-center gap-1`}>
-                                <MapPin className="w-3 h-3" />فتح في الخريطة
+                                <Globe className="w-3 h-3" />فتح في الخريطة
                               </a>
                             )}
                           </div>
@@ -826,12 +906,11 @@ export default function App() {
             </div>
           )}
 
-
           {currentView === 'projects' && !selectedProject && (
             <div>
               <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
                 <h2 className={`text-lg font-bold ${txt}`}>المشاريع</h2>
-                <button onClick={() => { setModalType('addProject'); setShowModal(true); }} className={`flex items-center gap-1 bg-gradient-to-r ${accent.gradient} text-white px-3 py-2 rounded-xl text-xs`}><Plus className="w-4 h-4" />إضافة مشروع</button>
+                <button onClick={() => { setNewProject(emptyProject); setModalType('addProject'); setShowModal(true); }} className={`flex items-center gap-1 bg-gradient-to-r ${accent.gradient} text-white px-3 py-2 rounded-xl text-xs`}><Plus className="w-4 h-4" />إضافة مشروع</button>
               </div>
 
               {projects.length === 0 ? (
@@ -854,10 +933,8 @@ export default function App() {
                         <div className="flex flex-wrap gap-2 mb-3">
                           {p.client && <Chip><User className="w-3 h-3 inline ml-1" />{p.client}</Chip>}
                           {p.phone && <Chip><Phone className="w-3 h-3 inline ml-1" />{p.phone}</Chip>}
-                          {p.location && <Chip><MapPin className="w-3 h-3 inline ml-1" />{p.location}</Chip>}
                           {p.budget && <Chip>💰 {p.budget} ر.س</Chip>}
                           <Chip><CheckSquare className="w-3 h-3 inline ml-1" />{projectTasks.length} مهمة</Chip>
-                          <Chip><FileText className="w-3 h-3 inline ml-1" />{(p.files?.images?.length || 0) + (p.files?.documents?.length || 0) + (p.files?.others?.length || 0)} ملف</Chip>
                         </div>
 
                         <div className="flex flex-wrap gap-2 text-xs">
@@ -899,20 +976,17 @@ export default function App() {
                   <Chip>من: {selectedProject.startDate || '-'}</Chip>
                   <Chip>إلى: {selectedProject.endDate || '-'}</Chip>
                   <Chip>أنشئ بواسطة: {selectedProject.createdBy}</Chip>
-                  <Chip>{new Date(selectedProject.createdAt).toLocaleDateString('ar-SA')}</Chip>
                 </div>
 
                 {selectedProject.mapUrl && (
                   <a href={selectedProject.mapUrl} target="_blank" rel="noreferrer" className={`text-xs ${accent.text} inline-flex items-center gap-1`}>
-                    <MapPin className="w-3 h-3" />فتح في خرائط قوقل
+                    <Globe className="w-3 h-3" />فتح في خرائط قوقل
                   </a>
                 )}
               </div>
 
               <div className={`${card} p-4 rounded-xl border mb-4`}>
-                <div className="flex justify-between items-center mb-3">
-                  <h3 className={`font-bold text-sm ${txt}`}>ملفات المشروع</h3>
-                </div>
+                <h3 className={`font-bold text-sm ${txt} mb-3`}>ملفات المشروع</h3>
                 <div className="grid md:grid-cols-3 gap-3">
                   <div className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
                     <div className="flex items-center gap-2 mb-2"><Image className="w-4 h-4" /><span className={`text-xs font-bold ${txt}`}>الصور</span></div>
@@ -932,7 +1006,7 @@ export default function App() {
               <div className={`${card} p-4 rounded-xl border`}>
                 <div className="flex justify-between items-center mb-3">
                   <h3 className={`font-bold text-sm ${txt}`}>مهام المشروع ({tasks.filter(t => t.projectId === selectedProject.id).length})</h3>
-                  <button onClick={() => { setNewTask({ ...newTask, projectId: selectedProject.id }); setModalType('addTask'); setShowModal(true); }} className={`text-xs ${accent.text}`}><Plus className="w-4 h-4 inline" />إضافة مهمة</button>
+                  <button onClick={() => { setNewTask({ ...emptyTask, projectId: selectedProject.id }); setModalType('addTask'); setShowModal(true); }} className={`text-xs ${accent.text}`}><Plus className="w-4 h-4 inline" />إضافة مهمة</button>
                 </div>
                 {tasks.filter(t => t.projectId === selectedProject.id).length === 0 ? (
                   <p className={`text-center py-4 text-xs ${txtSm}`}>لا توجد مهام</p>
@@ -958,7 +1032,7 @@ export default function App() {
             <div>
               <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
                 <h2 className={`text-lg font-bold ${txt}`}>الحسابات</h2>
-                <button onClick={() => { setModalType('addAcc'); setShowModal(true); }} className={`flex items-center gap-1 bg-gradient-to-r ${accent.gradient} text-white px-3 py-2 rounded-xl text-xs`}><Plus className="w-4 h-4" />إضافة</button>
+                <button onClick={() => { setNewAccount(emptyAccount); setModalType('addAcc'); setShowModal(true); }} className={`flex items-center gap-1 bg-gradient-to-r ${accent.gradient} text-white px-3 py-2 rounded-xl text-xs`}><Plus className="w-4 h-4" />إضافة</button>
               </div>
               {accounts.length === 0 ? (
                 <div className={`${card} p-8 rounded-xl border text-center`}><Users className={`w-12 h-12 mx-auto mb-3 ${txtSm}`} /><p className={txtSm}>لا توجد حسابات</p></div>
@@ -993,13 +1067,13 @@ export default function App() {
             <div>
               <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
                 <h2 className={`text-lg font-bold ${txt}`}>المستخدمين</h2>
-                <button onClick={() => { setModalType('addUser'); setShowModal(true); }} className={`flex items-center gap-1 bg-gradient-to-r ${accent.gradient} text-white px-3 py-2 rounded-xl text-xs`}><Plus className="w-4 h-4" />إضافة</button>
+                <button onClick={() => { setNewUser(emptyUser); setModalType('addUser'); setShowModal(true); }} className={`flex items-center gap-1 bg-gradient-to-r ${accent.gradient} text-white px-3 py-2 rounded-xl text-xs`}><Plus className="w-4 h-4" />إضافة</button>
               </div>
               <div className="space-y-3">{users.map(u => (
                 <div key={u.id} className={`${card} p-4 rounded-xl border`}>
                   <div className="flex items-center justify-between flex-wrap gap-3">
                     <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 bg-gradient-to-br ${accent.gradient} rounded-full flex items-center justify-center text-white font-bold text-sm`}>{u.username.charAt(0)}</div>
+                      <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center text-amber-800 font-bold text-sm">{u.username.charAt(0)}</div>
                       <div>
                         <h3 className={`font-bold text-sm ${txt}`}>{u.username}</h3>
                         <div className="flex items-center gap-2 flex-wrap">
@@ -1044,14 +1118,14 @@ export default function App() {
                 <button onClick={() => setAuditFilter('login')} className={`px-3 py-1.5 rounded-lg text-xs ${auditFilter === 'login' ? accent.color + ' text-white' : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>تسجيل الدخول</button>
                 <button onClick={() => setAuditFilter('operations')} className={`px-3 py-1.5 rounded-lg text-xs ${auditFilter === 'operations' ? accent.color + ' text-white' : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>العمليات</button>
               </div>
-              <div className={`${card} rounded-xl border overflow-x-auto`}>
+              <div className={`${card} rounded-xl border overflow-x-auto ${scrollbar}`}>
                 <table className="w-full text-xs">
                   <thead className={darkMode ? 'bg-gray-700' : 'bg-gray-100'}>
                     <tr><th className={`p-3 text-right ${txt}`}>الوقت</th><th className={`p-3 text-right ${txt}`}>المستخدم</th><th className={`p-3 text-right ${txt}`}>النوع</th><th className={`p-3 text-right ${txt}`}>الوصف</th></tr>
                   </thead>
                   <tbody>
                     {(auditFilter === 'login' ? loginLog : auditFilter === 'operations' ? auditLog : [...auditLog, ...loginLog.map(l => ({ ...l, isLogin: true }))].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))).slice(0, 50).map((l, i) => (
-                      <tr key={l.id} onClick={() => !l.isLogin && navigateToItem(l)} className={`${i % 2 === 0 ? (darkMode ? 'bg-gray-800/50' : 'bg-gray-50') : ''} ${!l.isLogin ? 'cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700' : ''}`}>
+                      <tr key={l.id} onClick={() => !l.isLogin && navigateToItem(l)} className={`${i % 2 === 0 ? (darkMode ? 'bg-gray-800/50' : 'bg-gray-50') : ''} ${!l.isLogin ? 'cursor-pointer' : ''} ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}>
                         <td className={`p-3 ${txtSm}`}>{new Date(l.timestamp).toLocaleString('ar-SA')}</td>
                         <td className={`p-3 ${txt}`}>{l.user}</td>
                         <td className="p-3"><span className={`px-2 py-0.5 rounded text-xs ${l.isLogin ? (l.action === 'دخول' ? 'bg-green-500' : 'bg-red-500') : accent.color} text-white`}>{l.isLogin ? l.action : l.action === 'add' ? 'إضافة' : l.action === 'edit' ? 'تعديل' : l.action === 'delete' ? 'حذف' : l.action === 'restore' ? 'إستعادة' : 'دفع'}</span></td>
@@ -1076,14 +1150,14 @@ export default function App() {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowVersions(false)}>
           <div className={`${card} p-6 rounded-2xl max-w-md w-full border`} onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4"><h3 className={`text-lg font-bold ${txt}`}>سجل النسخ</h3><button onClick={() => setShowVersions(false)} className={txtSm}><X className="w-5 h-5" /></button></div>
-            <div className="space-y-3 max-h-80 overflow-y-auto">{versionHistory.map((v, i) => (<div key={v.version} className={`p-3 rounded-xl ${i === 0 ? `${accent.color}/20` : darkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`}><div className="flex justify-between mb-2"><span className={`font-bold text-sm ${txt}`}>v{v.version}</span><span className={`text-xs ${txtSm}`}>{v.date}</span></div><ul className={`text-xs ${txtSm} space-y-1`}>{v.changes.map((c, j) => <li key={j}>• {c}</li>)}</ul></div>))}</div>
+            <div className={`space-y-3 max-h-80 overflow-y-auto ${scrollbar}`}>{versionHistory.map((v, i) => (<div key={v.version} className={`p-3 rounded-xl ${i === 0 ? `${accent.color}/20` : darkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`}><div className="flex justify-between mb-2"><span className={`font-bold text-sm ${txt}`}>v{v.version}</span><span className={`text-xs ${txtSm}`}>{v.date}</span></div><ul className={`text-xs ${txtSm} space-y-1`}>{v.changes.map((c, j) => <li key={j}>• {c}</li>)}</ul></div>))}</div>
           </div>
         </div>
       )}
 
       {showModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className={`${card} p-6 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border`}>
+          <div className={`${card} p-6 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border ${scrollbar}`}>
             
             {modalType === 'delExp' && <><h3 className={`text-lg font-bold mb-4 ${txt}`}>حذف مصروف</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.name}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delExpense(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
             {modalType === 'delTask' && <><h3 className={`text-lg font-bold mb-4 ${txt}`}>حذف مهمة</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.title}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delTask(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
@@ -1108,10 +1182,14 @@ export default function App() {
                   <div><label className={`block text-xs mb-1 ${txtSm}`}>اسم المصروف *</label><input value={modalType === 'addExp' ? newExpense.name : editingItem?.name || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, name: e.target.value }) : setEditingItem({ ...editingItem, name: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
                   <div><label className={`block text-xs mb-1 ${txtSm}`}>المبلغ *</label><input type="number" value={modalType === 'addExp' ? newExpense.amount : editingItem?.amount || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, amount: e.target.value }) : setEditingItem({ ...editingItem, amount: parseFloat(e.target.value) })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
                   <div><label className={`block text-xs mb-1 ${txtSm}`}>النوع</label><select value={modalType === 'addExp' ? newExpense.type : editingItem?.type || 'شهري'} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, type: e.target.value }) : setEditingItem({ ...editingItem, type: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`}><option value="شهري">شهري</option><option value="سنوي">سنوي</option><option value="مرة واحدة">مرة واحدة</option></select></div>
-                  {(modalType === 'addExp' ? newExpense.type : editingItem?.type) !== 'مرة واحدة' && <div><label className={`block text-xs mb-1 ${txtSm}`}>تاريخ الاستحقاق *</label><input type="date" value={modalType === 'addExp' ? newExpense.dueDate : editingItem?.dueDate || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, dueDate: e.target.value }) : setEditingItem({ ...editingItem, dueDate: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>}
+                  {(modalType === 'addExp' ? newExpense.type : editingItem?.type) !== 'مرة واحدة' && <div><label className={`block text-xs mb-1 ${txtSm}`}>تاريخ الاستحقاق *</label><input type="date" placeholder="أدخل التاريخ" value={modalType === 'addExp' ? newExpense.dueDate : editingItem?.dueDate || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, dueDate: e.target.value }) : setEditingItem({ ...editingItem, dueDate: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>}
                   <div><label className={`block text-xs mb-1 ${txtSm}`}>الوصف</label><textarea value={modalType === 'addExp' ? newExpense.reason : editingItem?.reason || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, reason: e.target.value }) : setEditingItem({ ...editingItem, reason: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} rows="2" /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الموقع</label><input placeholder="مثال: جدة - حي النزهة" value={modalType === 'addExp' ? newExpense.location : editingItem?.location || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, location: e.target.value }) : setEditingItem({ ...editingItem, location: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>رابط خرائط قوقل</label><input placeholder="https://maps.google.com/..." value={modalType === 'addExp' ? newExpense.mapUrl : editingItem?.mapUrl || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, mapUrl: e.target.value }) : setEditingItem({ ...editingItem, mapUrl: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الموقع</label>
+                    <div className="flex gap-2">
+                      <input placeholder="مثال: جدة - حي النزهة" value={modalType === 'addExp' ? newExpense.location : editingItem?.location || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, location: e.target.value }) : setEditingItem({ ...editingItem, location: e.target.value })} className={`flex-1 p-3 border rounded-xl text-sm ${inp}`} />
+                      <button onClick={() => openMapPicker(modalType === 'addExp' ? 'newExpense' : 'editExpense')} className={`p-3 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100'}`}><Globe className="w-5 h-5" /></button>
+                    </div>
+                  </div>
                 </div>
                 <div className="flex gap-3 justify-end mt-6"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addExp' ? addExpense : editExpense} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl text-sm`}>{modalType === 'addExp' ? 'إضافة' : 'حفظ'}</button></div>
               </>
@@ -1125,11 +1203,15 @@ export default function App() {
                   <div><label className={`block text-xs mb-1 ${txtSm}`}>المشروع</label><select value={modalType === 'addTask' ? newTask.projectId : editingItem?.projectId || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, projectId: e.target.value }) : setEditingItem({ ...editingItem, projectId: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`}><option value="">بدون مشروع</option>{projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
                   {taskSections.length > 0 && <div><label className={`block text-xs mb-1 ${txtSm}`}>القسم</label><select value={modalType === 'addTask' ? newTask.sectionId : editingItem?.sectionId || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, sectionId: e.target.value }) : setEditingItem({ ...editingItem, sectionId: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`}><option value="">بدون قسم</option>{taskSections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>}
                   <div><label className={`block text-xs mb-1 ${txtSm}`}>الوصف</label><textarea value={modalType === 'addTask' ? newTask.description : editingItem?.description || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, description: e.target.value }) : setEditingItem({ ...editingItem, description: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} rows="2" /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>تاريخ التسليم</label><input type="date" value={modalType === 'addTask' ? newTask.dueDate : editingItem?.dueDate || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, dueDate: e.target.value }) : setEditingItem({ ...editingItem, dueDate: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>تاريخ التسليم</label><input type="date" placeholder="أدخل التاريخ" value={modalType === 'addTask' ? newTask.dueDate : editingItem?.dueDate || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, dueDate: e.target.value }) : setEditingItem({ ...editingItem, dueDate: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
                   <div><label className={`block text-xs mb-1 ${txtSm}`}>المسؤول</label><select value={modalType === 'addTask' ? newTask.assignedTo : editingItem?.assignedTo || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, assignedTo: e.target.value }) : setEditingItem({ ...editingItem, assignedTo: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`}><option value="">اختر</option>{users.map(u => <option key={u.id} value={u.username}>{u.username}</option>)}</select></div>
                   <div><label className={`block text-xs mb-1 ${txtSm}`}>الأولوية</label><select value={modalType === 'addTask' ? newTask.priority : editingItem?.priority || 'متوسطة'} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, priority: e.target.value }) : setEditingItem({ ...editingItem, priority: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`}><option value="عالية">عالية</option><option value="متوسطة">متوسطة</option><option value="منخفضة">منخفضة</option></select></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الموقع</label><input placeholder="مثال: جدة" value={modalType === 'addTask' ? newTask.location : editingItem?.location || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, location: e.target.value }) : setEditingItem({ ...editingItem, location: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>رابط خرائط قوقل</label><input placeholder="https://maps.google.com/..." value={modalType === 'addTask' ? newTask.mapUrl : editingItem?.mapUrl || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, mapUrl: e.target.value }) : setEditingItem({ ...editingItem, mapUrl: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الموقع</label>
+                    <div className="flex gap-2">
+                      <input placeholder="مثال: جدة" value={modalType === 'addTask' ? newTask.location : editingItem?.location || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, location: e.target.value }) : setEditingItem({ ...editingItem, location: e.target.value })} className={`flex-1 p-3 border rounded-xl text-sm ${inp}`} />
+                      <button onClick={() => openMapPicker(modalType === 'addTask' ? 'newTask' : 'editTask')} className={`p-3 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100'}`}><Globe className="w-5 h-5" /></button>
+                    </div>
+                  </div>
                 </div>
                 <div className="flex gap-3 justify-end mt-6"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addTask' ? addTask : editTask} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl text-sm`}>{modalType === 'addTask' ? 'إضافة' : 'حفظ'}</button></div>
               </>
@@ -1143,11 +1225,15 @@ export default function App() {
                   <div><label className={`block text-xs mb-1 ${txtSm}`}>الوصف</label><textarea value={modalType === 'addProject' ? newProject.description : editingItem?.description || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, description: e.target.value }) : setEditingItem({ ...editingItem, description: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} rows="2" /></div>
                   <div><label className={`block text-xs mb-1 ${txtSm}`}>العميل</label><input value={modalType === 'addProject' ? newProject.client : editingItem?.client || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, client: e.target.value }) : setEditingItem({ ...editingItem, client: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
                   <div><label className={`block text-xs mb-1 ${txtSm}`}>رقم الهاتف</label><input value={modalType === 'addProject' ? newProject.phone : editingItem?.phone || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, phone: e.target.value }) : setEditingItem({ ...editingItem, phone: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الموقع</label><input value={modalType === 'addProject' ? newProject.location : editingItem?.location || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, location: e.target.value }) : setEditingItem({ ...editingItem, location: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>رابط خرائط قوقل</label><input value={modalType === 'addProject' ? newProject.mapUrl : editingItem?.mapUrl || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, mapUrl: e.target.value }) : setEditingItem({ ...editingItem, mapUrl: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الموقع</label>
+                    <div className="flex gap-2">
+                      <input value={modalType === 'addProject' ? newProject.location : editingItem?.location || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, location: e.target.value }) : setEditingItem({ ...editingItem, location: e.target.value })} className={`flex-1 p-3 border rounded-xl text-sm ${inp}`} />
+                      <button onClick={() => openMapPicker(modalType === 'addProject' ? 'newProject' : 'editProject')} className={`p-3 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100'}`}><Globe className="w-5 h-5" /></button>
+                    </div>
+                  </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div><label className={`block text-xs mb-1 ${txtSm}`}>تاريخ البدء</label><input type="date" value={modalType === 'addProject' ? newProject.startDate : editingItem?.startDate || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, startDate: e.target.value }) : setEditingItem({ ...editingItem, startDate: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                    <div><label className={`block text-xs mb-1 ${txtSm}`}>تاريخ الانتهاء</label><input type="date" value={modalType === 'addProject' ? newProject.endDate : editingItem?.endDate || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, endDate: e.target.value }) : setEditingItem({ ...editingItem, endDate: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                    <div><label className={`block text-xs mb-1 ${txtSm}`}>تاريخ البدء</label><input type="date" placeholder="أدخل التاريخ" value={modalType === 'addProject' ? newProject.startDate : editingItem?.startDate || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, startDate: e.target.value }) : setEditingItem({ ...editingItem, startDate: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                    <div><label className={`block text-xs mb-1 ${txtSm}`}>تاريخ الانتهاء</label><input type="date" placeholder="أدخل التاريخ" value={modalType === 'addProject' ? newProject.endDate : editingItem?.endDate || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, endDate: e.target.value }) : setEditingItem({ ...editingItem, endDate: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
                   </div>
                   <div><label className={`block text-xs mb-1 ${txtSm}`}>الميزانية (ر.س)</label><input type="number" value={modalType === 'addProject' ? newProject.budget : editingItem?.budget || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, budget: e.target.value }) : setEditingItem({ ...editingItem, budget: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
                   <div><label className={`block text-xs mb-1 ${txtSm}`}>الحالة</label><select value={modalType === 'addProject' ? newProject.status : editingItem?.status || 'جاري'} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, status: e.target.value }) : setEditingItem({ ...editingItem, status: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`}><option value="جاري">جاري</option><option value="متوقف">متوقف</option><option value="مكتمل">مكتمل</option></select></div>
@@ -1165,7 +1251,7 @@ export default function App() {
                   <div><label className={`block text-xs mb-1 ${txtSm}`}>رابط الدخول</label><input value={modalType === 'addAcc' ? newAccount.loginUrl : editingItem?.loginUrl || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, loginUrl: e.target.value }) : setEditingItem({ ...editingItem, loginUrl: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
                   <div><label className={`block text-xs mb-1 ${txtSm}`}>اسم المستخدم *</label><input value={modalType === 'addAcc' ? newAccount.username : editingItem?.username || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, username: e.target.value }) : setEditingItem({ ...editingItem, username: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
                   <div><label className={`block text-xs mb-1 ${txtSm}`}>كلمة المرور</label><input value={modalType === 'addAcc' ? newAccount.password : editingItem?.password || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, password: e.target.value }) : setEditingItem({ ...editingItem, password: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>تاريخ الاشتراك</label><input type="date" value={modalType === 'addAcc' ? newAccount.subscriptionDate : editingItem?.subscriptionDate || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, subscriptionDate: e.target.value }) : setEditingItem({ ...editingItem, subscriptionDate: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>تاريخ الاشتراك</label><input type="date" placeholder="أدخل التاريخ" value={modalType === 'addAcc' ? newAccount.subscriptionDate : editingItem?.subscriptionDate || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, subscriptionDate: e.target.value }) : setEditingItem({ ...editingItem, subscriptionDate: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
                   <div><label className={`block text-xs mb-1 ${txtSm}`}>الأيام المتبقية</label><input type="number" value={modalType === 'addAcc' ? newAccount.daysRemaining : editingItem?.daysRemaining || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, daysRemaining: parseInt(e.target.value) }) : setEditingItem({ ...editingItem, daysRemaining: parseInt(e.target.value) })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
                 </div>
                 <div className="flex gap-3 justify-end mt-6"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addAcc' ? addAccount : editAccount} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl text-sm`}>{modalType === 'addAcc' ? 'إضافة' : 'حفظ'}</button></div>
