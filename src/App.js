@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
-import { Calendar, CheckSquare, Users, Moon, Sun, Monitor, Plus, Archive, Clock, Activity, History, Loader, Power, Pencil, Trash2, RotateCcw, UserCog, ChevronLeft, ChevronDown, ChevronUp, FolderOpen, FileText, MapPin, User, X, Phone, Settings, Layers, CreditCard, DollarSign, Wallet, FolderPlus, AlertTriangle, Image, Map, Type, Search, RefreshCw, Shield, CheckCircle, XCircle, Copy, ExternalLink, Eye, EyeOff, Bell, Pause, Play } from 'lucide-react';
+import { Calendar, CheckSquare, Users, Moon, Sun, Monitor, Plus, Archive, Clock, Activity, History, Loader, Power, Pencil, Trash2, RotateCcw, UserCog, ChevronLeft, ChevronDown, ChevronUp, FolderOpen, FileText, MapPin, User, X, Phone, Settings, Layers, CreditCard, DollarSign, Wallet, FolderPlus, AlertTriangle, Image, Map, Type, Search, RefreshCw, Shield, CheckCircle, XCircle, Copy, ExternalLink, Eye, EyeOff } from 'lucide-react';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDpzPCma5c4Tuxd5htRHOvm4aYLRbj8Qkg",
@@ -14,7 +14,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const APP_VERSION = "4.5.0";
+const APP_VERSION = "4.6.0";
 
 const formatNumber = (num) => {
   if (num === null || num === undefined) return '0';
@@ -72,18 +72,10 @@ const fonts = [
   { id: 'rubik', name: 'Rubik', value: "'Rubik', sans-serif", url: 'https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&display=swap' },
 ];
 
-const textColors = [
-  { id: 'default', name: 'افتراضي', light: 'text-gray-900', dark: 'text-white' },
-  { id: 'blue', name: 'أزرق', light: 'text-blue-900', dark: 'text-blue-100' },
-  { id: 'green', name: 'أخضر', light: 'text-green-900', dark: 'text-green-100' },
-  { id: 'purple', name: 'بنفسجي', light: 'text-purple-900', dark: 'text-purple-100' },
-  { id: 'amber', name: 'ذهبي', light: 'text-amber-900', dark: 'text-amber-100' },
-];
-
 const versionHistory = [
-  { version: "4.5.0", date: "2024-12-14", changes: ["نظام استحقاق ذكي", "تتبع المنفق", "حالات جديدة", "رسائل تنبيه", "بطاقات الحسابات"] },
-  { version: "4.4.0", date: "2024-12-14", changes: ["بيانات متجاورة بأيقونات", "اقتراحات بحث الخريطة", "خيارات الخطوط"] },
-  { version: "4.3.0", date: "2024-12-14", changes: ["خريطة تفاعلية مع بحث", "تحسين عرض البيانات"] },
+  { version: "4.6.0", date: "2024-12-14", changes: ["تصميم زجاجي", "فقاعات ملونة", "20 تحية", "تحديث المصروفات"] },
+  { version: "4.5.0", date: "2024-12-14", changes: ["نظام استحقاق ذكي", "تتبع المنفق", "حالات جديدة"] },
+  { version: "4.4.0", date: "2024-12-14", changes: ["بيانات متجاورة بأيقونات", "خيارات الخطوط"] },
 ];
 
 const quotes = [
@@ -91,12 +83,34 @@ const quotes = [
   "الإصرار يصنع المستحيل 💪", "فكر كبيراً وابدأ صغيراً 🎯", "المثابرة طريق التميز ⭐", "النظام أساس النجاح 📊",
 ];
 
-const getGreeting = (username, hour) => {
-  if (hour >= 5 && hour < 12) return `صباح الخير ${username} ☀️`;
-  if (hour >= 12 && hour < 17) return `مساء النور ${username} 🌤️`;
-  if (hour >= 17 && hour < 21) return `مساء الخير ${username} 🌅`;
-  return `مساء الأنوار ${username} 🌙`;
+const greetings = [
+  (name) => `أهلاً ${name} 👋`,
+  (name) => `مرحباً ${name} 🌟`,
+  (name) => `هلا ${name} ✨`,
+  (name) => `أهلين ${name} 💫`,
+  (name) => `يا هلا ${name} 🎯`,
+  (name) => `حياك الله ${name} 🌙`,
+  (name) => `نورت ${name} ☀️`,
+  (name) => `هلا والله ${name} 🔥`,
+  (name) => `أهلاً وسهلاً ${name} 🌺`,
+  (name) => `تشرفنا ${name} ⭐`,
+  (name) => `منور ${name} 💡`,
+  (name) => `الله يحييك ${name} 🤝`,
+  (name) => `هلا وغلا ${name} 💎`,
+  (name) => `يا مرحبا ${name} 🎉`,
+  (name) => `حيّاك ${name} 🌷`,
+  (name) => `أسعد الله أوقاتك ${name} 🕐`,
+  (name) => `طال عمرك ${name} 🌿`,
+  (name) => `عساك بخير ${name} 💪`,
+  (name) => `هلا بالغالي ${name} ❤️`,
+  (name) => `مرحبتين ${name} 🙌`,
+];
+
+const getRandomGreeting = (username) => {
+  const randomIndex = Math.floor(Math.random() * greetings.length);
+  return greetings[randomIndex](username);
 };
+
 
 const backgrounds = [
   { id: 0, name: 'كلاسيكي', dark: 'from-gray-900 via-purple-900 to-gray-900', light: 'from-blue-50 via-indigo-50 to-purple-50' },
@@ -265,7 +279,6 @@ export default function App() {
   });
   const [fontSize, setFontSize] = useState(() => parseInt(localStorage.getItem('fontSize')) || 16);
   const [fontIndex, setFontIndex] = useState(() => parseInt(localStorage.getItem('fontIndex')) || 0);
-  const [textColorIndex, setTextColorIndex] = useState(() => parseInt(localStorage.getItem('textColorIndex')) || 0);
   const [bgIndex, setBgIndex] = useState(() => parseInt(localStorage.getItem('bgIndex')) || 0);
   const [accentIndex, setAccentIndex] = useState(() => parseInt(localStorage.getItem('accentIndex')) || 0);
   const [currentView, setCurrentView] = useState('dashboard');
@@ -277,6 +290,7 @@ export default function App() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [quote, setQuote] = useState(quotes[0]);
+  const [greeting, setGreeting] = useState('');
   const [newNotifications, setNewNotifications] = useState(0);
   const [archiveNotifications, setArchiveNotifications] = useState(0);
   const [showAuditPanel, setShowAuditPanel] = useState(false);
@@ -311,8 +325,8 @@ export default function App() {
   const [archivedAccounts, setArchivedAccounts] = useState([]);
   const [archivedProjects, setArchivedProjects] = useState([]);
   const [loginLog, setLoginLog] = useState([]);
-  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
   const [showPasswordId, setShowPasswordId] = useState(null);
+  const [showExpenseHistory, setShowExpenseHistory] = useState(null);
 
   const emptyExpense = { name: '', amount: '', currency: 'ر.س', dueDate: '', type: 'شهري', reason: '', status: 'لم يتم الدفع', location: '', mapUrl: '', coordinates: '', totalSpent: 0 };
   const emptyTask = { title: '', description: '', dueDate: '', assignedTo: '', priority: 'متوسط الأهمية', status: 'قيد الانتظار', projectId: '', sectionId: '', location: '', mapUrl: '', coordinates: '' };
@@ -328,16 +342,9 @@ export default function App() {
   const [newUser, setNewUser] = useState(emptyUser);
   const [newSection, setNewSection] = useState(emptySection);
 
-  // دالة إظهار التنبيه
-  const showToast = (message, type = 'success') => {
-    setToast({ show: true, message, type });
-    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
-  };
-
   // دالة النسخ
   const copyToClipboard = (text, label) => {
     navigator.clipboard.writeText(text);
-    showToast(`تم نسخ ${label}`);
   };
 
   useEffect(() => {
@@ -368,7 +375,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem('accentIndex', accentIndex); }, [accentIndex]);
   useEffect(() => { localStorage.setItem('fontSize', fontSize); }, [fontSize]);
   useEffect(() => { localStorage.setItem('fontIndex', fontIndex); }, [fontIndex]);
-  useEffect(() => { localStorage.setItem('textColorIndex', textColorIndex); }, [textColorIndex]);
+  useEffect(() => { if (currentUser) setGreeting(getRandomGreeting(currentUser.username)); }, [currentUser]);
 
   useEffect(() => {
     const unsub = onSnapshot(doc(db, 'data', 'main'), (snap) => {
@@ -456,8 +463,8 @@ export default function App() {
   };
 
   const addExpense = () => {
-    if (!newExpense.name || !newExpense.amount) { showToast('املأ الحقول المطلوبة', 'error'); return; }
-    if (newExpense.type !== 'مرة واحدة' && !newExpense.dueDate) { showToast('حدد تاريخ الاستحقاق', 'error'); return; }
+    if (!newExpense.name || !newExpense.amount) { alert('املأ الحقول المطلوبة'); return; }
+    if (newExpense.type !== 'مرة واحدة' && !newExpense.dueDate) { alert('حدد تاريخ الاستحقاق'); return; }
     const amount = parseFloat(newExpense.amount);
     const exp = { 
       ...newExpense, 
@@ -471,11 +478,10 @@ export default function App() {
     const ne = [...expenses, exp]; const al = addLog('add', 'مصروف', exp.name, exp.id);
     setExpenses(ne); save({ expenses: ne, auditLog: al });
     setNewExpense(emptyExpense); setShowModal(false);
-    showToast('تم إضافة المصروف بنجاح');
   };
 
   const editExpense = () => {
-    if (!editingItem.name || !editingItem.amount) { showToast('املأ الحقول', 'error'); return; }
+    if (!editingItem.name || !editingItem.amount) { alert('املأ الحقول'); return; }
     const oldExp = expenses.find(e => e.id === editingItem.id);
     const newAmount = parseFloat(editingItem.amount);
     const amountDiff = newAmount - (oldExp?.amount || 0);
@@ -499,7 +505,6 @@ export default function App() {
     const ne = expenses.map(e => e.id === editingItem.id ? updatedItem : e);
     const al = addLog('edit', 'مصروف', editingItem.name, editingItem.id);
     setExpenses(ne); save({ expenses: ne, auditLog: al }); setEditingItem(null); setShowModal(false);
-    showToast('تم تعديل المصروف بنجاح');
   };
 
   const delExpense = (exp) => {
@@ -507,7 +512,6 @@ export default function App() {
     const na = [{ ...exp, archivedAt: new Date().toISOString(), archivedBy: currentUser.username }, ...archivedExpenses];
     const al = addLog('delete', 'مصروف', exp.name, exp.id);
     setExpenses(ne); setArchivedExpenses(na); save({ expenses: ne, archivedExpenses: na, auditLog: al }); setShowModal(false);
-    showToast('تم نقل المصروف للأرشيف');
   };
 
   const restoreExpense = (exp) => {
@@ -515,7 +519,6 @@ export default function App() {
     const { archivedAt, archivedBy, ...rest } = exp; const ne = [...expenses, rest];
     const al = addLog('restore', 'مصروف', exp.name, exp.id);
     setExpenses(ne); setArchivedExpenses(na); save({ expenses: ne, archivedExpenses: na, auditLog: al });
-    showToast('تم استعادة المصروف بنجاح');
   };
 
   const markPaid = (id) => {
@@ -530,7 +533,6 @@ export default function App() {
     } : e);
     const al = addLog('pay', 'مصروف', exp.name, exp.id); 
     setExpenses(ne); save({ expenses: ne, auditLog: al });
-    showToast('تم تسجيل الدفع بنجاح');
   };
 
   // تحديث المصروفات المتكررة
@@ -566,27 +568,23 @@ export default function App() {
     if (updated) {
       setExpenses(ne);
       save({ expenses: ne });
-      showToast('تم تحديث المصروفات');
     } else {
-      showToast('لا توجد تحديثات');
     }
   };
 
   const addTask = () => {
-    if (!newTask.title) { showToast('أدخل عنوان المهمة', 'error'); return; }
+    if (!newTask.title) { alert('أدخل عنوان المهمة'); return; }
     const t = { ...newTask, id: `T${Date.now()}`, createdAt: new Date().toISOString(), createdBy: currentUser.username };
     const nt = [...tasks, t]; const al = addLog('add', 'مهمة', t.title, t.id);
     setTasks(nt); save({ tasks: nt, auditLog: al });
     setNewTask(emptyTask); setShowModal(false);
-    showToast('تم إضافة المهمة بنجاح');
   };
 
   const editTask = () => {
-    if (!editingItem.title) { showToast('أدخل عنوان المهمة', 'error'); return; }
+    if (!editingItem.title) { alert('أدخل عنوان المهمة'); return; }
     const nt = tasks.map(t => t.id === editingItem.id ? { ...editingItem, updatedAt: new Date().toISOString() } : t);
     const al = addLog('edit', 'مهمة', editingItem.title, editingItem.id);
     setTasks(nt); save({ tasks: nt, auditLog: al }); setEditingItem(null); setShowModal(false);
-    showToast('تم تعديل المهمة بنجاح');
   };
 
   const delTask = (t) => {
@@ -594,7 +592,6 @@ export default function App() {
     const na = [{ ...t, archivedAt: new Date().toISOString(), archivedBy: currentUser.username }, ...archivedTasks];
     const al = addLog('delete', 'مهمة', t.title, t.id);
     setTasks(nt); setArchivedTasks(na); save({ tasks: nt, archivedTasks: na, auditLog: al }); setShowModal(false);
-    showToast('تم نقل المهمة للأرشيف');
   };
 
   const restoreTask = (t) => {
@@ -602,33 +599,29 @@ export default function App() {
     const { archivedAt, archivedBy, ...rest } = t; const nt = [...tasks, rest];
     const al = addLog('restore', 'مهمة', t.title, t.id);
     setTasks(nt); setArchivedTasks(na); save({ tasks: nt, archivedTasks: na, auditLog: al });
-    showToast('تم استعادة المهمة بنجاح');
   };
 
   const addSection = () => {
-    if (!newSection.name) { showToast('أدخل اسم القسم', 'error'); return; }
+    if (!newSection.name) { alert('أدخل اسم القسم'); return; }
     const s = { id: `S${Date.now()}`, name: newSection.name, color: newSection.color, createdAt: new Date().toISOString(), createdBy: currentUser.username };
     const ns = [...taskSections, s]; const al = addLog('add', 'قسم', s.name, s.id);
     setTaskSections(ns); save({ taskSections: ns, auditLog: al });
     setNewSection(emptySection); setShowModal(false);
-    showToast('تم إضافة القسم بنجاح');
   };
 
   const addProject = () => {
-    if (!newProject.name) { showToast('أدخل اسم المشروع', 'error'); return; }
+    if (!newProject.name) { alert('أدخل اسم المشروع'); return; }
     const p = { ...newProject, id: `P${Date.now()}`, createdAt: new Date().toISOString(), createdBy: currentUser.username };
     const np = [...projects, p]; const al = addLog('add', 'مشروع', p.name, p.id);
     setProjects(np); save({ projects: np, auditLog: al });
     setNewProject(emptyProject); setShowModal(false);
-    showToast('تم إضافة المشروع بنجاح');
   };
 
   const editProject = () => {
-    if (!editingItem.name) { showToast('أدخل اسم المشروع', 'error'); return; }
+    if (!editingItem.name) { alert('أدخل اسم المشروع'); return; }
     const np = projects.map(p => p.id === editingItem.id ? { ...editingItem, updatedAt: new Date().toISOString() } : p);
     const al = addLog('edit', 'مشروع', editingItem.name, editingItem.id);
     setProjects(np); save({ projects: np, auditLog: al }); setEditingItem(null); setShowModal(false);
-    showToast('تم تعديل المشروع بنجاح');
   };
 
   const delProject = (p) => {
@@ -636,7 +629,6 @@ export default function App() {
     const na = [{ ...p, archivedAt: new Date().toISOString(), archivedBy: currentUser.username }, ...archivedProjects];
     const al = addLog('delete', 'مشروع', p.name, p.id);
     setProjects(np); setArchivedProjects(na); save({ projects: np, archivedProjects: na, auditLog: al }); setShowModal(false); setSelectedProject(null);
-    showToast('تم نقل المشروع للأرشيف');
   };
 
   const restoreProject = (p) => {
@@ -644,24 +636,21 @@ export default function App() {
     const { archivedAt, archivedBy, ...rest } = p; const np = [...projects, rest];
     const al = addLog('restore', 'مشروع', p.name, p.id);
     setProjects(np); setArchivedProjects(na); save({ projects: np, archivedProjects: na, auditLog: al });
-    showToast('تم استعادة المشروع بنجاح');
   };
 
   const addAccount = () => {
-    if (!newAccount.name || !newAccount.username) { showToast('املأ الحقول', 'error'); return; }
+    if (!newAccount.name || !newAccount.username) { alert('املأ الحقول'); return; }
     const a = { ...newAccount, id: `A${Date.now()}`, createdAt: new Date().toISOString(), createdBy: currentUser.username };
     const na = [...accounts, a]; const al = addLog('add', 'حساب', a.name, a.id);
     setAccounts(na); save({ accounts: na, auditLog: al });
     setNewAccount(emptyAccount); setShowModal(false);
-    showToast('تم إضافة الحساب بنجاح');
   };
 
   const editAccount = () => {
-    if (!editingItem.name) { showToast('املأ الحقول', 'error'); return; }
+    if (!editingItem.name) { alert('املأ الحقول'); return; }
     const na = accounts.map(a => a.id === editingItem.id ? { ...editingItem, updatedAt: new Date().toISOString() } : a);
     const al = addLog('edit', 'حساب', editingItem.name, editingItem.id);
     setAccounts(na); save({ accounts: na, auditLog: al }); setEditingItem(null); setShowModal(false);
-    showToast('تم تعديل الحساب بنجاح');
   };
 
   const delAccount = (a) => {
@@ -669,7 +658,6 @@ export default function App() {
     const nar = [{ ...a, archivedAt: new Date().toISOString(), archivedBy: currentUser.username }, ...archivedAccounts];
     const al = addLog('delete', 'حساب', a.name, a.id);
     setAccounts(na); setArchivedAccounts(nar); save({ accounts: na, archivedAccounts: nar, auditLog: al }); setShowModal(false);
-    showToast('تم نقل الحساب للأرشيف');
   };
 
   const restoreAccount = (a) => {
@@ -677,33 +665,29 @@ export default function App() {
     const { archivedAt, archivedBy, ...rest } = a; const na = [...accounts, rest];
     const al = addLog('restore', 'حساب', a.name, a.id);
     setAccounts(na); setArchivedAccounts(nar); save({ accounts: na, archivedAccounts: nar, auditLog: al });
-    showToast('تم استعادة الحساب بنجاح');
   };
 
   const addUser = () => {
-    if (!newUser.username || !newUser.password) { showToast('املأ الحقول', 'error'); return; }
-    if (users.find(u => u.username === newUser.username)) { showToast('المستخدم موجود', 'error'); return; }
+    if (!newUser.username || !newUser.password) { alert('املأ الحقول'); return; }
+    if (users.find(u => u.username === newUser.username)) { alert('المستخدم موجود'); return; }
     const u = { ...newUser, id: Date.now(), createdAt: new Date().toISOString(), createdBy: currentUser.username };
     const nu = [...users, u]; const al = addLog('add', 'مستخدم', u.username, u.id);
     setUsers(nu); save({ users: nu, auditLog: al });
     setNewUser(emptyUser); setShowModal(false);
-    showToast('تم إضافة المستخدم بنجاح');
   };
 
   const editUser = () => {
-    if (!editingItem.username) { showToast('املأ الحقول', 'error'); return; }
+    if (!editingItem.username) { alert('املأ الحقول'); return; }
     const nu = users.map(u => u.id === editingItem.id ? { ...editingItem, updatedAt: new Date().toISOString() } : u);
     const al = addLog('edit', 'مستخدم', editingItem.username, editingItem.id);
     setUsers(nu); save({ users: nu, auditLog: al }); setEditingItem(null); setShowModal(false);
-    showToast('تم تعديل المستخدم بنجاح');
   };
 
   const delUser = (u) => {
-    if (u.role === 'owner') { showToast('لا يمكن حذف المالك', 'error'); return; }
-    if (u.username === currentUser.username) { showToast('لا يمكن حذف نفسك', 'error'); return; }
+    if (u.role === 'owner') { alert('لا يمكن حذف المالك'); return; }
+    if (u.username === currentUser.username) { alert('لا يمكن حذف نفسك'); return; }
     const nu = users.filter(x => x.id !== u.id); const al = addLog('delete', 'مستخدم', u.username, u.id);
     setUsers(nu); save({ users: nu, auditLog: al }); setShowModal(false);
-    showToast('تم حذف المستخدم بنجاح');
   };
 
   const openMapPicker = (target) => {
@@ -724,11 +708,11 @@ export default function App() {
   const accent = accentColors[accentIndex];
   const currentBg = backgrounds[bgIndex];
   const currentFont = fonts[fontIndex];
-  const currentTextColor = textColors[textColorIndex];
   const bg = `bg-gradient-to-br ${darkMode ? currentBg.dark : currentBg.light}`;
-  const card = darkMode ? 'bg-gray-800/90 border-gray-700' : 'bg-white/90 border-gray-200';
-  const inp = darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400';
-  const txt = darkMode ? currentTextColor.dark : currentTextColor.light;
+  // التصميم الزجاجي
+  const card = darkMode ? 'bg-white/10 backdrop-blur-sm border-white/20' : 'bg-white/70 backdrop-blur-sm border-gray-200';
+  const inp = darkMode ? 'bg-gray-700/50 border-gray-600 text-white placeholder-gray-400' : 'bg-white/80 border-gray-300 text-gray-900 placeholder-gray-400';
+  const txt = darkMode ? 'text-white' : 'text-gray-900';
   const txtMd = darkMode ? 'text-gray-200' : 'text-gray-700';
   const txtSm = darkMode ? 'text-gray-400' : 'text-gray-500';
   const iconClass = `w-3.5 h-3.5 ${txtSm}`;
@@ -743,6 +727,41 @@ export default function App() {
 
   const formatTime12 = (date) => {
     return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+  };
+
+  // مكون الفقاعة الملونة
+  const Badge = ({ type, status }) => {
+    const styles = {
+      // المهام
+      'عالي الأهمية': 'bg-red-500/10 border-red-500/30 text-red-400',
+      'مستعجل': 'bg-orange-500/10 border-orange-500/30 text-orange-400',
+      'متوسط الأهمية': 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400',
+      'منخفض الأهمية': 'bg-green-500/10 border-green-500/30 text-green-400',
+      // المصروفات
+      'مدفوع': 'bg-green-500/10 border-green-500/30 text-green-400',
+      'لم يتم الدفع': 'bg-red-500/10 border-red-500/30 text-red-400',
+      'قريباً الدفع': 'bg-orange-500/10 border-orange-500/30 text-orange-400',
+      'متأخر': 'bg-red-500/10 border-red-500/30 text-red-400',
+      // المشاريع
+      'جاري العمل': 'bg-blue-500/10 border-blue-500/30 text-blue-400',
+      'منتهي': 'bg-green-500/10 border-green-500/30 text-green-400',
+      'متوقف': 'bg-red-500/10 border-red-500/30 text-red-400',
+    };
+    const lightStyles = {
+      'عالي الأهمية': 'bg-red-500/10 border-red-500/30 text-red-600',
+      'مستعجل': 'bg-orange-500/10 border-orange-500/30 text-orange-600',
+      'متوسط الأهمية': 'bg-yellow-500/10 border-yellow-500/30 text-yellow-600',
+      'منخفض الأهمية': 'bg-green-500/10 border-green-500/30 text-green-600',
+      'مدفوع': 'bg-green-500/10 border-green-500/30 text-green-600',
+      'لم يتم الدفع': 'bg-red-500/10 border-red-500/30 text-red-600',
+      'قريباً الدفع': 'bg-orange-500/10 border-orange-500/30 text-orange-600',
+      'متأخر': 'bg-red-500/10 border-red-500/30 text-red-600',
+      'جاري العمل': 'bg-blue-500/10 border-blue-500/30 text-blue-600',
+      'منتهي': 'bg-green-500/10 border-green-500/30 text-green-600',
+      'متوقف': 'bg-red-500/10 border-red-500/30 text-red-600',
+    };
+    const styleClass = darkMode ? styles[status] : lightStyles[status];
+    return <span className={`px-2 py-0.5 rounded-lg text-xs border ${styleClass || 'bg-gray-500/10 border-gray-500/30 text-gray-400'}`}>{status}</span>;
   };
 
   const InfoItem = ({ icon: Icon, children, href, phone }) => {
@@ -768,53 +787,9 @@ export default function App() {
   };
 
   const Label = ({ children }) => <span className={`text-xs ${txtSm}`}>{children}</span>;
-  
-  // حالات المهام
-  const Priority = ({ level }) => {
-    const colors = {
-      'عالي الأهمية': 'bg-red-500 text-white',
-      'مستعجل': 'bg-orange-500 text-white',
-      'متوسط الأهمية': 'bg-yellow-500 text-white',
-      'منخفض الأهمية': 'bg-green-500 text-white'
-    };
-    return <span className={`text-xs px-2 py-0.5 rounded ${colors[level] || 'bg-gray-500 text-white'}`}>{level}</span>;
-  };
-  
-  // حالات المصروفات
-  const ExpenseStatus = ({ expense }) => {
-    const status = getExpenseStatus(expense);
-    const colors = {
-      'مدفوع': 'text-green-500',
-      'لم يتم الدفع': 'text-red-500',
-      'قريباً الدفع': 'text-orange-500',
-      'متأخر': 'text-red-600'
-    };
-    return <span className={`text-xs ${colors[status] || txtSm}`}>{status}</span>;
-  };
-  
-  // حالات المشاريع
-  const ProjectStatus = ({ status }) => {
-    const colors = {
-      'جاري العمل': 'text-blue-500',
-      'منتهي': 'text-green-500',
-      'متوقف': 'text-red-500'
-    };
-    return <span className={`text-xs ${colors[status] || txtSm}`}>{status}</span>;
-  };
-  
-  // مكون التنبيه
-  const Toast = () => {
-    if (!toast.show) return null;
-    return (
-      <div className={`fixed bottom-20 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-xl shadow-lg z-[200] ${toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'} text-white flex items-center gap-2`}>
-        {toast.type === 'error' ? <XCircle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
-        <span>{toast.message}</span>
-      </div>
-    );
-  };
 
   const IconBtn = ({ onClick, icon: Icon, title, disabled }) => (
-    <button onClick={onClick} disabled={disabled} className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'} ${disabled ? 'opacity-50' : ''}`} title={title}>
+    <button onClick={onClick} disabled={disabled} className={`p-2 rounded-lg ${darkMode ? 'hover:bg-white/10 text-gray-400' : 'hover:bg-gray-100 text-gray-500'} ${disabled ? 'opacity-50' : ''}`} title={title}>
       <Icon className="w-4 h-4" />
     </button>
   );
@@ -852,29 +827,16 @@ export default function App() {
     </div>
   );
 
-  const greeting = getGreeting(currentUser.username, currentTime.getHours());
-
   return (
-    <div className={`min-h-screen ${bg} relative overflow-x-hidden pb-16`} style={{ fontSize: `${fontSize}px`, ...hideScrollbar }} dir="rtl">
+    <div className={`min-h-screen ${bg} relative overflow-x-hidden pb-16`} style={{ fontSize: `${fontSize}px`, fontFamily: currentFont.value, ...hideScrollbar }} dir="rtl">
       <style>{`*::-webkit-scrollbar { display: none; } * { scrollbar-width: none; -ms-overflow-style: none; } input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; } input[type=number] { -moz-appearance: textfield; }`}</style>
       <FinancialPattern />
-      
-      <Toast />
       
       {showMapPicker && <MapPicker darkMode={darkMode} onClose={() => setShowMapPicker(false)} onSelect={handleMapSelect} />}
       
       <link href={currentFont.url} rel="stylesheet" />
       
-      {/* زر التحديث الثابت */}
-      <button 
-        onClick={refreshExpenses} 
-        className={`fixed bottom-4 left-4 z-[100] p-3 rounded-full shadow-lg ${accent.color} text-white hover:opacity-90 transition-all`}
-        title="تحديث البيانات"
-      >
-        <RefreshCw className="w-5 h-5" />
-      </button>
-      
-      <div className={`${card} border-b px-4 py-3 flex flex-wrap items-center justify-between sticky top-0 z-50 gap-3`} style={{ fontFamily: currentFont.value }}>
+      <div className={`${card} border-b px-4 py-3 flex flex-wrap items-center justify-between sticky top-0 z-50 gap-3`}>
         <div className="flex items-center gap-3">
           <button onClick={() => { setCurrentView('dashboard'); setSelectedProject(null); }} className="w-10 h-10 rounded-xl flex items-center justify-center text-gray-700 font-bold text-xs" style={{ backgroundColor: '#dcdddc' }}>RKZ</button>
           <div>
@@ -895,7 +857,7 @@ export default function App() {
           <div className="relative" ref={auditRef}>
             <button onClick={() => { setShowAuditPanel(!showAuditPanel); setShowArchivePanel(false); setShowSettingsPanel(false); setNewNotifications(0); }} className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}>
               <Clock className={`w-5 h-5 ${txtMd}`} />
-              {newNotifications > 0 && <span className={`absolute -top-1 -right-1 w-4 h-4 ${accent.color} text-white text-xs rounded-full flex items-center justify-center`}>{newNotifications}</span>}
+              {newNotifications > 0 && <span className={`absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center`}>{newNotifications}</span>}
             </button>
             {showAuditPanel && (
               <div className={`absolute left-0 top-12 w-80 ${card} rounded-xl shadow-2xl border z-50 max-h-80 overflow-y-auto ${hideScrollbarClass}`} style={hideScrollbar}>
@@ -981,17 +943,6 @@ export default function App() {
                 </div>
 
                 <div className="mb-4">
-                  <p className={`text-xs mb-2 ${txtSm}`}>لون الخط</p>
-                  <div className="flex gap-2 flex-wrap">
-                    {textColors.map((c, i) => (
-                      <button key={c.id} onClick={() => setTextColorIndex(i)} className={`px-3 py-1.5 rounded-lg text-xs ${textColorIndex === i ? accent.color + ' text-white' : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
-                        {c.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mb-4">
                   <p className={`text-xs mb-2 ${txtSm}`}>الخلفية</p>
                   <div className="flex gap-2">{backgrounds.map((b, i) => (<button key={b.id} onClick={() => setBgIndex(i)} className={`w-8 h-8 rounded-lg bg-gradient-to-br ${b.dark} ${bgIndex === i ? 'ring-2 ring-offset-2 ring-blue-500' : ''}`} title={b.name} />))}</div>
                 </div>
@@ -1061,7 +1012,7 @@ export default function App() {
                       <div key={t.id} className="bg-orange-500/10 border border-orange-500/30 p-3 rounded-lg">
                         <div className="flex justify-between items-center">
                           <span className={`text-sm font-bold ${txt}`}>{t.title}</span>
-                          <Priority level={t.priority} />
+                          <Badge status={t.priority} />
                         </div>
                         <span className={`text-xs ${txtSm}`}><User className="w-3 h-3 inline ml-1" />{t.assignedTo || 'غير محدد'}</span>
                       </div>
@@ -1125,49 +1076,73 @@ export default function App() {
               ) : (
                 <div className="space-y-3">
                   {expenses.map(e => {
-                    const d = e.type !== 'مرة واحدة' ? calcDays(e.dueDate) : null;
-                    const isExpanded = expandedExpense === e.id;
+                    const d = e.type !== 'مرة واحدة' ? calcDaysRemaining(e.dueDate, e.type) : null;
+                    const expStatus = getExpenseStatus(e);
+                    const isUrgent = (e.type === 'شهري' && d !== null && d <= 7) || (e.type === 'سنوي' && d !== null && d <= 15);
                     return (
-                      <div key={e.id} className={`${card} p-4 rounded-xl border`}>
+                      <div key={e.id} className={`${card} p-4 rounded-xl border ${isUrgent && e.status !== 'مدفوع' ? 'bg-red-500/10 border-red-500/30' : ''}`}>
                         <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2 flex-wrap">
                               <h3 className={`font-bold ${txt}`}>{e.name}</h3>
-                              {e.status === 'مدفوع' && <span className={`text-xs ${txtSm}`}><CheckCircle className="w-3 h-3 inline ml-1 text-green-500" />مدفوع</span>}
+                              <Badge status={expStatus} />
                             </div>
                             <p className={`text-xl font-bold ${txt} mb-2`}>{formatNumber(e.amount)} ريال</p>
                             {e.reason && <p className={`text-xs ${txtSm} mb-2`}>{e.reason}</p>}
                             
-                            <div className={`text-xs ${txtSm} flex flex-wrap items-center gap-x-3 gap-y-1`}>
+                            <div className={`text-xs ${txtSm} flex flex-wrap items-center gap-x-3 gap-y-1 mb-2`}>
                               <InfoItem icon={RefreshCw}>{e.type}</InfoItem>
                               {e.dueDate && <InfoItem icon={Calendar}>{e.dueDate}</InfoItem>}
                               {d !== null && <InfoItem icon={Clock}>{d < 0 ? `متأخر ${formatNumber(Math.abs(d))} يوم` : `${formatNumber(d)} يوم متبقي`}</InfoItem>}
                               <InfoItem icon={User}>{e.createdBy}</InfoItem>
-                              <InfoItem icon={Calendar}>{new Date(e.createdAt).toLocaleDateString('en-US')}</InfoItem>
                               {e.location && <InfoItem icon={MapPin} href={e.mapUrl}>{e.location}</InfoItem>}
                             </div>
+                            
+                            <div className={`text-xs ${txt} mb-2`}>
+                              <DollarSign className="w-3.5 h-3.5 inline ml-1" />
+                              إجمالي المنفق: <span className="font-bold">{formatNumber(e.totalSpent || e.amount)} ريال</span>
+                            </div>
+                            
+                            {e.paymentHistory?.length > 0 && (
+                              <button onClick={() => setShowExpenseHistory(showExpenseHistory === e.id ? null : e.id)} className={`text-xs ${accent.text} hover:underline`}>
+                                <History className="w-3.5 h-3.5 inline ml-1" />العمليات السابقة ({e.paymentHistory.length})
+                              </button>
+                            )}
                           </div>
                           
                           <div className="flex gap-1">
-                            {e.status !== 'مدفوع' && <IconBtn onClick={() => markPaid(e.id)} icon={CheckSquare} title="تعليم كمدفوع" />}
-                            {e.paymentHistory?.length > 0 && (
-                              <IconBtn onClick={() => setExpandedExpense(isExpanded ? null : e.id)} icon={isExpanded ? ChevronUp : ChevronDown} title="سجل الدفعات" />
+                            {e.status !== 'مدفوع' && e.type !== 'مرة واحدة' && (
+                              <IconBtn onClick={() => {
+                                const newDueDate = new Date(e.dueDate);
+                                newDueDate.setDate(newDueDate.getDate() + (e.type === 'شهري' ? 30 : 365));
+                                const payment = { date: new Date().toISOString(), amount: e.amount, note: 'تحديث يدوي', by: currentUser.username };
+                                const ne = expenses.map(ex => ex.id === e.id ? { 
+                                  ...ex, 
+                                  dueDate: newDueDate.toISOString().split('T')[0],
+                                  totalSpent: (ex.totalSpent || ex.amount) + ex.amount,
+                                  paymentHistory: [...(ex.paymentHistory || []), payment]
+                                } : ex);
+                                const al = addLog('refresh', 'مصروف', e.name, e.id);
+                                setExpenses(ne); save({ expenses: ne, auditLog: al });
+                              }} icon={RefreshCw} title="تحديث" />
                             )}
+                            {e.status !== 'مدفوع' && <IconBtn onClick={() => markPaid(e.id)} icon={CheckSquare} title="تعليم كمدفوع" />}
                             <IconBtn onClick={() => { setEditingItem({ ...e }); setModalType('editExp'); setShowModal(true); }} icon={Pencil} title="تعديل" />
                             <IconBtn onClick={() => { setSelectedItem(e); setModalType('delExp'); setShowModal(true); }} icon={Trash2} title="حذف" />
                           </div>
                         </div>
 
-                        {isExpanded && e.paymentHistory?.length > 0 && (
-                          <div className={`mt-3 pt-3 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                            <p className={`text-xs font-bold mb-2 ${txt}`}>سجل الدفعات:</p>
+                        {showExpenseHistory === e.id && e.paymentHistory?.length > 0 && (
+                          <div className={`mt-3 pt-3 border-t ${darkMode ? 'border-white/20' : 'border-gray-200'}`}>
+                            <p className={`text-xs font-bold mb-2 ${txt}`}>العمليات السابقة:</p>
                             <div className="space-y-2">
                               {e.paymentHistory.map((p, i) => (
-                                <div key={i} className={`text-xs p-2 rounded-lg flex flex-wrap gap-3 ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                                <div key={i} className={`text-xs p-2 rounded-lg flex flex-wrap gap-3 ${darkMode ? 'bg-white/5' : 'bg-gray-100'}`}>
                                   <InfoItem icon={DollarSign}>{formatNumber(p.amount)} ريال</InfoItem>
                                   <InfoItem icon={Calendar}>{new Date(p.date).toLocaleDateString('en-US')}</InfoItem>
                                   <InfoItem icon={Clock}>{formatTime12(new Date(p.date))}</InfoItem>
-                                  <InfoItem icon={User}>{p.paidBy}</InfoItem>
+                                  {p.note && <span className={txtSm}>{p.note}</span>}
+                                  <InfoItem icon={User}>{p.by || p.paidBy}</InfoItem>
                                 </div>
                               ))}
                             </div>
@@ -1222,8 +1197,10 @@ export default function App() {
                       <div key={t.id} className={`${card} p-4 rounded-xl border`}>
                         <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
                           <div className="flex-1">
-                            <h3 className={`font-bold ${txt} mb-1`}>{t.title}</h3>
-                            <div className="mb-2"><Priority level={t.priority} /></div>
+                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                              <h3 className={`font-bold ${txt}`}>{t.title}</h3>
+                              <Badge status={t.priority} />
+                            </div>
                             {t.description && <p className={`text-xs ${txtSm} mb-2`}>{t.description}</p>}
                             
                             <div className={`text-xs ${txtSm} flex flex-wrap items-center gap-x-3 gap-y-1`}>
@@ -1349,7 +1326,7 @@ export default function App() {
                       <div key={t.id} className={`p-3 rounded-lg border ${darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'} flex justify-between items-center`}>
                         <div>
                           <div className="flex items-center gap-2">
-                            <Priority level={t.priority} />
+                            <Badge status={t.priority} />
                             <span className={`text-xs ${txt}`}>{t.title}</span>
                           </div>
                         </div>
