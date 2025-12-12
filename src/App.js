@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
-import { Calendar, CheckSquare, Users, Moon, Sun, Monitor, Plus, Archive, Clock, Activity, History, Loader, Power, Pencil, Trash2, RotateCcw, UserCog, ChevronLeft, ChevronDown, ChevronUp, FolderOpen, FileText, MapPin, User, X, Phone, Settings, Layers, CreditCard, DollarSign, Wallet, FolderPlus, AlertTriangle, Image, Map, Type, Search, RefreshCw, Shield, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, CheckSquare, Users, Moon, Sun, Monitor, Plus, Archive, Clock, Activity, History, Loader, Power, Pencil, Trash2, RotateCcw, UserCog, ChevronLeft, ChevronDown, ChevronUp, FolderOpen, FileText, MapPin, User, X, Phone, Settings, Layers, CreditCard, DollarSign, Wallet, FolderPlus, AlertTriangle, Image, Map, Type, Search, RefreshCw, Shield, CheckCircle, XCircle, Copy, ExternalLink, Eye, EyeOff, Bell, Pause, Play } from 'lucide-react';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDpzPCma5c4Tuxd5htRHOvm4aYLRbj8Qkg",
@@ -14,11 +14,54 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const APP_VERSION = "4.4.0";
+const APP_VERSION = "4.5.0";
 
 const formatNumber = (num) => {
   if (num === null || num === undefined) return '0';
   return Number(num).toLocaleString('en-US');
+};
+
+// حساب تاريخ الاستحقاق التالي
+const calcNextDueDate = (startDate, type) => {
+  if (!startDate) return null;
+  const start = new Date(startDate);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  if (type === 'مرة واحدة') {
+    return start;
+  }
+  
+  let nextDue = new Date(start);
+  const daysToAdd = type === 'شهري' ? 30 : 365;
+  
+  while (nextDue <= today) {
+    nextDue.setDate(nextDue.getDate() + daysToAdd);
+  }
+  
+  return nextDue;
+};
+
+// حساب الأيام المتبقية
+const calcDaysRemaining = (startDate, type) => {
+  const nextDue = calcNextDueDate(startDate, type);
+  if (!nextDue) return null;
+  
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const diff = Math.ceil((nextDue - today) / (1000 * 60 * 60 * 24));
+  return diff;
+};
+
+// تحديد حالة المصروف
+const getExpenseStatus = (expense) => {
+  if (expense.status === 'مدفوع') return 'مدفوع';
+  const days = calcDaysRemaining(expense.dueDate, expense.type);
+  if (days === null) return 'لم يتم الدفع';
+  if (expense.type === 'شهري' && days <= 7) return 'قريباً الدفع';
+  if (expense.type === 'سنوي' && days <= 15) return 'قريباً الدفع';
+  if (days < 0) return 'متأخر';
+  return 'لم يتم الدفع';
 };
 
 const fonts = [
@@ -38,8 +81,8 @@ const textColors = [
 ];
 
 const versionHistory = [
-  { version: "4.4.0", date: "2024-12-14", changes: ["بيانات متجاورة بأيقونات", "اقتراحات بحث الخريطة", "خيارات الخطوط", "روابط تفاعلية"] },
-  { version: "4.3.1", date: "2024-12-14", changes: ["رمز ريال جديد", "تصميم خريطة حديث", "إزالة الفقاعات"] },
+  { version: "4.5.0", date: "2024-12-14", changes: ["نظام استحقاق ذكي", "تتبع المنفق", "حالات جديدة", "رسائل تنبيه", "بطاقات الحسابات"] },
+  { version: "4.4.0", date: "2024-12-14", changes: ["بيانات متجاورة بأيقونات", "اقتراحات بحث الخريطة", "خيارات الخطوط"] },
   { version: "4.3.0", date: "2024-12-14", changes: ["خريطة تفاعلية مع بحث", "تحسين عرض البيانات"] },
 ];
 
@@ -268,10 +311,12 @@ export default function App() {
   const [archivedAccounts, setArchivedAccounts] = useState([]);
   const [archivedProjects, setArchivedProjects] = useState([]);
   const [loginLog, setLoginLog] = useState([]);
+  const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
+  const [showPasswordId, setShowPasswordId] = useState(null);
 
-  const emptyExpense = { name: '', amount: '', currency: 'ر.س', dueDate: '', type: 'شهري', reason: '', status: 'قيد الانتظار', location: '', mapUrl: '', coordinates: '' };
-  const emptyTask = { title: '', description: '', dueDate: '', assignedTo: '', priority: 'متوسطة', status: 'قيد الانتظار', projectId: '', sectionId: '', location: '', mapUrl: '', coordinates: '' };
-  const emptyProject = { name: '', description: '', client: '', location: '', phone: '', startDate: '', endDate: '', budget: '', status: 'جاري', mapUrl: '', coordinates: '', files: { images: [], documents: [], others: [] } };
+  const emptyExpense = { name: '', amount: '', currency: 'ر.س', dueDate: '', type: 'شهري', reason: '', status: 'لم يتم الدفع', location: '', mapUrl: '', coordinates: '', totalSpent: 0 };
+  const emptyTask = { title: '', description: '', dueDate: '', assignedTo: '', priority: 'متوسط الأهمية', status: 'قيد الانتظار', projectId: '', sectionId: '', location: '', mapUrl: '', coordinates: '' };
+  const emptyProject = { name: '', description: '', client: '', location: '', phone: '', startDate: '', endDate: '', budget: '', status: 'جاري العمل', mapUrl: '', coordinates: '', files: { images: [], documents: [], others: [] } };
   const emptyAccount = { name: '', description: '', loginUrl: '', username: '', password: '', subscriptionDate: '', daysRemaining: 365 };
   const emptyUser = { username: '', password: '', role: 'member', active: true };
   const emptySection = { name: '', color: 'blue' };
@@ -282,6 +327,18 @@ export default function App() {
   const [newAccount, setNewAccount] = useState(emptyAccount);
   const [newUser, setNewUser] = useState(emptyUser);
   const [newSection, setNewSection] = useState(emptySection);
+
+  // دالة إظهار التنبيه
+  const showToast = (message, type = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: '', type: 'success' }), 3000);
+  };
+
+  // دالة النسخ
+  const copyToClipboard = (text, label) => {
+    navigator.clipboard.writeText(text);
+    showToast(`تم نسخ ${label}`);
+  };
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -399,19 +456,50 @@ export default function App() {
   };
 
   const addExpense = () => {
-    if (!newExpense.name || !newExpense.amount) return alert('املأ الحقول المطلوبة');
-    if (newExpense.type !== 'مرة واحدة' && !newExpense.dueDate) return alert('حدد تاريخ الاستحقاق');
-    const exp = { ...newExpense, id: `E${Date.now()}`, amount: parseFloat(newExpense.amount), createdAt: new Date().toISOString(), createdBy: currentUser.username, paymentHistory: [] };
+    if (!newExpense.name || !newExpense.amount) { showToast('املأ الحقول المطلوبة', 'error'); return; }
+    if (newExpense.type !== 'مرة واحدة' && !newExpense.dueDate) { showToast('حدد تاريخ الاستحقاق', 'error'); return; }
+    const amount = parseFloat(newExpense.amount);
+    const exp = { 
+      ...newExpense, 
+      id: `E${Date.now()}`, 
+      amount, 
+      totalSpent: amount,
+      createdAt: new Date().toISOString(), 
+      createdBy: currentUser.username, 
+      paymentHistory: [{ date: new Date().toISOString(), amount, note: 'إنشاء المصروف', by: currentUser.username }]
+    };
     const ne = [...expenses, exp]; const al = addLog('add', 'مصروف', exp.name, exp.id);
     setExpenses(ne); save({ expenses: ne, auditLog: al });
     setNewExpense(emptyExpense); setShowModal(false);
+    showToast('تم إضافة المصروف بنجاح');
   };
 
   const editExpense = () => {
-    if (!editingItem.name || !editingItem.amount) return alert('املأ الحقول');
-    const ne = expenses.map(e => e.id === editingItem.id ? { ...editingItem, updatedAt: new Date().toISOString() } : e);
+    if (!editingItem.name || !editingItem.amount) { showToast('املأ الحقول', 'error'); return; }
+    const oldExp = expenses.find(e => e.id === editingItem.id);
+    const newAmount = parseFloat(editingItem.amount);
+    const amountDiff = newAmount - (oldExp?.amount || 0);
+    
+    const updatedItem = { 
+      ...editingItem, 
+      amount: newAmount,
+      totalSpent: (editingItem.totalSpent || 0) + (amountDiff > 0 ? amountDiff : 0),
+      updatedAt: new Date().toISOString() 
+    };
+    
+    if (amountDiff !== 0) {
+      updatedItem.paymentHistory = [...(editingItem.paymentHistory || []), { 
+        date: new Date().toISOString(), 
+        amount: amountDiff, 
+        note: amountDiff > 0 ? 'تعديل المبلغ (زيادة)' : 'تعديل المبلغ (نقص)', 
+        by: currentUser.username 
+      }];
+    }
+    
+    const ne = expenses.map(e => e.id === editingItem.id ? updatedItem : e);
     const al = addLog('edit', 'مصروف', editingItem.name, editingItem.id);
     setExpenses(ne); save({ expenses: ne, auditLog: al }); setEditingItem(null); setShowModal(false);
+    showToast('تم تعديل المصروف بنجاح');
   };
 
   const delExpense = (exp) => {
@@ -419,6 +507,7 @@ export default function App() {
     const na = [{ ...exp, archivedAt: new Date().toISOString(), archivedBy: currentUser.username }, ...archivedExpenses];
     const al = addLog('delete', 'مصروف', exp.name, exp.id);
     setExpenses(ne); setArchivedExpenses(na); save({ expenses: ne, archivedExpenses: na, auditLog: al }); setShowModal(false);
+    showToast('تم نقل المصروف للأرشيف');
   };
 
   const restoreExpense = (exp) => {
@@ -426,29 +515,78 @@ export default function App() {
     const { archivedAt, archivedBy, ...rest } = exp; const ne = [...expenses, rest];
     const al = addLog('restore', 'مصروف', exp.name, exp.id);
     setExpenses(ne); setArchivedExpenses(na); save({ expenses: ne, archivedExpenses: na, auditLog: al });
+    showToast('تم استعادة المصروف بنجاح');
   };
 
   const markPaid = (id) => {
     const exp = expenses.find(e => e.id === id);
     const payment = { date: new Date().toISOString(), amount: exp.amount, paidBy: currentUser.username };
-    const ne = expenses.map(e => e.id === id ? { ...e, status: 'مدفوع', paidAt: new Date().toISOString(), paymentHistory: [...(e.paymentHistory || []), payment] } : e);
+    const ne = expenses.map(e => e.id === id ? { 
+      ...e, 
+      status: 'مدفوع', 
+      paidAt: new Date().toISOString(), 
+      totalSpent: (e.totalSpent || 0) + e.amount,
+      paymentHistory: [...(e.paymentHistory || []), { ...payment, note: 'تم الدفع' }]
+    } : e);
     const al = addLog('pay', 'مصروف', exp.name, exp.id); 
     setExpenses(ne); save({ expenses: ne, auditLog: al });
+    showToast('تم تسجيل الدفع بنجاح');
+  };
+
+  // تحديث المصروفات المتكررة
+  const refreshExpenses = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let updated = false;
+    
+    const ne = expenses.map(e => {
+      if (e.type === 'مرة واحدة' || e.status === 'مدفوع') return e;
+      
+      const days = calcDaysRemaining(e.dueDate, e.type);
+      if (days !== null && days <= 0) {
+        updated = true;
+        const newDueDate = new Date(e.dueDate);
+        newDueDate.setDate(newDueDate.getDate() + (e.type === 'شهري' ? 30 : 365));
+        return {
+          ...e,
+          dueDate: newDueDate.toISOString().split('T')[0],
+          status: 'لم يتم الدفع',
+          totalSpent: (e.totalSpent || 0) + e.amount,
+          paymentHistory: [...(e.paymentHistory || []), { 
+            date: new Date().toISOString(), 
+            amount: e.amount, 
+            note: 'تحديث تلقائي', 
+            by: 'النظام' 
+          }]
+        };
+      }
+      return e;
+    });
+    
+    if (updated) {
+      setExpenses(ne);
+      save({ expenses: ne });
+      showToast('تم تحديث المصروفات');
+    } else {
+      showToast('لا توجد تحديثات');
+    }
   };
 
   const addTask = () => {
-    if (!newTask.title) return alert('أدخل عنوان المهمة');
+    if (!newTask.title) { showToast('أدخل عنوان المهمة', 'error'); return; }
     const t = { ...newTask, id: `T${Date.now()}`, createdAt: new Date().toISOString(), createdBy: currentUser.username };
     const nt = [...tasks, t]; const al = addLog('add', 'مهمة', t.title, t.id);
     setTasks(nt); save({ tasks: nt, auditLog: al });
     setNewTask(emptyTask); setShowModal(false);
+    showToast('تم إضافة المهمة بنجاح');
   };
 
   const editTask = () => {
-    if (!editingItem.title) return alert('أدخل عنوان المهمة');
+    if (!editingItem.title) { showToast('أدخل عنوان المهمة', 'error'); return; }
     const nt = tasks.map(t => t.id === editingItem.id ? { ...editingItem, updatedAt: new Date().toISOString() } : t);
     const al = addLog('edit', 'مهمة', editingItem.title, editingItem.id);
     setTasks(nt); save({ tasks: nt, auditLog: al }); setEditingItem(null); setShowModal(false);
+    showToast('تم تعديل المهمة بنجاح');
   };
 
   const delTask = (t) => {
@@ -456,6 +594,7 @@ export default function App() {
     const na = [{ ...t, archivedAt: new Date().toISOString(), archivedBy: currentUser.username }, ...archivedTasks];
     const al = addLog('delete', 'مهمة', t.title, t.id);
     setTasks(nt); setArchivedTasks(na); save({ tasks: nt, archivedTasks: na, auditLog: al }); setShowModal(false);
+    showToast('تم نقل المهمة للأرشيف');
   };
 
   const restoreTask = (t) => {
@@ -463,29 +602,33 @@ export default function App() {
     const { archivedAt, archivedBy, ...rest } = t; const nt = [...tasks, rest];
     const al = addLog('restore', 'مهمة', t.title, t.id);
     setTasks(nt); setArchivedTasks(na); save({ tasks: nt, archivedTasks: na, auditLog: al });
+    showToast('تم استعادة المهمة بنجاح');
   };
 
   const addSection = () => {
-    if (!newSection.name) return alert('أدخل اسم القسم');
+    if (!newSection.name) { showToast('أدخل اسم القسم', 'error'); return; }
     const s = { id: `S${Date.now()}`, name: newSection.name, color: newSection.color, createdAt: new Date().toISOString(), createdBy: currentUser.username };
     const ns = [...taskSections, s]; const al = addLog('add', 'قسم', s.name, s.id);
     setTaskSections(ns); save({ taskSections: ns, auditLog: al });
     setNewSection(emptySection); setShowModal(false);
+    showToast('تم إضافة القسم بنجاح');
   };
 
   const addProject = () => {
-    if (!newProject.name) return alert('أدخل اسم المشروع');
+    if (!newProject.name) { showToast('أدخل اسم المشروع', 'error'); return; }
     const p = { ...newProject, id: `P${Date.now()}`, createdAt: new Date().toISOString(), createdBy: currentUser.username };
     const np = [...projects, p]; const al = addLog('add', 'مشروع', p.name, p.id);
     setProjects(np); save({ projects: np, auditLog: al });
     setNewProject(emptyProject); setShowModal(false);
+    showToast('تم إضافة المشروع بنجاح');
   };
 
   const editProject = () => {
-    if (!editingItem.name) return alert('أدخل اسم المشروع');
+    if (!editingItem.name) { showToast('أدخل اسم المشروع', 'error'); return; }
     const np = projects.map(p => p.id === editingItem.id ? { ...editingItem, updatedAt: new Date().toISOString() } : p);
     const al = addLog('edit', 'مشروع', editingItem.name, editingItem.id);
     setProjects(np); save({ projects: np, auditLog: al }); setEditingItem(null); setShowModal(false);
+    showToast('تم تعديل المشروع بنجاح');
   };
 
   const delProject = (p) => {
@@ -493,6 +636,7 @@ export default function App() {
     const na = [{ ...p, archivedAt: new Date().toISOString(), archivedBy: currentUser.username }, ...archivedProjects];
     const al = addLog('delete', 'مشروع', p.name, p.id);
     setProjects(np); setArchivedProjects(na); save({ projects: np, archivedProjects: na, auditLog: al }); setShowModal(false); setSelectedProject(null);
+    showToast('تم نقل المشروع للأرشيف');
   };
 
   const restoreProject = (p) => {
@@ -500,21 +644,24 @@ export default function App() {
     const { archivedAt, archivedBy, ...rest } = p; const np = [...projects, rest];
     const al = addLog('restore', 'مشروع', p.name, p.id);
     setProjects(np); setArchivedProjects(na); save({ projects: np, archivedProjects: na, auditLog: al });
+    showToast('تم استعادة المشروع بنجاح');
   };
 
   const addAccount = () => {
-    if (!newAccount.name || !newAccount.username) return alert('املأ الحقول');
+    if (!newAccount.name || !newAccount.username) { showToast('املأ الحقول', 'error'); return; }
     const a = { ...newAccount, id: `A${Date.now()}`, createdAt: new Date().toISOString(), createdBy: currentUser.username };
     const na = [...accounts, a]; const al = addLog('add', 'حساب', a.name, a.id);
     setAccounts(na); save({ accounts: na, auditLog: al });
     setNewAccount(emptyAccount); setShowModal(false);
+    showToast('تم إضافة الحساب بنجاح');
   };
 
   const editAccount = () => {
-    if (!editingItem.name) return alert('املأ الحقول');
+    if (!editingItem.name) { showToast('املأ الحقول', 'error'); return; }
     const na = accounts.map(a => a.id === editingItem.id ? { ...editingItem, updatedAt: new Date().toISOString() } : a);
     const al = addLog('edit', 'حساب', editingItem.name, editingItem.id);
     setAccounts(na); save({ accounts: na, auditLog: al }); setEditingItem(null); setShowModal(false);
+    showToast('تم تعديل الحساب بنجاح');
   };
 
   const delAccount = (a) => {
@@ -522,6 +669,7 @@ export default function App() {
     const nar = [{ ...a, archivedAt: new Date().toISOString(), archivedBy: currentUser.username }, ...archivedAccounts];
     const al = addLog('delete', 'حساب', a.name, a.id);
     setAccounts(na); setArchivedAccounts(nar); save({ accounts: na, archivedAccounts: nar, auditLog: al }); setShowModal(false);
+    showToast('تم نقل الحساب للأرشيف');
   };
 
   const restoreAccount = (a) => {
@@ -529,29 +677,33 @@ export default function App() {
     const { archivedAt, archivedBy, ...rest } = a; const na = [...accounts, rest];
     const al = addLog('restore', 'حساب', a.name, a.id);
     setAccounts(na); setArchivedAccounts(nar); save({ accounts: na, archivedAccounts: nar, auditLog: al });
+    showToast('تم استعادة الحساب بنجاح');
   };
 
   const addUser = () => {
-    if (!newUser.username || !newUser.password) return alert('املأ الحقول');
-    if (users.find(u => u.username === newUser.username)) return alert('المستخدم موجود');
+    if (!newUser.username || !newUser.password) { showToast('املأ الحقول', 'error'); return; }
+    if (users.find(u => u.username === newUser.username)) { showToast('المستخدم موجود', 'error'); return; }
     const u = { ...newUser, id: Date.now(), createdAt: new Date().toISOString(), createdBy: currentUser.username };
     const nu = [...users, u]; const al = addLog('add', 'مستخدم', u.username, u.id);
     setUsers(nu); save({ users: nu, auditLog: al });
     setNewUser(emptyUser); setShowModal(false);
+    showToast('تم إضافة المستخدم بنجاح');
   };
 
   const editUser = () => {
-    if (!editingItem.username) return alert('املأ الحقول');
+    if (!editingItem.username) { showToast('املأ الحقول', 'error'); return; }
     const nu = users.map(u => u.id === editingItem.id ? { ...editingItem, updatedAt: new Date().toISOString() } : u);
     const al = addLog('edit', 'مستخدم', editingItem.username, editingItem.id);
     setUsers(nu); save({ users: nu, auditLog: al }); setEditingItem(null); setShowModal(false);
+    showToast('تم تعديل المستخدم بنجاح');
   };
 
   const delUser = (u) => {
-    if (u.role === 'owner') return alert('لا يمكن حذف المالك');
-    if (u.username === currentUser.username) return alert('لا يمكن حذف نفسك');
+    if (u.role === 'owner') { showToast('لا يمكن حذف المالك', 'error'); return; }
+    if (u.username === currentUser.username) { showToast('لا يمكن حذف نفسك', 'error'); return; }
     const nu = users.filter(x => x.id !== u.id); const al = addLog('delete', 'مستخدم', u.username, u.id);
     setUsers(nu); save({ users: nu, auditLog: al }); setShowModal(false);
+    showToast('تم حذف المستخدم بنجاح');
   };
 
   const openMapPicker = (target) => {
@@ -583,7 +735,7 @@ export default function App() {
 
   const totalArchived = (archivedExpenses?.length || 0) + (archivedTasks?.length || 0) + (archivedAccounts?.length || 0) + (archivedProjects?.length || 0);
   const urgentExpenses = expenses.filter(e => e.status !== 'مدفوع' && e.type !== 'مرة واحدة' && calcDays(e.dueDate) <= 15 && calcDays(e.dueDate) !== null);
-  const urgentTasks = tasks.filter(t => t.priority === 'عالية' || (calcDays(t.dueDate) !== null && calcDays(t.dueDate) < 0));
+  const urgentTasks = tasks.filter(t => t.priority === 'عالي الأهمية' || (calcDays(t.dueDate) !== null && calcDays(t.dueDate) < 0));
   const totalExpenses = expenses.reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
   const monthlyExpenses = expenses.filter(e => e.type === 'شهري').reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
   const yearlyExpenses = expenses.filter(e => e.type === 'سنوي').reduce((sum, e) => sum + (parseFloat(e.amount) || 0), 0);
@@ -616,9 +768,50 @@ export default function App() {
   };
 
   const Label = ({ children }) => <span className={`text-xs ${txtSm}`}>{children}</span>;
-  const Priority = ({ level }) => (
-    <span className={`text-xs px-2 py-0.5 rounded ${level === 'عالية' ? 'bg-red-500 text-white' : level === 'متوسطة' ? 'bg-yellow-500 text-white' : 'bg-green-500 text-white'}`}>{level}</span>
-  );
+  
+  // حالات المهام
+  const Priority = ({ level }) => {
+    const colors = {
+      'عالي الأهمية': 'bg-red-500 text-white',
+      'مستعجل': 'bg-orange-500 text-white',
+      'متوسط الأهمية': 'bg-yellow-500 text-white',
+      'منخفض الأهمية': 'bg-green-500 text-white'
+    };
+    return <span className={`text-xs px-2 py-0.5 rounded ${colors[level] || 'bg-gray-500 text-white'}`}>{level}</span>;
+  };
+  
+  // حالات المصروفات
+  const ExpenseStatus = ({ expense }) => {
+    const status = getExpenseStatus(expense);
+    const colors = {
+      'مدفوع': 'text-green-500',
+      'لم يتم الدفع': 'text-red-500',
+      'قريباً الدفع': 'text-orange-500',
+      'متأخر': 'text-red-600'
+    };
+    return <span className={`text-xs ${colors[status] || txtSm}`}>{status}</span>;
+  };
+  
+  // حالات المشاريع
+  const ProjectStatus = ({ status }) => {
+    const colors = {
+      'جاري العمل': 'text-blue-500',
+      'منتهي': 'text-green-500',
+      'متوقف': 'text-red-500'
+    };
+    return <span className={`text-xs ${colors[status] || txtSm}`}>{status}</span>;
+  };
+  
+  // مكون التنبيه
+  const Toast = () => {
+    if (!toast.show) return null;
+    return (
+      <div className={`fixed bottom-20 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-xl shadow-lg z-[200] ${toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'} text-white flex items-center gap-2`}>
+        {toast.type === 'error' ? <XCircle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
+        <span>{toast.message}</span>
+      </div>
+    );
+  };
 
   const IconBtn = ({ onClick, icon: Icon, title, disabled }) => (
     <button onClick={onClick} disabled={disabled} className={`p-2 rounded-lg ${darkMode ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'} ${disabled ? 'opacity-50' : ''}`} title={title}>
@@ -662,13 +855,24 @@ export default function App() {
   const greeting = getGreeting(currentUser.username, currentTime.getHours());
 
   return (
-    <div className={`min-h-screen ${bg} relative overflow-x-hidden`} style={{ fontSize: `${fontSize}px`, ...hideScrollbar }} dir="rtl">
+    <div className={`min-h-screen ${bg} relative overflow-x-hidden pb-16`} style={{ fontSize: `${fontSize}px`, ...hideScrollbar }} dir="rtl">
       <style>{`*::-webkit-scrollbar { display: none; } * { scrollbar-width: none; -ms-overflow-style: none; } input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; } input[type=number] { -moz-appearance: textfield; }`}</style>
       <FinancialPattern />
+      
+      <Toast />
       
       {showMapPicker && <MapPicker darkMode={darkMode} onClose={() => setShowMapPicker(false)} onSelect={handleMapSelect} />}
       
       <link href={currentFont.url} rel="stylesheet" />
+      
+      {/* زر التحديث الثابت */}
+      <button 
+        onClick={refreshExpenses} 
+        className={`fixed bottom-4 left-4 z-[100] p-3 rounded-full shadow-lg ${accent.color} text-white hover:opacity-90 transition-all`}
+        title="تحديث البيانات"
+      >
+        <RefreshCw className="w-5 h-5" />
+      </button>
       
       <div className={`${card} border-b px-4 py-3 flex flex-wrap items-center justify-between sticky top-0 z-50 gap-3`} style={{ fontFamily: currentFont.value }}>
         <div className="flex items-center gap-3">
@@ -823,8 +1027,8 @@ export default function App() {
               <h2 className={`text-lg font-bold mb-4 ${txt}`}>لوحة التحكم</h2>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                 {[{ label: 'المصروفات', value: expenses.length, sub: `${expenses.filter(e => e.status !== 'مدفوع').length} قيد الانتظار`, gradient: 'from-blue-500 to-blue-600', view: 'expenses' },
-                  { label: 'المهام', value: tasks.length, sub: `${tasks.filter(t => t.priority === 'عالية').length} عالية`, gradient: 'from-green-500 to-green-600', view: 'tasks' },
-                  { label: 'المشاريع', value: projects.length, sub: `${projects.filter(p => p.status === 'جاري').length} جاري`, gradient: 'from-purple-500 to-purple-600', view: 'projects' },
+                  { label: 'المهام', value: tasks.length, sub: `${tasks.filter(t => t.priority === 'عالي الأهمية').length} عالية`, gradient: 'from-green-500 to-green-600', view: 'tasks' },
+                  { label: 'المشاريع', value: projects.length, sub: `${projects.filter(p => p.status === 'جاري العمل').length} جاري`, gradient: 'from-purple-500 to-purple-600', view: 'projects' },
                   { label: 'الحسابات', value: accounts.length, sub: 'حساب', gradient: 'from-orange-500 to-orange-600', view: 'accounts' }].map((k, i) => (
                   <button key={i} onClick={() => setCurrentView(k.view)} className={`bg-gradient-to-br ${k.gradient} p-3 rounded-xl text-white text-right`}>
                     <p className="text-xs opacity-80">{k.label}</p>
@@ -882,8 +1086,8 @@ export default function App() {
                 </div>
                 <div className={`${card} p-4 rounded-xl border`}>
                   <div className="flex justify-between mb-3"><h3 className={`font-bold text-sm ${txt}`}>المشاريع النشطة</h3><button onClick={() => setCurrentView('projects')} className={`text-xs ${accent.text}`}>الكل</button></div>
-                  {projects.filter(p => p.status === 'جاري').length === 0 ? <p className={`text-center py-6 text-xs ${txtSm}`}>لا توجد مشاريع</p> : 
-                    projects.filter(p => p.status === 'جاري').slice(0, 4).map(p => (
+                  {projects.filter(p => p.status === 'جاري العمل').length === 0 ? <p className={`text-center py-6 text-xs ${txtSm}`}>لا توجد مشاريع</p> : 
+                    projects.filter(p => p.status === 'جاري العمل').slice(0, 4).map(p => (
                       <div key={p.id} className={`p-2 rounded-lg mb-2 border ${darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
                         <div className="flex justify-between"><span className={`text-xs ${txt}`}>{p.name}</span><span className={`text-xs ${txtSm}`}><Activity className="w-3 h-3 inline ml-1" />{p.status}</span></div>
                         <span className={`text-xs ${txtSm}`}><User className="w-3 h-3 inline ml-1" />{p.client || 'غير محدد'}</span>
@@ -1168,26 +1372,40 @@ export default function App() {
               {accounts.length === 0 ? (
                 <div className={`${card} p-8 rounded-xl border text-center`}><Users className={`w-12 h-12 mx-auto mb-3 ${txtSm}`} /><p className={txtSm}>لا توجد حسابات</p></div>
               ) : (
-                <div className="space-y-3">{accounts.map(a => (
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">{accounts.map(a => (
                   <div key={a.id} className={`${card} p-4 rounded-xl border`}>
-                    <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
-                      <div className="flex-1">
-                        <h3 className={`font-bold ${txt} mb-2`}>{a.name}</h3>
-                        {a.description && <p className={`text-xs ${txtSm} mb-2`}>{a.description}</p>}
-                        <div className={`text-xs ${txtSm} space-y-1`}>
-                          {a.loginUrl && <p>الرابط: <a href={a.loginUrl} target="_blank" rel="noreferrer" className={accent.text}>{a.loginUrl}</a></p>}
-                          <p>المستخدم: {a.username}</p>
-                          <p>كلمة المرور: {a.password}</p>
-                          {a.subscriptionDate && <p>الاشتراك: {a.subscriptionDate}</p>}
-                          <p>الأيام المتبقية: {formatNumber(a.daysRemaining)} يوم</p>
-                          <p>أنشئ بواسطة: {a.createdBy}</p>
-                        </div>
-                      </div>
+                    <div className="flex justify-between items-start mb-3">
+                      <h3 className={`font-bold ${txt}`}>{a.name}</h3>
                       <div className="flex gap-1">
                         <IconBtn onClick={() => { setEditingItem({ ...a }); setModalType('editAcc'); setShowModal(true); }} icon={Pencil} title="تعديل" />
                         <IconBtn onClick={() => { setSelectedItem(a); setModalType('delAcc'); setShowModal(true); }} icon={Trash2} title="حذف" />
                       </div>
                     </div>
+                    {a.description && <p className={`text-xs ${txtSm} mb-3`}>{a.description}</p>}
+                    
+                    <div className={`text-xs ${txtSm} space-y-2`}>
+                      <div className="flex items-center gap-2">
+                        <User className="w-3.5 h-3.5" />
+                        <span className="flex-1">{a.username}</span>
+                        <button onClick={() => copyToClipboard(a.username, 'اسم المستخدم')} className={`p-1 rounded ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}><Copy className="w-3.5 h-3.5" /></button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Settings className="w-3.5 h-3.5" />
+                        <span className="flex-1">{showPasswordId === a.id ? a.password : '••••••••'}</span>
+                        <button onClick={() => setShowPasswordId(showPasswordId === a.id ? null : a.id)} className={`p-1 rounded ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}>
+                          {showPasswordId === a.id ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                        </button>
+                        <button onClick={() => copyToClipboard(a.password, 'كلمة المرور')} className={`p-1 rounded ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}><Copy className="w-3.5 h-3.5" /></button>
+                      </div>
+                      {a.subscriptionDate && <div className="flex items-center gap-2"><Calendar className="w-3.5 h-3.5" /><span>{a.subscriptionDate}</span></div>}
+                      <div className="flex items-center gap-2"><Clock className="w-3.5 h-3.5" /><span>{formatNumber(a.daysRemaining)} يوم متبقي</span></div>
+                    </div>
+                    
+                    {a.loginUrl && (
+                      <a href={a.loginUrl} target="_blank" rel="noreferrer" className={`mt-3 flex items-center justify-center gap-2 w-full py-2 rounded-lg text-xs ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} ${txt}`}>
+                        <ExternalLink className="w-4 h-4" />انتقال للرابط
+                      </a>
+                    )}
                   </div>
                 ))}</div>
               )}
@@ -1200,19 +1418,26 @@ export default function App() {
                 <h2 className={`text-lg font-bold ${txt}`}>المستخدمين</h2>
                 <button onClick={() => { setNewUser(emptyUser); setModalType('addUser'); setShowModal(true); }} className={`flex items-center gap-1 bg-gradient-to-r ${accent.gradient} text-white px-3 py-2 rounded-xl text-xs`}><Plus className="w-4 h-4" />إضافة</button>
               </div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">{users.map(u => (
+              <div className="space-y-3">{users.map(u => (
                 <div key={u.id} className={`${card} p-4 rounded-xl border`}>
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className={`font-bold ${txt}`}>{u.username}</h3>
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <h3 className={`font-bold ${txt} mb-2`}>{u.username}</h3>
+                      <div className={`text-xs ${txtSm} flex flex-wrap items-center gap-x-3 gap-y-1`}>
+                        <InfoItem icon={Shield}>{u.role === 'owner' ? 'المالك' : u.role === 'manager' ? 'مدير' : 'عضو'}</InfoItem>
+                        <InfoItem icon={u.active !== false ? CheckCircle : XCircle}>{u.active !== false ? 'نشط' : 'معطل'}</InfoItem>
+                        {u.createdBy && <InfoItem icon={User}>{u.createdBy}</InfoItem>}
+                      </div>
+                    </div>
                     <div className="flex gap-1">
                       <IconBtn onClick={() => { setEditingItem({ ...u }); setModalType('editUser'); setShowModal(true); }} icon={Pencil} title="تعديل" />
                       {u.role !== 'owner' && <IconBtn onClick={() => { setSelectedItem(u); setModalType('delUser'); setShowModal(true); }} icon={Trash2} title="حذف" />}
                     </div>
                   </div>
-                  <div className={`text-xs ${txtSm} space-y-2`}>
-                    <p>الصلاحية: <span className={`px-2 py-0.5 rounded ${u.role === 'owner' ? 'bg-amber-500 text-white' : u.role === 'manager' ? 'bg-blue-500 text-white' : 'bg-gray-500 text-white'}`}>{u.role === 'owner' ? 'المالك' : u.role === 'manager' ? 'مدير' : 'عضو'}</span></p>
-                    <p>الحالة: <span className={`px-2 py-0.5 rounded ${u.active !== false ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>{u.active !== false ? 'نشط' : 'معطل'}</span></p>
-                    {u.createdBy && <p>أنشئ بواسطة: {u.createdBy}</p>}
+                </div>
+              ))}</div>
+            </div>
+          )}
                   </div>
                 </div>
               ))}</div>
@@ -1361,7 +1586,7 @@ export default function App() {
                     <div><label className={`block text-xs mb-1 ${txtSm}`}>تاريخ الانتهاء</label><input type="date" value={modalType === 'addProject' ? newProject.endDate : editingItem?.endDate || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, endDate: e.target.value }) : setEditingItem({ ...editingItem, endDate: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
                   </div>
                   <div><label className={`block text-xs mb-1 ${txtSm}`}>الميزانية</label><input type="number" inputMode="decimal" value={modalType === 'addProject' ? newProject.budget : editingItem?.budget || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, budget: e.target.value }) : setEditingItem({ ...editingItem, budget: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الحالة</label><select value={modalType === 'addProject' ? newProject.status : editingItem?.status || 'جاري'} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, status: e.target.value }) : setEditingItem({ ...editingItem, status: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`}><option value="جاري">جاري</option><option value="متوقف">متوقف</option><option value="مكتمل">مكتمل</option></select></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الحالة</label><select value={modalType === 'addProject' ? newProject.status : editingItem?.status || 'جاري'} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, status: e.target.value }) : setEditingItem({ ...editingItem, status: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`}><option value="جاري العمل">جاري العمل</option><option value="متوقف">متوقف</option><option value="منتهي">منتهي</option></select></div>
                 </div>
                 <div className="flex gap-3 justify-end mt-6"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addProject' ? addProject : editProject} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl text-sm`}>{modalType === 'addProject' ? 'إضافة' : 'حفظ'}</button></div>
               </>
