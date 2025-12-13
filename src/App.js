@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, setDoc, onSnapshot, query, orderBy, runTransaction } from 'firebase/firestore';
-import { Calendar, CheckSquare, Users, Moon, Sun, Monitor, Plus, Archive, Clock, Activity, History, Loader, Power, Pencil, Trash2, RotateCcw, UserCog, ChevronLeft, ChevronDown, ChevronUp, FolderOpen, FileText, MapPin, User, X, Phone, Settings, Layers, CreditCard, DollarSign, Wallet, FolderPlus, AlertTriangle, Image, Map, Type, Search, RefreshCw, Shield, CheckCircle, XCircle, Copy, ExternalLink, Eye, EyeOff, Folder, BookOpen } from 'lucide-react';
+import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
+import { Calendar, CheckSquare, Users, Moon, Sun, Monitor, Plus, Archive, Clock, Activity, History, Loader, Power, Pencil, Trash2, RotateCcw, UserCog, ChevronLeft, FolderOpen, FileText, MapPin, User, X, Phone, Settings, Layers, DollarSign, Wallet, FolderPlus, AlertTriangle, Map, Type, Search, RefreshCw, Shield, CheckCircle, XCircle, Copy, ExternalLink, Eye, EyeOff, Folder, BookOpen } from 'lucide-react';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDpzPCma5c4Tuxd5htRHOvm4aYLRbj8Qkg",
@@ -14,7 +14,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const APP_VERSION = "5.2.0-MultiUser";
+const APP_VERSION = "5.0.0";
 
 // نظام الأرقام التسلسلية
 const generateRefNumber = (prefix, counter) => {
@@ -115,17 +115,6 @@ const calcDaysRemaining = (startDate, type) => {
   today.setHours(0, 0, 0, 0);
   const diff = Math.ceil((nextDue - today) / (1000 * 60 * 60 * 24));
   return diff;
-};
-
-// تحديد حالة المصروف
-const getExpenseStatus = (expense) => {
-  if (expense.status === 'مدفوع') return 'مدفوع';
-  const days = calcDaysRemaining(expense.dueDate, expense.type);
-  if (days === null) return 'لم يتم الدفع';
-  if (expense.type === 'شهري' && days <= 7) return 'قريباً الدفع';
-  if (expense.type === 'سنوي' && days <= 15) return 'قريباً الدفع';
-  if (days < 0) return 'متأخر';
-  return 'لم يتم الدفع';
 };
 
 const fonts = [
@@ -276,7 +265,6 @@ const MapPicker = ({ onSelect, onClose, darkMode }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [position, setPosition] = useState({ lat: 24.7136, lng: 46.6753 });
   const [locationName, setLocationName] = useState('الرياض');
-  const mapRef = useRef(null);
   const searchTimeout = useRef(null);
 
   const searchSuggestions = async (query) => {
@@ -284,6 +272,7 @@ const MapPicker = ({ onSelect, onClose, darkMode }) => {
       setSuggestions([]);
       return;
     }
+    setSearching(true);
     try {
       const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`);
       const data = await response.json();
@@ -291,6 +280,8 @@ const MapPicker = ({ onSelect, onClose, darkMode }) => {
       setShowSuggestions(true);
     } catch (error) {
       console.error('Search error:', error);
+    } finally {
+      setSearching(false);
     }
   };
 
@@ -360,7 +351,6 @@ const MapPicker = ({ onSelect, onClose, darkMode }) => {
           
           <div className="relative rounded-xl overflow-hidden border-2 border-gray-300" style={{ height: '300px' }}>
             <iframe
-              ref={mapRef}
               src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${position.lat},${position.lng}&zoom=15&maptype=roadmap&language=ar`}
               width="100%"
               height="100%"
@@ -461,75 +451,6 @@ export default function App() {
   
   // عدادات الأرقام التسلسلية
   const [counters, setCounters] = useState({ E: 0, T: 0, P: 0, A: 0 });
-  // --- FINAL CLEAN HELPERS ---
-  const incrementCounter = async (key) => {
-    await runTransaction(db, async (t) => {
-      const ref = doc(db, 'system', 'counters');
-      const docVal = await t.get(ref);
-      t.set(ref, { ...docVal.data(), [key]: (docVal.data()?.[key] || 0) + 1 }, { merge: true });
-    });
-  };
-  
-  const addLog = async (action, type, name, itemId) => {
-    await addDoc(collection(db, 'audit'), {
-      user: currentUser?.username || 'النظام', action, itemType: type, itemName: name, itemId,
-      description: ${currentUser?.username} قام  : ,
-      timestamp: new Date().toISOString()
-    });
-  };
-  // ---------------------------
-
-
-  // --- NEW MULTI-USER LOGIC ---
-  // REMOVED DUPLICATE const incrementCounter = async (key) => {
-    await runTransaction(db, async (t) => {
-      const ref = doc(db, 'system', 'counters');
-      const docVal = await t.get(ref);
-      t.set(ref, { ...docVal.data(), [key]: (docVal.data()?.[key] || 0) + 1 }, { merge: true });
-    });
-  };
-  
-  // REMOVED DUPLICATE const addLog = async (action, type, name, itemId) => {
-    await addDoc(collection(db, 'audit'), {
-      user: currentUser?.username || 'النظام', action, itemType: type, itemName: name, itemId,
-      description: `${currentUser?.username} قام ${action === 'add' ? 'بإضافة' : action === 'edit' ? 'بتعديل' : 'بحذف'} ${type}: ${name}`,
-      timestamp: new Date().toISOString()
-    });
-  };
-
-  const handleAddExpenseNew = async () => {
-    if (!newExpense.name || !newExpense.amount) return alert('أكمل البيانات');
-    const refNum = generateRefNumber('E', counters.E + 1);
-    await addDoc(collection(db, 'expenses'), { ...newExpense, refNumber: refNum, createdAt: new Date().toISOString(), createdBy: currentUser.username });
-    await incrementCounter('E'); await addLog('add', 'مصروف', newExpense.name, refNum);
-    setNewExpense(emptyExpense); setShowModal(false);
-  };
-
-  const handleAddTaskNew = async () => {
-    if (!newTask.title) return alert('أكمل البيانات');
-    const refNum = generateRefNumber('T', counters.T + 1);
-    await addDoc(collection(db, 'tasks'), { ...newTask, refNumber: refNum, createdAt: new Date().toISOString(), createdBy: currentUser.username });
-    await incrementCounter('T'); await addLog('add', 'مهمة', newTask.title, refNum);
-    setNewTask(emptyTask); setShowModal(false);
-  };
-
-  const handleAddProjectNew = async () => {
-    if (!newProject.name) return alert('أكمل البيانات');
-    const refNum = generateRefNumber('P', counters.P + 1);
-    await addDoc(collection(db, 'projects'), { ...newProject, refNumber: refNum, createdAt: new Date().toISOString(), createdBy: currentUser.username });
-    await incrementCounter('P'); await addLog('add', 'مشروع', newProject.name, refNum);
-    setNewProject(emptyProject); setShowModal(false);
-  };
-
-  const handleAddAccountNew = async () => {
-    if (!newAccount.name) return alert('أكمل البيانات');
-    const refNum = generateRefNumber('A', counters.A + 1);
-    await addDoc(collection(db, 'accounts'), { ...newAccount, refNumber: refNum, createdAt: new Date().toISOString(), createdBy: currentUser.username });
-    await incrementCounter('A'); await addLog('add', 'حساب', newAccount.name, refNum);
-    setNewAccount(emptyAccount); setShowModal(false);
-  };
-  // ---------------------------
-
 
   const emptyExpense = { name: '', amount: '', currency: 'ر.س', dueDate: '', type: 'شهري', reason: '', status: 'لم يتم الدفع', location: '', mapUrl: '', coordinates: '', totalSpent: 0 };
   const emptyTask = { title: '', description: '', dueDate: '', assignedTo: '', priority: 'متوسط الأهمية', status: 'قيد الانتظار', projectId: '', sectionId: '', location: '', mapUrl: '', coordinates: '' };
@@ -546,7 +467,7 @@ export default function App() {
   const [newSection, setNewSection] = useState(emptySection);
 
   // دالة النسخ
-  const copyToClipboard = (text, label) => {
+  const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
   };
 
@@ -582,18 +503,26 @@ export default function App() {
   useEffect(() => { if (currentUser) setGreeting(getRandomGreeting(currentUser.username)); }, [currentUser]);
 
   useEffect(() => {
-    setLoading(true);
-    const unsubs = [
-      onSnapshot(query(collection(db, 'expenses'), orderBy('createdAt', 'desc')), s => setExpenses(s.docs.map(d => ({id:d.id, ...d.data()})))),
-      onSnapshot(query(collection(db, 'tasks'), orderBy('createdAt', 'desc')), s => setTasks(s.docs.map(d => ({id:d.id, ...d.data()})))),
-      onSnapshot(query(collection(db, 'projects'), orderBy('createdAt', 'desc')), s => setProjects(s.docs.map(d => ({id:d.id, ...d.data()})))),
-      onSnapshot(query(collection(db, 'accounts'), orderBy('createdAt', 'desc')), s => setAccounts(s.docs.map(d => ({id:d.id, ...d.data()})))),
-      onSnapshot(collection(db, 'users'), s => { const u = s.docs.map(d => ({id:d.id, ...d.data()})); setUsers(u.length ? u : [{username:'نايف', password:'@Lion12345', role:'owner', active:true}]); }),
-      onSnapshot(doc(db, 'system', 'counters'), s => setCounters(s.exists() ? s.data() : { E:0, T:0, P:0, A:0 })),
-      onSnapshot(query(collection(db, 'audit'), orderBy('timestamp', 'desc')), s => setAuditLog(s.docs.map(d => ({id:d.id, ...d.data()})).slice(0, 50)))
-    ];
-    setLoading(false);
-    return () => unsubs.forEach(u => u());
+    const unsub = onSnapshot(doc(db, 'data', 'main'), (snap) => {
+      if (snap.exists()) {
+        const d = snap.data();
+        setUsers(d.users || defaultUsers);
+        setExpenses(d.expenses || []);
+        setTasks(d.tasks || []);
+        setProjects(d.projects || []);
+        setTaskSections(d.taskSections || []);
+        setAccounts(d.accounts || []);
+        setAuditLog(d.auditLog || []);
+        setArchivedExpenses(d.archivedExpenses || []);
+        setArchivedTasks(d.archivedTasks || []);
+        setArchivedAccounts(d.archivedAccounts || []);
+        setArchivedProjects(d.archivedProjects || []);
+        setLoginLog(d.loginLog || []);
+        setCounters(d.counters || { E: 0, T: 0, P: 0, A: 0 });
+      }
+      setLoading(false);
+    });
+    return () => unsub();
   }, []);
 
   useEffect(() => { const t = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(t); }, []);
@@ -614,7 +543,7 @@ export default function App() {
     } catch (e) { console.error(e); } 
   };
 
-  // REMOVED DUPLICATE const addLog = (action, itemType, itemName, itemId) => { 
+  const addLog = (action, itemType, itemName, itemId) => { 
     const actionText = action === 'add' ? 'بإضافة' : action === 'edit' ? 'بتعديل' : action === 'delete' ? 'بحذف' : action === 'restore' ? 'بإستعادة' : action === 'pay' ? 'بدفع' : action;
     const desc = `${currentUser?.username || 'النظام'} قام ${actionText} ${itemType}: ${itemName}`;
     const l = { id: `LOG${Date.now()}`, user: currentUser?.username || 'النظام', action, itemType, itemName, itemId, description: desc, timestamp: new Date().toISOString() }; 
@@ -664,17 +593,20 @@ export default function App() {
     if (!newExpense.name || !newExpense.amount) { alert('املأ الحقول المطلوبة'); return; }
     if (newExpense.type !== 'مرة واحدة' && !newExpense.dueDate) { alert('حدد تاريخ الاستحقاق'); return; }
     const amount = parseFloat(newExpense.amount);
+    const newCounter = counters.E + 1;
     const exp = { 
       ...newExpense, 
       id: `E${Date.now()}`, 
+      refNumber: generateRefNumber('E', newCounter),
       amount, 
       totalSpent: amount,
       createdAt: new Date().toISOString(), 
       createdBy: currentUser.username, 
       paymentHistory: [{ date: new Date().toISOString(), amount, note: 'إنشاء المصروف', by: currentUser.username }]
     };
+    const newCounters = { ...counters, E: newCounter };
     const ne = [...expenses, exp]; const al = addLog('add', 'مصروف', exp.name, exp.id);
-    setExpenses(ne); save({ expenses: ne, auditLog: al });
+    setExpenses(ne); setCounters(newCounters); save({ expenses: ne, auditLog: al, counters: newCounters });
     setNewExpense(emptyExpense); setShowModal(false);
   };
 
@@ -719,62 +651,13 @@ export default function App() {
     setExpenses(ne); setArchivedExpenses(na); save({ expenses: ne, archivedExpenses: na, auditLog: al });
   };
 
-  const markPaid = (id) => {
-    const exp = expenses.find(e => e.id === id);
-    const payment = { date: new Date().toISOString(), amount: exp.amount, paidBy: currentUser.username };
-    const ne = expenses.map(e => e.id === id ? { 
-      ...e, 
-      status: 'مدفوع', 
-      paidAt: new Date().toISOString(), 
-      totalSpent: (e.totalSpent || 0) + e.amount,
-      paymentHistory: [...(e.paymentHistory || []), { ...payment, note: 'تم الدفع' }]
-    } : e);
-    const al = addLog('pay', 'مصروف', exp.name, exp.id); 
-    setExpenses(ne); save({ expenses: ne, auditLog: al });
-  };
-
-  // تحديث المصروفات المتكررة
-  const refreshExpenses = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    let updated = false;
-    
-    const ne = expenses.map(e => {
-      if (e.type === 'مرة واحدة' || e.status === 'مدفوع') return e;
-      
-      const days = calcDaysRemaining(e.dueDate, e.type);
-      if (days !== null && days <= 0) {
-        updated = true;
-        const newDueDate = new Date(e.dueDate);
-        newDueDate.setDate(newDueDate.getDate() + (e.type === 'شهري' ? 30 : 365));
-        return {
-          ...e,
-          dueDate: newDueDate.toISOString().split('T')[0],
-          status: 'لم يتم الدفع',
-          totalSpent: (e.totalSpent || 0) + e.amount,
-          paymentHistory: [...(e.paymentHistory || []), { 
-            date: new Date().toISOString(), 
-            amount: e.amount, 
-            note: 'تحديث تلقائي', 
-            by: 'النظام' 
-          }]
-        };
-      }
-      return e;
-    });
-    
-    if (updated) {
-      setExpenses(ne);
-      save({ expenses: ne });
-    } else {
-    }
-  };
-
   const addTask = () => {
     if (!newTask.title) { alert('أدخل عنوان المهمة'); return; }
-    const t = { ...newTask, id: `T${Date.now()}`, createdAt: new Date().toISOString(), createdBy: currentUser.username };
+    const newCounter = counters.T + 1;
+    const t = { ...newTask, id: `T${Date.now()}`, refNumber: generateRefNumber('T', newCounter), createdAt: new Date().toISOString(), createdBy: currentUser.username };
+    const newCounters = { ...counters, T: newCounter };
     const nt = [...tasks, t]; const al = addLog('add', 'مهمة', t.title, t.id);
-    setTasks(nt); save({ tasks: nt, auditLog: al });
+    setTasks(nt); setCounters(newCounters); save({ tasks: nt, auditLog: al, counters: newCounters });
     setNewTask(emptyTask); setShowModal(false);
   };
 
@@ -809,9 +692,11 @@ export default function App() {
 
   const addProject = () => {
     if (!newProject.name) { alert('أدخل اسم المشروع'); return; }
-    const p = { ...newProject, id: `P${Date.now()}`, createdAt: new Date().toISOString(), createdBy: currentUser.username };
+    const newCounter = counters.P + 1;
+    const p = { ...newProject, id: `P${Date.now()}`, refNumber: generateRefNumber('P', newCounter), createdAt: new Date().toISOString(), createdBy: currentUser.username };
+    const newCounters = { ...counters, P: newCounter };
     const np = [...projects, p]; const al = addLog('add', 'مشروع', p.name, p.id);
-    setProjects(np); save({ projects: np, auditLog: al });
+    setProjects(np); setCounters(newCounters); save({ projects: np, auditLog: al, counters: newCounters });
     setNewProject(emptyProject); setShowModal(false);
   };
 
@@ -838,9 +723,11 @@ export default function App() {
 
   const addAccount = () => {
     if (!newAccount.name || !newAccount.username) { alert('املأ الحقول'); return; }
-    const a = { ...newAccount, id: `A${Date.now()}`, createdAt: new Date().toISOString(), createdBy: currentUser.username };
+    const newCounter = counters.A + 1;
+    const a = { ...newAccount, id: `A${Date.now()}`, refNumber: generateRefNumber('A', newCounter), createdAt: new Date().toISOString(), createdBy: currentUser.username };
+    const newCounters = { ...counters, A: newCounter };
     const na = [...accounts, a]; const al = addLog('add', 'حساب', a.name, a.id);
-    setAccounts(na); save({ accounts: na, auditLog: al });
+    setAccounts(na); setCounters(newCounters); save({ accounts: na, auditLog: al, counters: newCounters });
     setNewAccount(emptyAccount); setShowModal(false);
   };
 
@@ -916,7 +803,6 @@ export default function App() {
   const cardPopup = darkMode ? 'bg-gray-800/95 backdrop-blur-md border-gray-700' : 'bg-white/95 backdrop-blur-md border-gray-200';
   const inp = darkMode ? 'bg-gray-700/80 border-gray-600 text-white placeholder-gray-400' : 'bg-white/90 border-gray-300 text-gray-900 placeholder-gray-400';
   const txt = darkMode ? 'text-white' : 'text-gray-900';
-  const txtMd = darkMode ? 'text-gray-200' : 'text-gray-700';
   const txtSm = darkMode ? 'text-gray-400' : 'text-gray-500';
   const iconClass = `w-3.5 h-3.5 ${txtSm}`;
 
@@ -933,7 +819,7 @@ export default function App() {
   };
 
   // مكون الفقاعة الملونة
-  const Badge = ({ type, status }) => {
+  const Badge = ({ status }) => {
     const styles = {
       // المهام
       'عالي الأهمية': 'bg-red-500/10 border-red-500/30 text-red-400',
@@ -947,7 +833,7 @@ export default function App() {
       'متأخر': 'bg-red-500/10 border-red-500/30 text-red-400',
       // المشاريع
       'جاري العمل': 'bg-blue-500/10 border-blue-500/30 text-blue-400',
-      'منتهي': 'bg-green-500/10 border-green-500/30 text-green-400',
+      'مكتمل': 'bg-green-500/10 border-green-500/30 text-green-400',
       'متوقف': 'bg-red-500/10 border-red-500/30 text-red-400',
     };
     const lightStyles = {
@@ -960,7 +846,7 @@ export default function App() {
       'قريباً الدفع': 'bg-orange-500/10 border-orange-500/30 text-orange-600',
       'متأخر': 'bg-red-500/10 border-red-500/30 text-red-600',
       'جاري العمل': 'bg-blue-500/10 border-blue-500/30 text-blue-600',
-      'منتهي': 'bg-green-500/10 border-green-500/30 text-green-600',
+      'مكتمل': 'bg-green-500/10 border-green-500/30 text-green-600',
       'متوقف': 'bg-red-500/10 border-red-500/30 text-red-600',
     };
     const styleClass = darkMode ? styles[status] : lightStyles[status];
@@ -988,8 +874,6 @@ export default function App() {
       </span>
     );
   };
-
-  const Label = ({ children }) => <span className={`text-xs ${txtSm}`}>{children}</span>;
 
   const IconBtn = ({ onClick, icon: Icon, title, disabled }) => (
     <button onClick={onClick} disabled={disabled} className={`p-2 rounded-lg ${darkMode ? 'hover:bg-white/10 text-gray-400' : 'hover:bg-gray-100 text-gray-500'} ${disabled ? 'opacity-50' : ''}`} title={title}>
@@ -1387,7 +1271,10 @@ export default function App() {
               <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
                 <h2 className={`text-lg font-bold ${txt}`}>المصروفات</h2>
                 <button onClick={() => { setNewExpense(emptyExpense); setModalType('addExp'); setShowModal(true); }} className={`flex items-center gap-1 bg-gradient-to-r ${accent.gradient} text-white px-3 py-2 rounded-xl text-xs`}><Plus className="w-4 h-4" />إضافة</button>
-              </div>              {/* بطاقات الإحصائيات - تصميم موحد */}
+              </div>
+              <p className={`text-xs ${txtSm} mb-4`}>{getRandomEncouragement('expenses')}</p>
+
+              {/* بطاقات الإحصائيات - تصميم موحد */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                 <div className={`${card} p-4 rounded-xl border`}>
                   <div className="flex justify-between items-center mb-3">
@@ -1529,7 +1416,10 @@ export default function App() {
                     <Plus className="w-4 h-4" />إضافة مهمة
                   </button>
                 </div>
-              </div>              {/* بطاقات إحصائيات المهام - تصميم موحد */}
+              </div>
+              <p className={`text-xs ${txtSm} mb-4`}>{getRandomEncouragement('tasks')}</p>
+
+              {/* بطاقات إحصائيات المهام - تصميم موحد */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                 <div className={`${card} p-3 rounded-xl border`}>
                   <div className="flex justify-between items-center mb-2">
@@ -1643,7 +1533,10 @@ export default function App() {
               <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
                 <h2 className={`text-lg font-bold ${txt}`}>المشاريع</h2>
                 <button onClick={() => { setNewProject(emptyProject); setModalType('addProject'); setShowModal(true); }} className={`flex items-center gap-1 bg-gradient-to-r ${accent.gradient} text-white px-3 py-2 rounded-xl text-xs`}><Plus className="w-4 h-4" />إضافة مشروع</button>
-              </div>              {/* بطاقات إحصائيات المشاريع - تصميم موحد */}
+              </div>
+              <p className={`text-xs ${txtSm} mb-4`}>{getRandomEncouragement('projects')}</p>
+
+              {/* بطاقات إحصائيات المشاريع - تصميم موحد */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                 <div className={`${card} p-3 rounded-xl border`}>
                   <div className="flex justify-between items-center mb-2">
@@ -1790,7 +1683,7 @@ export default function App() {
                               }} />
                             </label>
                             <button onClick={() => {
-                              if (window.window.confirm('هل تريد حذف هذا المجلد؟')) {
+                              if (window.confirm('هل تريد حذف هذا المجلد؟')) {
                                 const newFolders = selectedProject.folders.filter((_, i) => i !== fi);
                                 const np = projects.map(p => p.id === selectedProject.id ? { ...p, folders: newFolders } : p);
                                 setProjects(np); setSelectedProject({ ...selectedProject, folders: newFolders }); save({ projects: np });
@@ -1859,7 +1752,10 @@ export default function App() {
               <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
                 <h2 className={`text-lg font-bold ${txt}`}>الحسابات</h2>
                 <button onClick={() => { setNewAccount(emptyAccount); setModalType('addAcc'); setShowModal(true); }} className={`flex items-center gap-1 bg-gradient-to-r ${accent.gradient} text-white px-3 py-2 rounded-xl text-xs`}><Plus className="w-4 h-4" />إضافة</button>
-              </div>              {/* بطاقات إحصائيات الحسابات - تصميم موحد */}
+              </div>
+              <p className={`text-xs ${txtSm} mb-4`}>{getRandomEncouragement('accounts')}</p>
+
+              {/* بطاقات إحصائيات الحسابات - تصميم موحد */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                 <div className={`${card} p-3 rounded-xl border`}>
                   <div className="flex justify-between items-center mb-2">
@@ -2188,7 +2084,7 @@ export default function App() {
                     <div><input type="date" placeholder="تاريخ الانتهاء" value={modalType === 'addProject' ? newProject.endDate : editingItem?.endDate || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, endDate: e.target.value }) : setEditingItem({ ...editingItem, endDate: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
                   </div>
                   <div><label className={`block text-xs mb-1 ${txtSm}`}>الميزانية</label><input type="number" inputMode="decimal" value={modalType === 'addProject' ? newProject.budget : editingItem?.budget || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, budget: e.target.value }) : setEditingItem({ ...editingItem, budget: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الحالة</label><select value={modalType === 'addProject' ? newProject.status : editingItem?.status || 'جاري'} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, status: e.target.value }) : setEditingItem({ ...editingItem, status: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`}><option value="جاري العمل">جاري العمل</option><option value="متوقف">متوقف</option><option value="منتهي">منتهي</option></select></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الحالة</label><select value={modalType === 'addProject' ? newProject.status : editingItem?.status || 'جاري'} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, status: e.target.value }) : setEditingItem({ ...editingItem, status: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`}><option value="جاري العمل">جاري العمل</option><option value="متوقف">متوقف</option><option value="مكتمل">مكتمل</option></select></div>
                 </div>
                 <div className="flex gap-3 justify-end mt-6"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addProject' ? addProject : editProject} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl text-sm`}>{modalType === 'addProject' ? 'إضافة' : 'حفظ'}</button></div>
               </>
