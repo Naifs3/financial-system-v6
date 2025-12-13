@@ -15,12 +15,6 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const APP_VERSION = "5.2.0-MultiUser";
-  // Helper to increment counters
-  
-  
-  // Helper to add log
-  
-
 
 // نظام الأرقام التسلسلية
 const generateRefNumber = (prefix, counter) => {
@@ -468,27 +462,22 @@ export default function App() {
   // عدادات الأرقام التسلسلية
   const [counters, setCounters] = useState({ E: 0, T: 0, P: 0, A: 0 });
 
-  const emptyExpense = { name: '', amount: '', currency: 'ر.س', dueDate: '', type: 'شهري', reason: '', status: 'لم يتم الدفع', location: '', mapUrl: '', coordinates: '', totalSpent: 0 };
-  const emptyTask = { title: '', description: '', dueDate: '', assignedTo: '', priority: 'متوسط الأهمية', status: 'قيد الانتظار', projectId: '', sectionId: '', location: '', mapUrl: '', coordinates: '' };
-  const emptyProject = { name: '', description: '', client: '', location: '', phone: '', startDate: '', endDate: '', budget: '', status: 'جاري العمل', mapUrl: '', coordinates: '', folders: [] };
-  const emptyAccount = { name: '', description: '', loginUrl: '', username: '', password: '', subscriptionDate: '', daysRemaining: 365 };
-  const emptyUser = { username: '', password: '', role: 'member', active: true };
-  const emptySection = { name: '', color: 'blue' };
-
-  const [newExpense, setNewExpense] = useState(emptyExpense);
-  const [newTask, setNewTask] = useState(emptyTask);
-  const [newProject, setNewProject] = useState(emptyProject);
-  const [newAccount, setNewAccount] = useState(emptyAccount);
-  const [newUser, setNewUser] = useState(emptyUser);
-
-  const handleDeleteNew = async (coll, id, name, type) => {
-    if(window.confirm('هل أنت متأكد من الحذف؟')) {
-       await deleteDoc(doc(db, coll, id));
-       await addLog('delete', type, name, id);
-       setShowModal(false);
-    }
+  // --- NEW MULTI-USER LOGIC ---
+  const incrementCounter = async (key) => {
+    await runTransaction(db, async (t) => {
+      const ref = doc(db, 'system', 'counters');
+      const docVal = await t.get(ref);
+      t.set(ref, { ...docVal.data(), [key]: (docVal.data()?.[key] || 0) + 1 }, { merge: true });
+    });
   };
-
+  
+  const addLog = async (action, type, name, itemId) => {
+    await addDoc(collection(db, 'audit'), {
+      user: currentUser?.username || 'النظام', action, itemType: type, itemName: name, itemId,
+      description: `${currentUser?.username} قام ${action === 'add' ? 'بإضافة' : action === 'edit' ? 'بتعديل' : 'بحذف'} ${type}: ${name}`,
+      timestamp: new Date().toISOString()
+    });
+  };
 
   const handleAddExpenseNew = async () => {
     if (!newExpense.name || !newExpense.amount) return alert('أكمل البيانات');
@@ -506,7 +495,7 @@ export default function App() {
     setNewTask(emptyTask); setShowModal(false);
   };
 
-   const handleAddProjectNew = async () => {
+  const handleAddProjectNew = async () => {
     if (!newProject.name) return alert('أكمل البيانات');
     const refNum = generateRefNumber('P', counters.P + 1);
     await addDoc(collection(db, 'projects'), { ...newProject, refNumber: refNum, createdAt: new Date().toISOString(), createdBy: currentUser.username });
@@ -521,7 +510,21 @@ export default function App() {
     await incrementCounter('A'); await addLog('add', 'حساب', newAccount.name, refNum);
     setNewAccount(emptyAccount); setShowModal(false);
   };
+  // ---------------------------
 
+
+  const emptyExpense = { name: '', amount: '', currency: 'ر.س', dueDate: '', type: 'شهري', reason: '', status: 'لم يتم الدفع', location: '', mapUrl: '', coordinates: '', totalSpent: 0 };
+  const emptyTask = { title: '', description: '', dueDate: '', assignedTo: '', priority: 'متوسط الأهمية', status: 'قيد الانتظار', projectId: '', sectionId: '', location: '', mapUrl: '', coordinates: '' };
+  const emptyProject = { name: '', description: '', client: '', location: '', phone: '', startDate: '', endDate: '', budget: '', status: 'جاري العمل', mapUrl: '', coordinates: '', folders: [] };
+  const emptyAccount = { name: '', description: '', loginUrl: '', username: '', password: '', subscriptionDate: '', daysRemaining: 365 };
+  const emptyUser = { username: '', password: '', role: 'member', active: true };
+  const emptySection = { name: '', color: 'blue' };
+
+  const [newExpense, setNewExpense] = useState(emptyExpense);
+  const [newTask, setNewTask] = useState(emptyTask);
+  const [newProject, setNewProject] = useState(emptyProject);
+  const [newAccount, setNewAccount] = useState(emptyAccount);
+  const [newUser, setNewUser] = useState(emptyUser);
   const [newSection, setNewSection] = useState(emptySection);
 
   // دالة النسخ
@@ -593,7 +596,7 @@ export default function App() {
     } catch (e) { console.error(e); } 
   };
 
-  // REMOVED DUPLICATE const addLog = (action, itemType, itemName, itemId) => { 
+  const addLog = (action, itemType, itemName, itemId) => { 
     const actionText = action === 'add' ? 'بإضافة' : action === 'edit' ? 'بتعديل' : action === 'delete' ? 'بحذف' : action === 'restore' ? 'بإستعادة' : action === 'pay' ? 'بدفع' : action;
     const desc = `${currentUser?.username || 'النظام'} قام ${actionText} ${itemType}: ${itemName}`;
     const l = { id: `LOG${Date.now()}`, user: currentUser?.username || 'النظام', action, itemType, itemName, itemId, description: desc, timestamp: new Date().toISOString() }; 
@@ -982,62 +985,7 @@ export default function App() {
   if (loading) return <div className={`min-h-screen ${bg} flex items-center justify-center`} dir="rtl"><Loader className="w-12 h-12 text-blue-500 animate-spin" /></div>;
 
 
-  
-  // Helper to increment counters (Moved inside)
-  const incrementCounter = async (key) => {
-    await runTransaction(db, async (t) => {
-      const ref = doc(db, 'system', 'counters');
-      const docVal = await t.get(ref);
-      t.set(ref, { ...docVal.data(), [key]: (docVal.data()?.[key] || 0) + 1 }, { merge: true });
-    });
-  };
-  
-  // Helper to add log (Moved inside)
-  const addLog = async (action, type, name, itemId) => {
-    await addDoc(collection(db, 'audit'), {
-      user: currentUser?.username || 'النظام', action, itemType: type, itemName: name, itemId,
-      description: ${currentUser?.username} قام  : ,
-      timestamp: new Date().toISOString()
-    });
-  };
-
-
-// --- NEW HANDLERS ---
-
-  const handleAddExpense = async () => {
-    if (!newExpense.name || !newExpense.amount) return alert('أكمل البيانات');
-    const refNum = generateRefNumber('E', counters.E + 1);
-    await addDoc(collection(db, 'expenses'), { ...newExpense, refNumber: refNum, createdAt: new Date().toISOString(), createdBy: currentUser.username });
-    await incrementCounter('E'); await addLog('add', 'مصروف', newExpense.name, refNum);
-    setNewExpense(emptyExpense); setShowModal(false);
-  };
-
-  const handleAddTask = async () => {
-    if (!newTask.title) return alert('أكمل البيانات');
-    const refNum = generateRefNumber('T', counters.T + 1);
-    await addDoc(collection(db, 'tasks'), { ...newTask, refNumber: refNum, createdAt: new Date().toISOString(), createdBy: currentUser.username });
-    await incrementCounter('T'); await addLog('add', 'مهمة', newTask.title, refNum);
-    setNewTask(emptyTask); setShowModal(false);
-  };
-
-   const handleAddProject = async () => {
-    if (!newProject.name) return alert('أكمل البيانات');
-    const refNum = generateRefNumber('P', counters.P + 1);
-    await addDoc(collection(db, 'projects'), { ...newProject, refNumber: refNum, createdAt: new Date().toISOString(), createdBy: currentUser.username });
-    await incrementCounter('P'); await addLog('add', 'مشروع', newProject.name, refNum);
-    setNewProject(emptyProject); setShowModal(false);
-  };
-
-  const handleAddAccount = async () => {
-    if (!newAccount.name) return alert('أكمل البيانات');
-    const refNum = generateRefNumber('A', counters.A + 1);
-    await addDoc(collection(db, 'accounts'), { ...newAccount, refNumber: refNum, createdAt: new Date().toISOString(), createdBy: currentUser.username });
-    await incrementCounter('A'); await addLog('add', 'حساب', newAccount.name, refNum);
-    setNewAccount(emptyAccount); setShowModal(false);
-  };
-
-
-if (!isLoggedIn) return (
+  if (!isLoggedIn) return (
     <div className={`min-h-screen ${bg} flex items-center justify-center p-4 relative overflow-hidden`} style={hideScrollbar} dir="rtl">
       <FinancialPattern />
       <div className={`${card} p-8 rounded-2xl shadow-2xl w-full max-w-md border relative z-10`}>
@@ -1824,7 +1772,7 @@ if (!isLoggedIn) return (
                               }} />
                             </label>
                             <button onClick={() => {
-                              if (window.confirm('هل تريد حذف هذا المجلد؟')) {
+                              if (window.window.confirm('هل تريد حذف هذا المجلد؟')) {
                                 const newFolders = selectedProject.folders.filter((_, i) => i !== fi);
                                 const np = projects.map(p => p.id === selectedProject.id ? { ...p, folders: newFolders } : p);
                                 setProjects(np); setSelectedProject({ ...selectedProject, folders: newFolders }); save({ projects: np });
