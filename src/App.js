@@ -14,7 +14,71 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const APP_VERSION = "4.6.0";
+const APP_VERSION = "5.0.0";
+
+// نظام الأرقام التسلسلية
+const generateRefNumber = (prefix, counter) => {
+  return `${prefix}-${String(counter).padStart(4, '0')}`;
+};
+
+// ألوان موحدة للحالات
+const getStatusColor = (status, days = null) => {
+  // متأخر / منتهي / عالي الأهمية
+  if (status === 'overdue' || status === 'expired' || status === 'عالي الأهمية' || status === 'delete' || (days !== null && days < 0)) {
+    return { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30', badge: 'bg-red-500/30 text-red-300' };
+  }
+  // عاجل / مستعجل / ينتهي قريباً
+  if (status === 'urgent' || status === 'مستعجل' || (days !== null && days <= 7)) {
+    return { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30', badge: 'bg-orange-500/30 text-orange-300' };
+  }
+  // قريب / متوسط
+  if (status === 'soon' || status === 'متوسط الأهمية' || (days !== null && days <= 14)) {
+    return { bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30', badge: 'bg-yellow-500/30 text-yellow-300' };
+  }
+  // آمن / مكتمل / منخفض / نشط / إضافة
+  if (status === 'safe' || status === 'مكتمل' || status === 'منخفض الأهمية' || status === 'active' || status === 'add') {
+    return { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/30', badge: 'bg-green-500/30 text-green-300' };
+  }
+  // جاري العمل / مرة واحدة / تعديل
+  if (status === 'جاري العمل' || status === 'مرة واحدة' || status === 'edit') {
+    return { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30', badge: 'bg-blue-500/30 text-blue-300' };
+  }
+  // متوقف / سنوي / دفع
+  if (status === 'متوقف' || status === 'سنوي' || status === 'refresh') {
+    return { bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30', badge: 'bg-purple-500/30 text-purple-300' };
+  }
+  // افتراضي
+  return { bg: 'bg-gray-500/20', text: 'text-gray-400', border: 'border-gray-500/30', badge: 'bg-gray-500/30 text-gray-300' };
+};
+
+// تحديد لون المصروف حسب الأيام والنوع
+const getExpenseColor = (days, type) => {
+  if (type === 'مرة واحدة') return getStatusColor('مرة واحدة');
+  if (days === null) return getStatusColor('safe');
+  if (days < 0) return getStatusColor('overdue');
+  if (days <= 7) return getStatusColor('urgent');
+  if (days <= 14) return getStatusColor('soon');
+  return getStatusColor('safe');
+};
+
+// تحديد لون المهمة حسب الأولوية
+const getTaskColor = (priority) => {
+  return getStatusColor(priority);
+};
+
+// تحديد لون المشروع حسب الحالة
+const getProjectColor = (status) => {
+  return getStatusColor(status);
+};
+
+// تحديد لون الحساب حسب الأيام المتبقية
+const getAccountColor = (days) => {
+  if (days === null || days > 30) return getStatusColor('active');
+  if (days <= 0) return getStatusColor('expired');
+  if (days <= 7) return getStatusColor('urgent');
+  if (days <= 30) return getStatusColor('soon');
+  return getStatusColor('active');
+};
 
 const formatNumber = (num) => {
   if (num === null || num === undefined) return '0';
@@ -394,6 +458,9 @@ export default function App() {
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [previewImage, setPreviewImage] = useState(null);
   const [taskFilter, setTaskFilter] = useState('all');
+  
+  // عدادات الأرقام التسلسلية
+  const [counters, setCounters] = useState({ E: 0, T: 0, P: 0, A: 0 });
 
   const emptyExpense = { name: '', amount: '', currency: 'ر.س', dueDate: '', type: 'شهري', reason: '', status: 'لم يتم الدفع', location: '', mapUrl: '', coordinates: '', totalSpent: 0 };
   const emptyTask = { title: '', description: '', dueDate: '', assignedTo: '', priority: 'متوسط الأهمية', status: 'قيد الانتظار', projectId: '', sectionId: '', location: '', mapUrl: '', coordinates: '' };
@@ -461,6 +528,7 @@ export default function App() {
         setArchivedAccounts(d.archivedAccounts || []);
         setArchivedProjects(d.archivedProjects || []);
         setLoginLog(d.loginLog || []);
+        setCounters(d.counters || { E: 0, T: 0, P: 0, A: 0 });
       }
       setLoading(false);
     });
@@ -479,7 +547,8 @@ export default function App() {
         accounts: d.accounts || accounts, auditLog: d.auditLog || auditLog, 
         archivedExpenses: d.archivedExpenses || archivedExpenses, archivedTasks: d.archivedTasks || archivedTasks, 
         archivedAccounts: d.archivedAccounts || archivedAccounts, archivedProjects: d.archivedProjects || archivedProjects,
-        loginLog: d.loginLog || loginLog 
+        loginLog: d.loginLog || loginLog,
+        counters: d.counters || counters
       }); 
     } catch (e) { console.error(e); } 
   };
@@ -1262,37 +1331,49 @@ export default function App() {
 
               {/* بطاقات الإحصائيات - تصميم موحد */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                <div className={`${card} p-3 rounded-xl border`}>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className={`text-xs ${txtSm}`}>الإجمالي</span>
-                    <DollarSign className={`w-4 h-4 ${txtSm}`} />
+                <div className={`${card} p-4 rounded-xl border`}>
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className={`font-bold text-sm ${txt}`}>الإجمالي</h3>
+                    <span className={`text-2xl font-bold ${txt}`}>{formatNumber(expenses.length)}</span>
                   </div>
-                  <p className={`text-lg font-bold ${txt}`}>{formatNumber(totalExpenses)} <span className={`text-xs ${txtSm}`}>ريال</span></p>
-                  <div className="mt-2 p-1.5 rounded-lg bg-blue-500/20"><span className="text-xs text-blue-400">{formatNumber(expenses.length)} مصروف</span></div>
+                  <div className="space-y-2">
+                    <div className="p-2 rounded-lg bg-blue-500/20">
+                      <div className="flex justify-between"><span className={`text-xs ${txt}`}>المبلغ</span><span className={`text-xs font-bold ${txt}`}>{formatNumber(totalExpenses)} ر.س</span></div>
+                    </div>
+                  </div>
                 </div>
-                <div className={`${card} p-3 rounded-xl border`}>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className={`text-xs ${txtSm}`}>الشهري</span>
-                    <Calendar className={`w-4 h-4 ${txtSm}`} />
+                <div className={`${card} p-4 rounded-xl border`}>
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className={`font-bold text-sm ${txt}`}>الشهري</h3>
+                    <span className={`text-2xl font-bold ${txt}`}>{formatNumber(expenses.filter(e => e.type === 'شهري').length)}</span>
                   </div>
-                  <p className={`text-lg font-bold ${txt}`}>{formatNumber(monthlyExpenses)} <span className={`text-xs ${txtSm}`}>ريال</span></p>
-                  <div className="mt-2 p-1.5 rounded-lg bg-green-500/20"><span className="text-xs text-green-400">{formatNumber(expenses.filter(e => e.type === 'شهري').length)} مصروف</span></div>
+                  <div className="space-y-2">
+                    <div className="p-2 rounded-lg bg-green-500/20">
+                      <div className="flex justify-between"><span className={`text-xs ${txt}`}>المبلغ</span><span className={`text-xs font-bold ${txt}`}>{formatNumber(monthlyExpenses)} ر.س</span></div>
+                    </div>
+                  </div>
                 </div>
-                <div className={`${card} p-3 rounded-xl border`}>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className={`text-xs ${txtSm}`}>السنوي</span>
-                    <Wallet className={`w-4 h-4 ${txtSm}`} />
+                <div className={`${card} p-4 rounded-xl border`}>
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className={`font-bold text-sm ${txt}`}>السنوي</h3>
+                    <span className={`text-2xl font-bold ${txt}`}>{formatNumber(expenses.filter(e => e.type === 'سنوي').length)}</span>
                   </div>
-                  <p className={`text-lg font-bold ${txt}`}>{formatNumber(yearlyExpenses)} <span className={`text-xs ${txtSm}`}>ريال</span></p>
-                  <div className="mt-2 p-1.5 rounded-lg bg-purple-500/20"><span className="text-xs text-purple-400">{formatNumber(expenses.filter(e => e.type === 'سنوي').length)} مصروف</span></div>
+                  <div className="space-y-2">
+                    <div className="p-2 rounded-lg bg-purple-500/20">
+                      <div className="flex justify-between"><span className={`text-xs ${txt}`}>المبلغ</span><span className={`text-xs font-bold ${txt}`}>{formatNumber(yearlyExpenses)} ر.س</span></div>
+                    </div>
+                  </div>
                 </div>
-                <div className={`${card} p-3 rounded-xl border`}>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className={`text-xs ${txtSm}`}>مرة واحدة</span>
-                    <CreditCard className={`w-4 h-4 ${txtSm}`} />
+                <div className={`${card} p-4 rounded-xl border`}>
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className={`font-bold text-sm ${txt}`}>مرة واحدة</h3>
+                    <span className={`text-2xl font-bold ${txt}`}>{formatNumber(expenses.filter(e => e.type === 'مرة واحدة').length)}</span>
                   </div>
-                  <p className={`text-lg font-bold ${txt}`}>{formatNumber(onceExpenses)} <span className={`text-xs ${txtSm}`}>ريال</span></p>
-                  <div className="mt-2 p-1.5 rounded-lg bg-orange-500/20"><span className="text-xs text-orange-400">{formatNumber(expenses.filter(e => e.type === 'مرة واحدة').length)} مصروف</span></div>
+                  <div className="space-y-2">
+                    <div className="p-2 rounded-lg bg-orange-500/20">
+                      <div className="flex justify-between"><span className={`text-xs ${txt}`}>المبلغ</span><span className={`text-xs font-bold ${txt}`}>{formatNumber(onceExpenses)} ر.س</span></div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -1303,84 +1384,75 @@ export default function App() {
                   <p className={`text-xs ${txtSm} mt-2`}>{getRandomEncouragement('empty')}</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {[...expenses].sort((a, b) => {
-                    const dA = a.type !== 'مرة واحدة' ? calcDaysRemaining(a.dueDate, a.type) : 999;
-                    const dB = b.type !== 'مرة واحدة' ? calcDaysRemaining(b.dueDate, b.type) : 999;
-                    return (dA || 999) - (dB || 999);
-                  }).map(e => {
-                    const d = e.type !== 'مرة واحدة' ? calcDaysRemaining(e.dueDate, e.type) : null;
-                    const isUrgent = (e.type === 'شهري' && d !== null && d <= 7) || (e.type === 'سنوي' && d !== null && d <= 15);
-                    const isOverdue = d !== null && d < 0;
-                    const daysText = d !== null ? (d < 0 ? `متأخر ${formatNumber(Math.abs(d))} يوم` : `${formatNumber(d)} يوم`) : null;
-                    const badgeColor = isOverdue ? 'bg-red-500/20 border-red-500/50 text-red-400' : 
-                                       isUrgent ? 'bg-orange-500/20 border-orange-500/50 text-orange-400' : 
-                                       d !== null && d <= 30 ? 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400' : 
-                                       'bg-green-500/20 border-green-500/50 text-green-400';
-                    return (
-                      <div key={e.id} className={`${card} p-3 rounded-xl border ${isUrgent || isOverdue ? 'border-red-500/30' : ''}`}>
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2 flex-wrap">
-                              <h3 className={`font-bold ${txt}`}>{e.name}</h3>
-                              {d !== null && e.type !== 'مرة واحدة' && <span className={`px-2 py-0.5 rounded-lg text-xs border ${badgeColor}`}>{daysText}</span>}
-                            </div>
-                            
-                            <div className={`${txtSm} flex flex-wrap items-center gap-x-3 gap-y-1`}>
-                              <span className={txt}><Wallet className="w-3.5 h-3.5 inline ml-1" />{e.type === 'شهري' ? 'شهرياً' : e.type === 'سنوي' ? 'سنوياً' : 'مرة واحدة'}: <span className="font-bold">{formatNumber(e.amount)}</span></span>
-                              {e.type !== 'مرة واحدة' && <span className={txt}><CreditCard className="w-3.5 h-3.5 inline ml-1" />الإجمالي: <span className="font-bold">{formatNumber(e.totalSpent || 0)}</span></span>}
-                              {e.createdAt && <InfoItem icon={Calendar}>إنشاء: {new Date(e.createdAt).toLocaleDateString('en-GB')}</InfoItem>}
-                              {e.dueDate && <InfoItem icon={Clock}>استحقاق: {e.dueDate}</InfoItem>}
-                              <InfoItem icon={User}>{e.createdBy}</InfoItem>
-                              {e.location && <InfoItem icon={MapPin} href={e.mapUrl}>{e.location}</InfoItem>}
-                            </div>
-                          </div>
-                          
-                          <div className="flex gap-1">
-                            <IconBtn onClick={() => setShowExpenseHistory(showExpenseHistory === e.id ? null : e.id)} icon={BookOpen} title="السجل" />
-                            {e.type !== 'مرة واحدة' && (
-                              <IconBtn onClick={() => {
-                                const newDueDate = new Date(e.dueDate);
-                                newDueDate.setDate(newDueDate.getDate() + (e.type === 'شهري' ? 30 : 365));
-                                const payment = { date: new Date().toISOString(), amount: e.amount, note: 'تحديث يدوي', by: currentUser.username };
-                                const ne = expenses.map(ex => ex.id === e.id ? { 
-                                  ...ex, 
-                                  dueDate: newDueDate.toISOString().split('T')[0],
-                                  totalSpent: (ex.totalSpent || 0) + parseFloat(ex.amount),
-                                  paymentHistory: [...(ex.paymentHistory || []), payment]
-                                } : ex);
-                                const al = addLog('refresh', 'مصروف', e.name, e.id);
-                                setExpenses(ne); save({ expenses: ne, auditLog: al });
-                              }} icon={RefreshCw} title="تحديث" />
-                            )}
-                            <IconBtn onClick={() => { setEditingItem({ ...e }); setModalType('editExp'); setShowModal(true); }} icon={Pencil} title="تعديل" />
-                            <IconBtn onClick={() => { setSelectedItem(e); setModalType('delExp'); setShowModal(true); }} icon={Trash2} title="حذف" />
-                          </div>
-                        </div>
-
-                        {showExpenseHistory === e.id && (
-                          <div className={`mt-3 pt-3 border-t ${darkMode ? 'border-white/20' : 'border-gray-200'}`}>
-                            <p className={`font-bold mb-2 ${txt}`}>سجل العمليات:</p>
-                            {e.paymentHistory?.length > 0 ? (
-                              <div className="space-y-2">
-                                {e.paymentHistory.map((p, i) => (
-                                  <div key={i} className={`p-2 rounded-lg flex flex-wrap gap-3 ${darkMode ? 'bg-white/5' : 'bg-gray-100'}`}>
-                                    <InfoItem icon={Wallet}>{formatNumber(p.amount)} ريال</InfoItem>
-                                    <InfoItem icon={Calendar}>{new Date(p.date).toLocaleDateString('en-GB')}</InfoItem>
-                                    <InfoItem icon={Clock}>{formatTime12(new Date(p.date))}</InfoItem>
-                                    {p.note && <span className={txtSm}>{p.note}</span>}
-                                    <InfoItem icon={User}>{p.by || p.paidBy}</InfoItem>
-                                  </div>
-                                ))}
+                <div className={`${card} p-4 rounded-xl border`}>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className={`font-bold ${txt}`}>قائمة المصروفات</h3>
+                    <span className={`text-xs ${txtSm}`}>{formatNumber(expenses.length)} مصروف</span>
+                  </div>
+                  <div className="space-y-2">
+                    {[...expenses].sort((a, b) => {
+                      const dA = a.type !== 'مرة واحدة' ? calcDaysRemaining(a.dueDate, a.type) : 999;
+                      const dB = b.type !== 'مرة واحدة' ? calcDaysRemaining(b.dueDate, b.type) : 999;
+                      return (dA || 999) - (dB || 999);
+                    }).map(e => {
+                      const d = e.type !== 'مرة واحدة' ? calcDaysRemaining(e.dueDate, e.type) : null;
+                      const color = getExpenseColor(d, e.type);
+                      const daysText = d !== null ? (d < 0 ? `متأخر ${formatNumber(Math.abs(d))} يوم` : `${formatNumber(d)} يوم`) : null;
+                      return (
+                        <div key={e.id} className={`p-3 rounded-lg ${color.bg}`}>
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <span className={`text-xs font-mono px-2 py-0.5 rounded ${color.badge}`}>{e.refNumber || 'E-0000'}</span>
+                                <h3 className={`font-bold ${txt}`}>{e.name}</h3>
+                                {daysText && e.type !== 'مرة واحدة' && <span className={`text-xs font-bold ${color.text}`}>{daysText}</span>}
+                                {e.type === 'مرة واحدة' && <span className={`text-xs font-bold ${color.text}`}>مرة واحدة</span>}
                               </div>
-                            ) : (
-                              <p className={txtSm}>لا توجد عمليات سابقة</p>
-                            )}
+                              <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-xs ${txtSm}`}>
+                                <span className={txt}>{e.type === 'شهري' ? 'شهرياً' : e.type === 'سنوي' ? 'سنوياً' : 'المبلغ'}: <span className="font-bold">{formatNumber(e.amount)}</span></span>
+                                {e.type !== 'مرة واحدة' && <span className={txt}>الإجمالي: <span className="font-bold">{formatNumber(e.totalSpent || 0)}</span></span>}
+                                {e.dueDate && <span>استحقاق: {e.dueDate}</span>}
+                                <span>{e.createdBy}</span>
+                              </div>
+                            </div>
+                            <div className="flex gap-1">
+                              <button onClick={() => setShowExpenseHistory(showExpenseHistory === e.id ? null : e.id)} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20"><BookOpen className="w-4 h-4 text-gray-300" /></button>
+                              {e.type !== 'مرة واحدة' && (
+                                <button onClick={() => {
+                                  const newDueDate = new Date(e.dueDate);
+                                  newDueDate.setDate(newDueDate.getDate() + (e.type === 'شهري' ? 30 : 365));
+                                  const payment = { date: new Date().toISOString(), amount: e.amount, note: 'تحديث يدوي', by: currentUser.username };
+                                  const ne = expenses.map(ex => ex.id === e.id ? { ...ex, dueDate: newDueDate.toISOString().split('T')[0], totalSpent: (ex.totalSpent || 0) + parseFloat(ex.amount), paymentHistory: [...(ex.paymentHistory || []), payment] } : ex);
+                                  const al = addLog('refresh', 'مصروف', e.name, e.id);
+                                  setExpenses(ne); save({ expenses: ne, auditLog: al });
+                                }} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20"><RefreshCw className="w-4 h-4 text-gray-300" /></button>
+                              )}
+                              <button onClick={() => { setEditingItem({ ...e }); setModalType('editExp'); setShowModal(true); }} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20"><Pencil className="w-4 h-4 text-gray-300" /></button>
+                              <button onClick={() => { setSelectedItem(e); setModalType('delExp'); setShowModal(true); }} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20"><Trash2 className="w-4 h-4 text-gray-300" /></button>
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                          {showExpenseHistory === e.id && (
+                            <div className={`mt-3 pt-3 border-t border-white/10`}>
+                              <p className={`font-bold mb-2 text-xs ${txt}`}>سجل العمليات:</p>
+                              {e.paymentHistory?.length > 0 ? (
+                                <div className="space-y-1">
+                                  {e.paymentHistory.map((p, i) => (
+                                    <div key={i} className="p-2 rounded-lg bg-white/5 flex flex-wrap gap-3 text-xs">
+                                      <span className={txt}>{formatNumber(p.amount)} ريال</span>
+                                      <span className={txtSm}>{new Date(p.date).toLocaleDateString('en-GB')}</span>
+                                      <span className={txtSm}>{formatTime12(new Date(p.date))}</span>
+                                      {p.note && <span className={txtSm}>{p.note}</span>}
+                                      <span className={txtSm}>{p.by || p.paidBy}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : <p className={`text-xs ${txtSm}`}>لا توجد عمليات سابقة</p>}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -1461,50 +1533,51 @@ export default function App() {
                   <p className={`text-xs ${txtSm} mt-2`}>{getRandomEncouragement('empty')}</p>
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {[...(projectFilter ? tasks.filter(t => t.projectId === projectFilter) : tasks)]
-                    .sort((a, b) => {
-                      if (taskFilter === 'priority') {
-                        const priorityOrder = { 'عالي الأهمية': 0, 'مستعجل': 1, 'متوسط الأهمية': 2, 'منخفض الأهمية': 3 };
-                        return (priorityOrder[a.priority] || 3) - (priorityOrder[b.priority] || 3);
-                      }
-                      return 0;
-                    })
-                    .map(t => {
-                    const d = calcDays(t.dueDate);
-                    const project = projects.find(p => p.id === t.projectId);
-                    const section = taskSections.find(s => s.id === t.sectionId);
-                    const isOverdue = d !== null && d < 0;
-                    const daysText = d !== null ? (d < 0 ? `مضى ${formatNumber(Math.abs(d))} يوم` : `متبقي ${formatNumber(d)} يوم`) : null;
-                    return (
-                      <div key={t.id} className={`${card} p-3 rounded-xl border ${isOverdue ? 'border-red-500/30' : ''}`}>
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2 flex-wrap">
-                              <h3 className={`font-bold ${txt}`}>{t.title}</h3>
-                              <Badge status={t.priority} />
-                              {daysText && <span className={`px-2 py-0.5 rounded-lg text-xs border ${isOverdue ? 'bg-red-500/20 border-red-500/50 text-red-400' : 'bg-green-500/20 border-green-500/50 text-green-400'}`}>{daysText}</span>}
+                <div className={`${card} p-4 rounded-xl border`}>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className={`font-bold ${txt}`}>قائمة المهام</h3>
+                    <span className={`text-xs ${txtSm}`}>{formatNumber((projectFilter ? tasks.filter(t => t.projectId === projectFilter) : tasks).length)} مهمة</span>
+                  </div>
+                  <div className="space-y-2">
+                    {[...(projectFilter ? tasks.filter(t => t.projectId === projectFilter) : tasks)]
+                      .sort((a, b) => {
+                        if (taskFilter === 'priority') {
+                          const priorityOrder = { 'عالي الأهمية': 0, 'مستعجل': 1, 'متوسط الأهمية': 2, 'منخفض الأهمية': 3 };
+                          return (priorityOrder[a.priority] || 3) - (priorityOrder[b.priority] || 3);
+                        }
+                        return 0;
+                      })
+                      .map(t => {
+                      const d = calcDays(t.dueDate);
+                      const project = projects.find(p => p.id === t.projectId);
+                      const color = getTaskColor(t.priority);
+                      const daysText = d !== null ? (d < 0 ? `مضى ${formatNumber(Math.abs(d))} يوم` : `متبقي ${formatNumber(d)} يوم`) : null;
+                      return (
+                        <div key={t.id} className={`p-3 rounded-lg ${color.bg}`}>
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <span className={`text-xs font-mono px-2 py-0.5 rounded ${color.badge}`}>{t.refNumber || 'T-0000'}</span>
+                                <h3 className={`font-bold ${txt}`}>{t.title}</h3>
+                                <span className={`text-xs font-bold ${color.text}`}>{t.priority}</span>
+                              </div>
+                              {t.description && <p className={`text-xs ${txtSm} mb-1`}>{t.description}</p>}
+                              <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-xs ${txtSm}`}>
+                                {project && <span className={accent.text}>{project.name}</span>}
+                                <span>أنشئ: {t.createdBy}</span>
+                                {t.assignedTo && <span>المنفذ: {t.assignedTo}</span>}
+                                {daysText && <span>{daysText}</span>}
+                              </div>
                             </div>
-                            {t.description && <p className={`${txtSm} mb-2`}>{t.description}</p>}
-                            
-                            <div className={`${txtSm} flex flex-wrap items-center gap-x-3 gap-y-1`}>
-                              {project && <button onClick={() => { setSelectedProject(project); setCurrentView('projects'); }} className={`inline-flex items-center gap-1 hover:underline ${accent.text}`}><FolderOpen className="w-3.5 h-3.5" />{project.name}</button>}
-                              {section && <InfoItem icon={Layers}>{section.name}</InfoItem>}
-                              <InfoItem icon={User}>أنشئ بواسطة: {t.createdBy}</InfoItem>
-                              {t.assignedTo && <InfoItem icon={UserCog}>المنفذ: {t.assignedTo}</InfoItem>}
-                              {t.createdAt && <InfoItem icon={Calendar}>أنشئ: {new Date(t.createdAt).toLocaleDateString('en-GB')}</InfoItem>}
-                              {t.dueDate && <InfoItem icon={Clock}>تنفيذ: {t.dueDate}</InfoItem>}
-                              {t.location && <InfoItem icon={MapPin} href={t.mapUrl}>{t.location}</InfoItem>}
+                            <div className="flex gap-1">
+                              <button onClick={() => { setEditingItem({ ...t }); setModalType('editTask'); setShowModal(true); }} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20"><Pencil className="w-4 h-4 text-gray-300" /></button>
+                              <button onClick={() => { setSelectedItem(t); setModalType('delTask'); setShowModal(true); }} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20"><Trash2 className="w-4 h-4 text-gray-300" /></button>
                             </div>
-                          </div>
-                          <div className="flex gap-1">
-                            <IconBtn onClick={() => { setEditingItem({ ...t }); setModalType('editTask'); setShowModal(true); }} icon={Pencil} title="تعديل" />
-                            <IconBtn onClick={() => { setSelectedItem(t); setModalType('delTask'); setShowModal(true); }} icon={Trash2} title="حذف" />
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -1561,31 +1634,38 @@ export default function App() {
                   <p className={`text-xs ${txtSm} mt-2`}>{getRandomEncouragement('empty')}</p>
                 </div>
               ) : (
-                <div className="grid md:grid-cols-2 gap-4">
-                  {projects.map(p => {
-                    const projectTasks = tasks.filter(t => t.projectId === p.id);
-                    const totalFiles = p.folders?.reduce((sum, f) => sum + (f.files?.length || 0), 0) || 0;
-                    return (
-                      <div key={p.id} onClick={() => setSelectedProject(p)} className={`${card} p-4 rounded-xl border cursor-pointer hover:shadow-lg transition-all`}>
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <h3 className={`font-bold ${txt}`}>{p.name}</h3>
-                          <Badge status={p.status} />
+                <div className={`${card} p-4 rounded-xl border`}>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className={`font-bold ${txt}`}>قائمة المشاريع</h3>
+                    <span className={`text-xs ${txtSm}`}>{formatNumber(projects.length)} مشروع</span>
+                  </div>
+                  <div className="space-y-2">
+                    {projects.map(p => {
+                      const projectTasks = tasks.filter(t => t.projectId === p.id);
+                      const color = getProjectColor(p.status);
+                      return (
+                        <div key={p.id} onClick={() => setSelectedProject(p)} className={`p-3 rounded-lg ${color.bg} cursor-pointer hover:opacity-80 transition-all`}>
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <span className={`text-xs font-mono px-2 py-0.5 rounded ${color.badge}`}>{p.refNumber || 'P-0000'}</span>
+                                <h3 className={`font-bold ${txt}`}>{p.name}</h3>
+                                <span className={`text-xs font-bold ${color.text}`}>{p.status}</span>
+                              </div>
+                              {p.description && <p className={`text-xs ${txtSm} mb-1`}>{p.description.substring(0, 60)}...</p>}
+                              <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-xs ${txtSm}`}>
+                                {p.client && <span>العميل: {p.client}</span>}
+                                {p.budget && <span>الميزانية: {formatNumber(p.budget)} ر.س</span>}
+                                <span>{formatNumber(projectTasks.length)} مهمة</span>
+                                <span>{p.createdBy}</span>
+                              </div>
+                            </div>
+                            <ChevronLeft className={`w-5 h-5 ${txtSm}`} />
+                          </div>
                         </div>
-                        {p.description && <p className={`${txtSm} mb-3 line-clamp-2`}>{p.description}</p>}
-                        
-                        <div className={`${txtSm} flex flex-wrap items-center gap-x-3 gap-y-1`}>
-                          {p.client && <InfoItem icon={User}>{p.client}</InfoItem>}
-                          {p.phone && <InfoItem icon={Phone} phone={p.phone}>{p.phone}</InfoItem>}
-                          {p.budget && <InfoItem icon={DollarSign}>{formatNumber(p.budget)} ريال</InfoItem>}
-                          <InfoItem icon={CheckSquare}>{formatNumber(projectTasks.length)} مهمة</InfoItem>
-                          {totalFiles > 0 && <InfoItem icon={FileText}>{formatNumber(totalFiles)} ملف</InfoItem>}
-                          {p.startDate && <InfoItem icon={Calendar}>{p.startDate}</InfoItem>}
-                          {p.location && <InfoItem icon={MapPin} href={p.mapUrl}>{p.location}</InfoItem>}
-                          <InfoItem icon={User}>{p.createdBy}</InfoItem>
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>
@@ -1773,42 +1853,48 @@ export default function App() {
                   <p className={`text-xs ${txtSm} mt-2`}>{getRandomEncouragement('empty')}</p>
                 </div>
               ) : (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">{accounts.map(a => (
-                  <div key={a.id} className={`${card} p-4 rounded-xl border`}>
-                    <div className="flex justify-between items-start mb-3">
-                      <h3 className={`font-bold ${txt}`}>{a.name}</h3>
-                      <div className="flex gap-1">
-                        <IconBtn onClick={() => { setEditingItem({ ...a }); setModalType('editAcc'); setShowModal(true); }} icon={Pencil} title="تعديل" />
-                        <IconBtn onClick={() => { setSelectedItem(a); setModalType('delAcc'); setShowModal(true); }} icon={Trash2} title="حذف" />
-                      </div>
-                    </div>
-                    {a.description && <p className={`text-xs ${txtSm} mb-3`}>{a.description}</p>}
-                    
-                    <div className={`text-xs ${txtSm} space-y-2`}>
-                      <div className="flex items-center gap-2">
-                        <User className="w-3.5 h-3.5" />
-                        <span className="flex-1">{a.username}</span>
-                        <button onClick={() => copyToClipboard(a.username, 'اسم المستخدم')} className={`p-1 rounded ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}><Copy className="w-3.5 h-3.5" /></button>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Settings className="w-3.5 h-3.5" />
-                        <span className="flex-1">{showPasswordId === a.id ? a.password : '••••••••'}</span>
-                        <button onClick={() => setShowPasswordId(showPasswordId === a.id ? null : a.id)} className={`p-1 rounded ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}>
-                          {showPasswordId === a.id ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                        </button>
-                        <button onClick={() => copyToClipboard(a.password, 'كلمة المرور')} className={`p-1 rounded ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}><Copy className="w-3.5 h-3.5" /></button>
-                      </div>
-                      {a.subscriptionDate && <div className="flex items-center gap-2"><Calendar className="w-3.5 h-3.5" /><span>{a.subscriptionDate}</span></div>}
-                      <div className="flex items-center gap-2"><Clock className="w-3.5 h-3.5" /><span>{formatNumber(a.daysRemaining)} يوم متبقي</span></div>
-                    </div>
-                    
-                    {a.loginUrl && (
-                      <a href={a.loginUrl} target="_blank" rel="noreferrer" className={`mt-3 flex items-center justify-center gap-2 w-full py-2 rounded-lg text-xs ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'} ${txt}`}>
-                        <ExternalLink className="w-4 h-4" />انتقال للرابط
-                      </a>
-                    )}
+                <div className={`${card} p-4 rounded-xl border`}>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className={`font-bold ${txt}`}>قائمة الحسابات</h3>
+                    <span className={`text-xs ${txtSm}`}>{formatNumber(accounts.length)} حساب</span>
                   </div>
-                ))}</div>
+                  <div className="space-y-2">
+                    {accounts.map(a => {
+                      const d = calcDays(a.subscriptionDate);
+                      const color = getAccountColor(d);
+                      return (
+                        <div key={a.id} className={`p-3 rounded-lg ${color.bg}`}>
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <span className={`text-xs font-mono px-2 py-0.5 rounded ${color.badge}`}>{a.refNumber || 'A-0000'}</span>
+                                <h3 className={`font-bold ${txt}`}>{a.name}</h3>
+                                {d !== null && <span className={`text-xs font-bold ${color.text}`}>{d <= 0 ? 'منتهي' : `${formatNumber(d)} يوم`}</span>}
+                              </div>
+                              <div className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-xs ${txtSm}`}>
+                                <span>{a.username}</span>
+                                {a.subscriptionDate && <span>انتهاء: {a.subscriptionDate}</span>}
+                              </div>
+                            </div>
+                            <div className="flex gap-1">
+                              <button onClick={() => copyToClipboard(a.username, 'اسم المستخدم')} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20"><Copy className="w-4 h-4 text-gray-300" /></button>
+                              <button onClick={() => setShowPasswordId(showPasswordId === a.id ? null : a.id)} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20">{showPasswordId === a.id ? <EyeOff className="w-4 h-4 text-gray-300" /> : <Eye className="w-4 h-4 text-gray-300" />}</button>
+                              {a.loginUrl && <a href={a.loginUrl} target="_blank" rel="noreferrer" className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20"><ExternalLink className="w-4 h-4 text-gray-300" /></a>}
+                              <button onClick={() => { setEditingItem({ ...a }); setModalType('editAcc'); setShowModal(true); }} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20"><Pencil className="w-4 h-4 text-gray-300" /></button>
+                              <button onClick={() => { setSelectedItem(a); setModalType('delAcc'); setShowModal(true); }} className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20"><Trash2 className="w-4 h-4 text-gray-300" /></button>
+                            </div>
+                          </div>
+                          {showPasswordId === a.id && (
+                            <div className="mt-2 pt-2 border-t border-white/10 flex items-center gap-2">
+                              <span className={`text-xs ${txt}`}>كلمة المرور: <span className="font-mono">{a.password}</span></span>
+                              <button onClick={() => copyToClipboard(a.password, 'كلمة المرور')} className="p-1 rounded bg-white/10 hover:bg-white/20"><Copy className="w-3 h-3 text-gray-300" /></button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               )}
             </div>
           )}
