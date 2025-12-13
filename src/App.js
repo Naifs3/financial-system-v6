@@ -16,22 +16,10 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const APP_VERSION = "5.2.0-MultiUser";
   // Helper to increment counters
-  const incrementCounter = async (key) => {
-    await runTransaction(db, async (t) => {
-      const ref = doc(db, 'system', 'counters');
-      const docVal = await t.get(ref);
-      t.set(ref, { ...docVal.data(), [key]: (docVal.data()?.[key] || 0) + 1 }, { merge: true });
-    });
-  };
+  
   
   // Helper to add log
-  const addLog = async (action, type, name, itemId) => {
-    await addDoc(collection(db, 'audit'), {
-      user: currentUser?.username || 'النظام', action, itemType: type, itemName: name, itemId,
-      description: `${currentUser?.username} قام ${action === 'add' ? 'بإضافة' : action === 'edit' ? 'بتعديل' : 'بحذف'} ${type}: ${name}`,
-      timestamp: new Date().toISOString()
-    });
-  };
+  
 
 
 // نظام الأرقام التسلسلية
@@ -494,7 +482,7 @@ export default function App() {
   const [newUser, setNewUser] = useState(emptyUser);
 
   const handleDeleteNew = async (coll, id, name, type) => {
-    if(confirm('هل أنت متأكد من الحذف؟')) {
+    if(window.confirm('هل أنت متأكد من الحذف؟')) {
        await deleteDoc(doc(db, coll, id));
        await addLog('delete', type, name, id);
        setShowModal(false);
@@ -994,7 +982,27 @@ export default function App() {
   if (loading) return <div className={`min-h-screen ${bg} flex items-center justify-center`} dir="rtl"><Loader className="w-12 h-12 text-blue-500 animate-spin" /></div>;
 
 
-  // --- NEW HANDLERS ---
+  
+  // Helper to increment counters (Moved inside)
+  const incrementCounter = async (key) => {
+    await runTransaction(db, async (t) => {
+      const ref = doc(db, 'system', 'counters');
+      const docVal = await t.get(ref);
+      t.set(ref, { ...docVal.data(), [key]: (docVal.data()?.[key] || 0) + 1 }, { merge: true });
+    });
+  };
+  
+  // Helper to add log (Moved inside)
+  const addLog = async (action, type, name, itemId) => {
+    await addDoc(collection(db, 'audit'), {
+      user: currentUser?.username || 'النظام', action, itemType: type, itemName: name, itemId,
+      description: ${currentUser?.username} قام  : ,
+      timestamp: new Date().toISOString()
+    });
+  };
+
+
+// --- NEW HANDLERS ---
 
   const handleAddExpense = async () => {
     if (!newExpense.name || !newExpense.amount) return alert('أكمل البيانات');
