@@ -1013,96 +1013,72 @@ export default function App() {
             <div>
               <h2 className={`text-lg font-bold mb-4 ${txt}`}>لوحة التحكم</h2>
               
-              {/* بطاقات الإحصائيات الجديدة */}
+              {/* بطاقات الإحصائيات - تصميم موحد */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                 {/* بطاقة المصروفات */}
-                <button onClick={() => setCurrentView('expenses')} className="bg-gradient-to-br from-rose-500 to-pink-600 p-4 rounded-2xl text-white text-right relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-full opacity-10">
-                    <Wallet className="w-24 h-24 absolute -top-4 -left-4" />
+                <button onClick={() => setCurrentView('expenses')} className={`${card} p-4 rounded-xl border text-right hover:border-rose-500/50 transition-all`}>
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className={`font-bold text-sm ${txt}`}>المصروفات</h3>
+                    <span className={`text-2xl font-bold ${txt}`}>{formatNumber(expenses.length)}</span>
                   </div>
-                  <div className="relative">
-                    <div className="flex items-center justify-between mb-2">
-                      <Wallet className="w-7 h-7 opacity-80" />
-                      <span className="text-3xl font-bold">{formatNumber(expenses.length)}</span>
-                    </div>
-                    <p className="text-sm font-bold mb-2">المصروفات</p>
-                    <div className="space-y-1 text-xs opacity-90">
-                      <div className="flex justify-between"><span>شهري</span><span className="font-bold">{formatNumber(expenses.filter(e => e.type === 'شهري').length)}</span></div>
-                      <div className="flex justify-between"><span>سنوي</span><span className="font-bold">{formatNumber(expenses.filter(e => e.type === 'سنوي').length)}</span></div>
-                      <div className="flex justify-between"><span>مرة واحدة</span><span className="font-bold">{formatNumber(expenses.filter(e => e.type === 'مرة واحدة').length)}</span></div>
-                    </div>
-                    <div className="mt-2 pt-2 border-t border-white/20">
-                      <div className="flex justify-between text-xs"><span>الإجمالي</span><span className="font-bold">{formatNumber(expenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0))} ر.س</span></div>
-                    </div>
+                  <div className="space-y-2">
+                    <div className="p-2 rounded-lg bg-blue-500/20"><div className="flex justify-between"><span className={`text-xs ${txt}`}>شهري</span><span className={`text-xs font-bold ${txt}`}>{formatNumber(expenses.filter(e => e.type === 'شهري').length)}</span></div></div>
+                    <div className="p-2 rounded-lg bg-purple-500/20"><div className="flex justify-between"><span className={`text-xs ${txt}`}>سنوي</span><span className={`text-xs font-bold ${txt}`}>{formatNumber(expenses.filter(e => e.type === 'سنوي').length)}</span></div></div>
+                    <div className="p-2 rounded-lg bg-orange-500/20"><div className="flex justify-between"><span className={`text-xs ${txt}`}>مرة واحدة</span><span className={`text-xs font-bold ${txt}`}>{formatNumber(expenses.filter(e => e.type === 'مرة واحدة').length)}</span></div></div>
+                  </div>
+                  <div className={`mt-3 pt-2 border-t ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                    <div className="flex justify-between text-xs"><span className={txtSm}>الإجمالي</span><span className={`font-bold ${txt}`}>{formatNumber(expenses.reduce((s, e) => s + (parseFloat(e.amount) || 0), 0))} ر.س</span></div>
                   </div>
                 </button>
 
                 {/* بطاقة المهام */}
-                <button onClick={() => setCurrentView('tasks')} className="bg-gradient-to-br from-violet-500 to-purple-600 p-4 rounded-2xl text-white text-right relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-full opacity-10">
-                    <CheckSquare className="w-24 h-24 absolute -top-4 -left-4" />
+                <button onClick={() => setCurrentView('tasks')} className={`${card} p-4 rounded-xl border text-right hover:border-violet-500/50 transition-all`}>
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className={`font-bold text-sm ${txt}`}>المهام</h3>
+                    <span className={`text-2xl font-bold ${txt}`}>{formatNumber(tasks.length)}</span>
                   </div>
-                  <div className="relative">
-                    <div className="flex items-center justify-between mb-2">
-                      <CheckSquare className="w-7 h-7 opacity-80" />
-                      <span className="text-3xl font-bold">{formatNumber(tasks.length)}</span>
-                    </div>
-                    <p className="text-sm font-bold mb-2">المهام</p>
-                    <div className="space-y-1 text-xs opacity-90">
-                      <div className="flex justify-between"><span className="flex items-center gap-1"><span className="w-2 h-2 bg-red-400 rounded-full"></span>عالي</span><span className="font-bold">{formatNumber(tasks.filter(t => t.priority === 'عالي الأهمية').length)}</span></div>
-                      <div className="flex justify-between"><span className="flex items-center gap-1"><span className="w-2 h-2 bg-orange-400 rounded-full"></span>مستعجل</span><span className="font-bold">{formatNumber(tasks.filter(t => t.priority === 'مستعجل').length)}</span></div>
-                      <div className="flex justify-between"><span className="flex items-center gap-1"><span className="w-2 h-2 bg-yellow-400 rounded-full"></span>متوسط</span><span className="font-bold">{formatNumber(tasks.filter(t => t.priority === 'متوسط الأهمية').length)}</span></div>
-                      <div className="flex justify-between"><span className="flex items-center gap-1"><span className="w-2 h-2 bg-green-400 rounded-full"></span>منخفض</span><span className="font-bold">{formatNumber(tasks.filter(t => t.priority === 'منخفض الأهمية').length)}</span></div>
-                    </div>
+                  <div className="space-y-2">
+                    <div className="p-2 rounded-lg bg-red-500/20"><div className="flex justify-between"><span className={`text-xs ${txt}`}>عالي الأهمية</span><span className={`text-xs font-bold ${txt}`}>{formatNumber(tasks.filter(t => t.priority === 'عالي الأهمية').length)}</span></div></div>
+                    <div className="p-2 rounded-lg bg-orange-500/20"><div className="flex justify-between"><span className={`text-xs ${txt}`}>مستعجل</span><span className={`text-xs font-bold ${txt}`}>{formatNumber(tasks.filter(t => t.priority === 'مستعجل').length)}</span></div></div>
+                    <div className="p-2 rounded-lg bg-yellow-500/20"><div className="flex justify-between"><span className={`text-xs ${txt}`}>متوسط</span><span className={`text-xs font-bold ${txt}`}>{formatNumber(tasks.filter(t => t.priority === 'متوسط الأهمية').length)}</span></div></div>
+                    <div className="p-2 rounded-lg bg-green-500/20"><div className="flex justify-between"><span className={`text-xs ${txt}`}>منخفض</span><span className={`text-xs font-bold ${txt}`}>{formatNumber(tasks.filter(t => t.priority === 'منخفض الأهمية').length)}</span></div></div>
                   </div>
                 </button>
 
                 {/* بطاقة المشاريع */}
-                <button onClick={() => setCurrentView('projects')} className="bg-gradient-to-br from-emerald-500 to-teal-600 p-4 rounded-2xl text-white text-right relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-full opacity-10">
-                    <FolderOpen className="w-24 h-24 absolute -top-4 -left-4" />
+                <button onClick={() => setCurrentView('projects')} className={`${card} p-4 rounded-xl border text-right hover:border-emerald-500/50 transition-all`}>
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className={`font-bold text-sm ${txt}`}>المشاريع</h3>
+                    <span className={`text-2xl font-bold ${txt}`}>{formatNumber(projects.length)}</span>
                   </div>
-                  <div className="relative">
-                    <div className="flex items-center justify-between mb-2">
-                      <FolderOpen className="w-7 h-7 opacity-80" />
-                      <span className="text-3xl font-bold">{formatNumber(projects.length)}</span>
-                    </div>
-                    <p className="text-sm font-bold mb-2">المشاريع</p>
-                    <div className="space-y-1 text-xs opacity-90">
-                      <div className="flex justify-between"><span className="flex items-center gap-1"><span className="w-2 h-2 bg-blue-400 rounded-full"></span>جاري</span><span className="font-bold">{formatNumber(projects.filter(p => p.status === 'جاري العمل').length)}</span></div>
-                      <div className="flex justify-between"><span className="flex items-center gap-1"><span className="w-2 h-2 bg-green-400 rounded-full"></span>مكتمل</span><span className="font-bold">{formatNumber(projects.filter(p => p.status === 'مكتمل').length)}</span></div>
-                      <div className="flex justify-between"><span className="flex items-center gap-1"><span className="w-2 h-2 bg-gray-400 rounded-full"></span>متوقف</span><span className="font-bold">{formatNumber(projects.filter(p => p.status === 'متوقف').length)}</span></div>
-                    </div>
-                    <div className="mt-2 pt-2 border-t border-white/20">
-                      <div className="flex justify-between text-xs"><span>القيمة</span><span className="font-bold">{formatNumber(projects.reduce((s, p) => s + (parseFloat(p.budget) || 0), 0))} ر.س</span></div>
-                    </div>
+                  <div className="space-y-2">
+                    <div className="p-2 rounded-lg bg-blue-500/20"><div className="flex justify-between"><span className={`text-xs ${txt}`}>جاري العمل</span><span className={`text-xs font-bold ${txt}`}>{formatNumber(projects.filter(p => p.status === 'جاري العمل').length)}</span></div></div>
+                    <div className="p-2 rounded-lg bg-green-500/20"><div className="flex justify-between"><span className={`text-xs ${txt}`}>مكتمل</span><span className={`text-xs font-bold ${txt}`}>{formatNumber(projects.filter(p => p.status === 'مكتمل').length)}</span></div></div>
+                    <div className="p-2 rounded-lg bg-gray-500/20"><div className="flex justify-between"><span className={`text-xs ${txt}`}>متوقف</span><span className={`text-xs font-bold ${txt}`}>{formatNumber(projects.filter(p => p.status === 'متوقف').length)}</span></div></div>
+                  </div>
+                  <div className={`mt-3 pt-2 border-t ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                    <div className="flex justify-between text-xs"><span className={txtSm}>القيمة</span><span className={`font-bold ${txt}`}>{formatNumber(projects.reduce((s, p) => s + (parseFloat(p.budget) || 0), 0))} ر.س</span></div>
                   </div>
                 </button>
 
                 {/* بطاقة الحسابات */}
-                <button onClick={() => setCurrentView('accounts')} className="bg-gradient-to-br from-amber-500 to-orange-600 p-4 rounded-2xl text-white text-right relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-full h-full opacity-10">
-                    <Users className="w-24 h-24 absolute -top-4 -left-4" />
+                <button onClick={() => setCurrentView('accounts')} className={`${card} p-4 rounded-xl border text-right hover:border-amber-500/50 transition-all`}>
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className={`font-bold text-sm ${txt}`}>الحسابات</h3>
+                    <span className={`text-2xl font-bold ${txt}`}>{formatNumber(accounts.length)}</span>
                   </div>
-                  <div className="relative">
-                    <div className="flex items-center justify-between mb-2">
-                      <Users className="w-7 h-7 opacity-80" />
-                      <span className="text-3xl font-bold">{formatNumber(accounts.length)}</span>
-                    </div>
-                    <p className="text-sm font-bold mb-2">الحسابات</p>
-                    <div className="space-y-1 text-xs opacity-90">
-                      <div className="flex justify-between"><span className="flex items-center gap-1"><span className="w-2 h-2 bg-green-400 rounded-full"></span>نشط</span><span className="font-bold">{formatNumber(accounts.filter(a => { const d = calcDays(a.subscriptionDate); return d === null || d > 30; }).length)}</span></div>
-                      <div className="flex justify-between"><span className="flex items-center gap-1"><span className="w-2 h-2 bg-yellow-400 rounded-full"></span>ينتهي قريباً</span><span className="font-bold">{formatNumber(accounts.filter(a => { const d = calcDays(a.subscriptionDate); return d !== null && d <= 30 && d > 0; }).length)}</span></div>
-                      <div className="flex justify-between"><span className="flex items-center gap-1"><span className="w-2 h-2 bg-red-400 rounded-full"></span>منتهي</span><span className="font-bold">{formatNumber(accounts.filter(a => { const d = calcDays(a.subscriptionDate); return d !== null && d <= 0; }).length)}</span></div>
-                    </div>
+                  <div className="space-y-2">
+                    <div className="p-2 rounded-lg bg-green-500/20"><div className="flex justify-between"><span className={`text-xs ${txt}`}>نشط</span><span className={`text-xs font-bold ${txt}`}>{formatNumber(accounts.filter(a => { const d = calcDays(a.subscriptionDate); return d === null || d > 30; }).length)}</span></div></div>
+                    <div className="p-2 rounded-lg bg-yellow-500/20"><div className="flex justify-between"><span className={`text-xs ${txt}`}>ينتهي قريباً</span><span className={`text-xs font-bold ${txt}`}>{formatNumber(accounts.filter(a => { const d = calcDays(a.subscriptionDate); return d !== null && d <= 30 && d > 0; }).length)}</span></div></div>
+                    <div className="p-2 rounded-lg bg-red-500/20"><div className="flex justify-between"><span className={`text-xs ${txt}`}>منتهي</span><span className={`text-xs font-bold ${txt}`}>{formatNumber(accounts.filter(a => { const d = calcDays(a.subscriptionDate); return d !== null && d <= 0; }).length)}</span></div></div>
                   </div>
                 </button>
               </div>
 
-              {/* بطاقات البنود العاجلة الجديدة */}
-              {(urgentExpenses.length > 0 || urgentTasks.length > 0) && (
-                <div className="mb-4">
-                  <div className="flex items-center gap-2 mb-3">
+              {/* بنود تحتاج اهتمام - تصميم موحد */}
+              {(urgentExpenses.length > 0 || urgentTasks.length > 0 || accounts.filter(a => { const d = calcDays(a.subscriptionDate); return d !== null && d <= 30 && d > 0; }).length > 0) && (
+                <div className={`${card} p-4 rounded-xl border mb-4`}>
+                  <div className="flex items-center gap-2 mb-4">
                     <AlertTriangle className="w-5 h-5 text-red-500" />
                     <h3 className={`font-bold ${txt}`}>بنود تحتاج اهتمام</h3>
                   </div>
@@ -1111,29 +1087,20 @@ export default function App() {
                   {urgentExpenses.length > 0 && (
                     <div className="mb-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <div className="w-1 h-4 bg-red-500 rounded-full"></div>
                         <span className={`text-sm font-bold ${txt}`}>مصروفات قريبة</span>
                         <span className="bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full text-xs">{urgentExpenses.length}</span>
                       </div>
-                      <div className="grid md:grid-cols-3 gap-3">
+                      <div className="grid md:grid-cols-3 gap-2">
                         {urgentExpenses.slice(0, 3).map(e => {
                           const d = calcDays(e.dueDate);
                           const isOverdue = d !== null && d < 0;
                           const isUrgent = d !== null && d <= 7;
-                          const bgColor = isOverdue ? 'from-red-500/20 to-red-600/10 border-red-500/30' : isUrgent ? 'from-orange-500/20 to-orange-600/10 border-orange-500/30' : 'from-yellow-500/20 to-yellow-600/10 border-yellow-500/30';
-                          const lineColor = isOverdue ? 'bg-red-500' : isUrgent ? 'bg-orange-500' : 'bg-yellow-500';
-                          const badgeColor = isOverdue ? 'bg-red-500 text-white' : isUrgent ? 'bg-orange-500 text-white' : 'bg-yellow-500 text-black';
+                          const bgColor = isOverdue ? 'bg-red-500/20' : isUrgent ? 'bg-orange-500/20' : 'bg-yellow-500/20';
+                          const textColor = isOverdue ? 'text-red-400' : isUrgent ? 'text-orange-400' : 'text-yellow-400';
                           return (
-                            <div key={e.id} className={`bg-gradient-to-br ${bgColor} border p-3 rounded-xl relative overflow-hidden`}>
-                              <div className={`absolute top-0 left-0 w-full h-1 ${lineColor}`}></div>
-                              <div className="flex items-start justify-between mb-2">
-                                <span className={`font-bold text-sm ${txt}`}>{e.name}</span>
-                                <span className={`${badgeColor} px-2 py-0.5 rounded-lg text-xs`}>{isOverdue ? `متأخر ${formatNumber(Math.abs(d))} يوم` : `${formatNumber(d)} يوم`}</span>
-                              </div>
-                              <p className={`text-xl font-bold mb-2 ${txt}`}>{formatNumber(e.amount)} <span className={`text-xs ${txtSm}`}>ريال</span></p>
-                              <div className={`flex items-center gap-2 text-xs ${txtSm}`}>
-                                <Clock className="w-3 h-3" />استحقاق: {e.dueDate}
-                              </div>
+                            <div key={e.id} className={`p-2 rounded-lg ${bgColor}`}>
+                              <div className="flex justify-between"><span className={`text-xs ${txt}`}>{e.name}</span><span className={`text-xs font-bold ${textColor}`}>{isOverdue ? `متأخر ${formatNumber(Math.abs(d))} يوم` : `${formatNumber(d)} يوم`}</span></div>
+                              <div className="flex justify-between mt-1"><span className={`text-xs ${txtSm}`}>{formatNumber(e.amount)} ريال</span><span className={`text-xs ${txtSm}`}>استحقاق: {e.dueDate}</span></div>
                             </div>
                           );
                         })}
@@ -1143,32 +1110,44 @@ export default function App() {
                   
                   {/* مهام عالية الأهمية */}
                   {urgentTasks.length > 0 && (
-                    <div>
+                    <div className="mb-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <div className="w-1 h-4 bg-purple-500 rounded-full"></div>
                         <span className={`text-sm font-bold ${txt}`}>مهام عالية الأهمية</span>
                         <span className="bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded-full text-xs">{urgentTasks.length}</span>
                       </div>
-                      <div className="grid md:grid-cols-2 gap-3">
+                      <div className="grid md:grid-cols-2 gap-2">
                         {urgentTasks.slice(0, 4).map(t => {
                           const d = calcDays(t.dueDate);
-                          const project = projects.find(p => p.id === t.projectId);
                           const isHigh = t.priority === 'عالي الأهمية';
-                          const bgColor = isHigh ? 'from-purple-500/20 to-purple-600/10 border-purple-500/30' : 'from-orange-500/20 to-orange-600/10 border-orange-500/30';
-                          const lineColor = isHigh ? 'bg-purple-500' : 'bg-orange-500';
+                          const bgColor = isHigh ? 'bg-red-500/20' : 'bg-orange-500/20';
+                          const textColor = isHigh ? 'text-red-400' : 'text-orange-400';
                           return (
-                            <div key={t.id} className={`bg-gradient-to-br ${bgColor} border p-3 rounded-xl relative overflow-hidden`}>
-                              <div className={`absolute top-0 left-0 w-full h-1 ${lineColor}`}></div>
-                              <div className="flex items-start justify-between mb-2">
-                                <span className={`font-bold text-sm ${txt}`}>{t.title}</span>
-                                <Badge status={t.priority} />
-                              </div>
-                              {t.description && <p className={`text-xs mb-2 ${txtSm}`}>{t.description.substring(0, 50)}{t.description.length > 50 ? '...' : ''}</p>}
-                              <div className={`flex items-center gap-3 text-xs flex-wrap ${txtSm}`}>
-                                {t.assignedTo && <span className="inline-flex items-center gap-1"><User className="w-3 h-3" />المنفذ: {t.assignedTo}</span>}
-                                {d !== null && <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3" />{d < 0 ? `مضى ${formatNumber(Math.abs(d))} يوم` : `متبقي ${formatNumber(d)} يوم`}</span>}
-                                {project && <span className={`inline-flex items-center gap-1 ${accent.text}`}><FolderOpen className="w-3 h-3" />{project.name}</span>}
-                              </div>
+                            <div key={t.id} className={`p-2 rounded-lg ${bgColor}`}>
+                              <div className="flex justify-between"><span className={`text-xs ${txt}`}>{t.title}</span><span className={`text-xs font-bold ${textColor}`}>{t.priority}</span></div>
+                              <div className="flex justify-between mt-1"><span className={`text-xs ${txtSm}`}>المنفذ: {t.assignedTo || 'غير محدد'}</span>{d !== null && <span className={`text-xs ${txtSm}`}>{d < 0 ? `مضى ${formatNumber(Math.abs(d))} يوم` : `متبقي ${formatNumber(d)} يوم`}</span>}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* اشتراكات تنتهي قريباً */}
+                  {accounts.filter(a => { const d = calcDays(a.subscriptionDate); return d !== null && d <= 30 && d > 0; }).length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={`text-sm font-bold ${txt}`}>اشتراكات تنتهي قريباً</span>
+                        <span className="bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full text-xs">{accounts.filter(a => { const d = calcDays(a.subscriptionDate); return d !== null && d <= 30 && d > 0; }).length}</span>
+                      </div>
+                      <div className="grid md:grid-cols-3 gap-2">
+                        {accounts.filter(a => { const d = calcDays(a.subscriptionDate); return d !== null && d <= 30 && d > 0; }).slice(0, 3).map(a => {
+                          const d = calcDays(a.subscriptionDate);
+                          const bgColor = d <= 7 ? 'bg-orange-500/20' : d <= 15 ? 'bg-yellow-500/20' : 'bg-green-500/20';
+                          const textColor = d <= 7 ? 'text-orange-400' : d <= 15 ? 'text-yellow-400' : 'text-green-400';
+                          return (
+                            <div key={a.id} className={`p-2 rounded-lg ${bgColor}`}>
+                              <div className="flex justify-between"><span className={`text-xs ${txt}`}>{a.name}</span><span className={`text-xs font-bold ${textColor}`}>{formatNumber(d)} يوم</span></div>
+                              <div className="flex justify-between mt-1"><span className={`text-xs ${txtSm}`}>انتهاء: {a.subscriptionDate}</span></div>
                             </div>
                           );
                         })}
@@ -1178,29 +1157,45 @@ export default function App() {
                 </div>
               )}
 
-              <div className="grid md:grid-cols-2 gap-4">
+              {/* الأقسام السفلية */}
+              <div className="grid md:grid-cols-3 gap-4">
+                {/* المصروفات القادمة */}
                 <div className={`${card} p-4 rounded-xl border`}>
                   <div className="flex justify-between mb-3"><h3 className={`font-bold text-sm ${txt}`}>المصروفات القادمة</h3><button onClick={() => setCurrentView('expenses')} className={`text-xs ${accent.text}`}>الكل</button></div>
                   {expenses.filter(e => e.status !== 'مدفوع').length === 0 ? <p className={`text-center py-6 text-xs ${txtSm}`}>لا توجد مصروفات</p> : 
-                    expenses.filter(e => e.status !== 'مدفوع').slice(0, 4).map(e => {
+                    <div className="space-y-2">{expenses.filter(e => e.status !== 'مدفوع').slice(0, 4).map(e => {
                       const d = calcDays(e.dueDate);
                       return (
-                        <div key={e.id} className={`p-2 rounded-lg mb-2 ${d !== null && d < 0 ? 'bg-red-500/20' : d !== null && d < 7 ? 'bg-orange-500/20' : 'bg-green-500/20'}`}>
+                        <div key={e.id} className={`p-2 rounded-lg ${d !== null && d < 0 ? 'bg-red-500/20' : d !== null && d < 7 ? 'bg-orange-500/20' : 'bg-green-500/20'}`}>
                           <div className="flex justify-between"><span className={`text-xs ${txt}`}>{e.name}</span><span className={`text-xs font-bold ${txt}`}>{formatNumber(e.amount)} ريال</span></div>
-                          {d !== null && <span className={`text-xs ${txtSm}`}><Clock className="w-3 h-3 inline ml-1" />{d < 0 ? `متأخر ${formatNumber(Math.abs(d))} يوم` : `${formatNumber(d)} يوم`}</span>}
+                          {d !== null && <span className={`text-xs ${txtSm}`}>{d < 0 ? `متأخر ${formatNumber(Math.abs(d))} يوم` : `${formatNumber(d)} يوم`}</span>}
                         </div>
                       );
-                    })}
+                    })}</div>}
                 </div>
+
+                {/* المشاريع النشطة */}
                 <div className={`${card} p-4 rounded-xl border`}>
                   <div className="flex justify-between mb-3"><h3 className={`font-bold text-sm ${txt}`}>المشاريع النشطة</h3><button onClick={() => setCurrentView('projects')} className={`text-xs ${accent.text}`}>الكل</button></div>
                   {projects.filter(p => p.status === 'جاري العمل').length === 0 ? <p className={`text-center py-6 text-xs ${txtSm}`}>لا توجد مشاريع</p> : 
-                    projects.filter(p => p.status === 'جاري العمل').slice(0, 4).map(p => (
-                      <div key={p.id} className={`p-2 rounded-lg mb-2 border ${darkMode ? 'bg-gray-700/50 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-                        <div className="flex justify-between"><span className={`text-xs ${txt}`}>{p.name}</span><span className={`text-xs ${txtSm}`}><Activity className="w-3 h-3 inline ml-1" />{p.status}</span></div>
-                        <span className={`text-xs ${txtSm}`}><User className="w-3 h-3 inline ml-1" />{p.client || 'غير محدد'}</span>
+                    <div className="space-y-2">{projects.filter(p => p.status === 'جاري العمل').slice(0, 4).map(p => (
+                      <div key={p.id} className="p-2 rounded-lg bg-blue-500/20">
+                        <div className="flex justify-between"><span className={`text-xs ${txt}`}>{p.name}</span><span className={`text-xs font-bold ${txt}`}>جاري العمل</span></div>
+                        <span className={`text-xs ${txtSm}`}>العميل: {p.client || 'غير محدد'}</span>
                       </div>
-                    ))}
+                    ))}</div>}
+                </div>
+
+                {/* آخر العمليات */}
+                <div className={`${card} p-4 rounded-xl border`}>
+                  <div className="flex justify-between mb-3"><h3 className={`font-bold text-sm ${txt}`}>آخر العمليات</h3><button onClick={() => setCurrentView('audit')} className={`text-xs ${accent.text}`}>السجل</button></div>
+                  {auditLog.length === 0 ? <p className={`text-center py-6 text-xs ${txtSm}`}>لا توجد عمليات</p> : 
+                    <div className="space-y-2">{auditLog.slice(0, 4).map(l => (
+                      <div key={l.id} className={`p-2 rounded-lg ${l.action === 'add' ? 'bg-green-500/20' : l.action === 'edit' ? 'bg-blue-500/20' : l.action === 'delete' ? 'bg-red-500/20' : 'bg-purple-500/20'}`}>
+                        <div className="flex justify-between"><span className={`text-xs ${txt}`}>{l.description?.substring(0, 25) || 'عملية'}...</span><span className={`text-xs ${txtSm}`}>{l.user}</span></div>
+                        <span className={`text-xs ${txtSm}`}>{new Date(l.timestamp).toLocaleDateString('en-GB')} {formatTime12(new Date(l.timestamp))}</span>
+                      </div>
+                    ))}</div>}
                 </div>
               </div>
             </div>
