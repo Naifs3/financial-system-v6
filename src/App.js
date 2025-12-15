@@ -1001,13 +1001,19 @@ export default function App() {
   const currentBg = backgrounds[bgIndex];
   const currentFont = fonts[fontIndex];
   const currentHeaderColor = headerColors[headerColorIndex];
-  const bg = `bg-gradient-to-br ${darkMode ? currentBg.dark : currentBg.light}`;
+  const bg = tokyoNightEnabled 
+    ? 'bg-gradient-to-br from-gray-900 to-gray-800'
+    : `bg-gradient-to-br ${darkMode ? currentBg.dark : currentBg.light}`;
   // التصميم الزجاجي - شفافية أقل
-  const card = darkMode ? 'bg-gray-800/80 backdrop-blur-sm border-gray-700/50' : 'bg-white/90 backdrop-blur-sm border-gray-200';
+  const card = tokyoNightEnabled 
+    ? 'bg-gray-800/80 backdrop-blur-md border-gray-700/50' 
+    : (darkMode ? 'bg-gray-800/80 backdrop-blur-sm border-gray-700/50' : 'bg-white/90 backdrop-blur-sm border-gray-200');
   const headerCard = darkMode ? currentHeaderColor.dark : currentHeaderColor.light;
   const headerTxt = headerColorIndex > 0 ? 'text-white' : (darkMode ? 'text-white' : 'text-gray-900');
   const headerTxtSm = headerColorIndex > 0 ? 'text-gray-300' : (darkMode ? 'text-gray-400' : 'text-gray-500');
-  const cardPopup = darkMode ? 'bg-gray-800/95 backdrop-blur-md border-gray-700' : 'bg-white/95 backdrop-blur-md border-gray-200';
+  const cardPopup = tokyoNightEnabled
+    ? 'bg-gray-800/95 backdrop-blur-md border-gray-700'
+    : (darkMode ? 'bg-gray-800/95 backdrop-blur-md border-gray-700' : 'bg-white/95 backdrop-blur-md border-gray-200');
   const inp = tokyoNightEnabled 
     ? 'bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20' 
     : (darkMode ? 'bg-gray-700/80 border-gray-600 text-white placeholder-gray-400' : 'bg-white/90 border-gray-300 text-gray-900 placeholder-gray-400');
@@ -2248,11 +2254,11 @@ export default function App() {
             ...hideScrollbar
           }}>
             
-            {modalType === 'delExp' && <><h3 className={`text-lg font-bold mb-4 ${txt}`}>حذف مصروف</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.name}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delExpense(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
-            {modalType === 'delTask' && <><h3 className={`text-lg font-bold mb-4 ${txt}`}>حذف مهمة</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.title}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delTask(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
-            {modalType === 'delProject' && <><h3 className={`text-lg font-bold mb-4 ${txt}`}>حذف مشروع</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.name}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delProject(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
-            {modalType === 'delAcc' && <><h3 className={`text-lg font-bold mb-4 ${txt}`}>حذف حساب</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.name}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delAccount(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
-            {modalType === 'delUser' && <><h3 className={`text-lg font-bold mb-4 ${txt}`}>حذف مستخدم</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.username}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delUser(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
+            {modalType === 'delExp' && <><h3 className={`text-lg font-bold mb-4 ${txt}`}>حذف مصروف</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.name}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl text-sm ${tokyoNightEnabled?'bg-gray-700/50 text-white':(darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black')}`}>إلغاء</button><button onClick={() => delExpense(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
+            {modalType === 'delTask' && <><h3 className={`text-lg font-bold mb-4 ${txt}`}>حذف مهمة</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.title}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl text-sm ${tokyoNightEnabled?'bg-gray-700/50 text-white':(darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black')}`}>إلغاء</button><button onClick={() => delTask(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
+            {modalType === 'delProject' && <><h3 className={`text-lg font-bold mb-4 ${txt}`}>حذف مشروع</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.name}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl text-sm ${tokyoNightEnabled?'bg-gray-700/50 text-white':(darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black')}`}>إلغاء</button><button onClick={() => delProject(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
+            {modalType === 'delAcc' && <><h3 className={`text-lg font-bold mb-4 ${txt}`}>حذف حساب</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.name}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl text-sm ${tokyoNightEnabled?'bg-gray-700/50 text-white':(darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black')}`}>إلغاء</button><button onClick={() => delAccount(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
+            {modalType === 'delUser' && <><h3 className={`text-lg font-bold mb-4 ${txt}`}>حذف مستخدم</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.username}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl text-sm ${tokyoNightEnabled?'bg-gray-700/50 text-white':(darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black')}`}>إلغاء</button><button onClick={() => delUser(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
 
             {modalType === 'addSection' && (
               <>
@@ -2264,7 +2270,7 @@ export default function App() {
                   <input placeholder="اسم القسم *" value={newSection.name} onChange={e=>setNewSection({...newSection,name:e.target.value})} className={`w-full border rounded-xl px-4 py-2.5 text-sm ${inp}`} />
                 </div>
                 <div className="flex gap-2 mt-4">
-                  <button onClick={()=>setShowModal(false)} className={`flex-1 py-2.5 rounded-xl text-sm ${darkMode?'bg-gray-700 hover:bg-gray-600 text-white':'bg-gray-200 hover:bg-gray-300 text-black'}`}>إلغاء</button>
+                  <button onClick={()=>setShowModal(false)} className={`flex-1 py-2.5 rounded-xl text-sm ${tokyoNightEnabled?'bg-gray-700/50 hover:bg-gray-600/50 text-white':(darkMode?'bg-gray-700 hover:bg-gray-600 text-white':'bg-gray-200 hover:bg-gray-300 text-black')}`}>إلغاء</button>
                   <button onClick={addSection} className={`flex-1 bg-gradient-to-r ${accent.gradient} text-white py-2.5 rounded-xl text-sm`}>إضافة</button>
                 </div>
               </>
@@ -2288,7 +2294,7 @@ export default function App() {
                   </div>
                 </div>
                 <div className="flex gap-2 mt-4">
-                  <button onClick={()=>{setShowModal(false);setEditingItem(null);}} className={`flex-1 py-2.5 rounded-xl text-sm ${darkMode?'bg-gray-700 hover:bg-gray-600 text-white':'bg-gray-200 hover:bg-gray-300 text-black'}`}>إلغاء</button>
+                  <button onClick={()=>{setShowModal(false);setEditingItem(null);}} className={`flex-1 py-2.5 rounded-xl text-sm ${tokyoNightEnabled?'bg-gray-700/50 hover:bg-gray-600/50 text-white':(darkMode?'bg-gray-700 hover:bg-gray-600 text-white':'bg-gray-200 hover:bg-gray-300 text-black')}`}>إلغاء</button>
                   <button onClick={modalType==='addExp'?addExpense:editExpense} className={`flex-1 bg-gradient-to-r ${accent.gradient} text-white py-2.5 rounded-xl text-sm`}>{modalType==='addExp'?'إضافة':'حفظ'}</button>
                 </div>
               </>
@@ -2314,7 +2320,7 @@ export default function App() {
                   </div>
                 </div>
                 <div className="flex gap-2 mt-4">
-                  <button onClick={()=>{setShowModal(false);setEditingItem(null);}} className={`flex-1 py-2.5 rounded-xl text-sm ${darkMode?'bg-gray-700 hover:bg-gray-600 text-white':'bg-gray-200 hover:bg-gray-300 text-black'}`}>إلغاء</button>
+                  <button onClick={()=>{setShowModal(false);setEditingItem(null);}} className={`flex-1 py-2.5 rounded-xl text-sm ${tokyoNightEnabled?'bg-gray-700/50 hover:bg-gray-600/50 text-white':(darkMode?'bg-gray-700 hover:bg-gray-600 text-white':'bg-gray-200 hover:bg-gray-300 text-black')}`}>إلغاء</button>
                   <button onClick={modalType==='addTask'?addTask:editTask} className={`flex-1 bg-gradient-to-r ${accent.gradient} text-white py-2.5 rounded-xl text-sm`}>{modalType==='addTask'?'إضافة':'حفظ'}</button>
                 </div>
               </>
@@ -2343,7 +2349,7 @@ export default function App() {
                   <select value={modalType==='addProject'?newProject.status:editingItem?.status||''} onChange={e=>modalType==='addProject'?setNewProject({...newProject,status:e.target.value}):setEditingItem({...editingItem,status:e.target.value})} className={`w-full border rounded-xl px-4 py-2.5 text-sm ${inp}`}><option value="">الحالة</option><option value="جاري العمل">جاري العمل</option><option value="متوقف">متوقف</option><option value="مكتمل">مكتمل</option></select>
                 </div>
                 <div className="flex gap-2 mt-4">
-                  <button onClick={()=>{setShowModal(false);setEditingItem(null);}} className={`flex-1 py-2.5 rounded-xl text-sm ${darkMode?'bg-gray-700 hover:bg-gray-600 text-white':'bg-gray-200 hover:bg-gray-300 text-black'}`}>إلغاء</button>
+                  <button onClick={()=>{setShowModal(false);setEditingItem(null);}} className={`flex-1 py-2.5 rounded-xl text-sm ${tokyoNightEnabled?'bg-gray-700/50 hover:bg-gray-600/50 text-white':(darkMode?'bg-gray-700 hover:bg-gray-600 text-white':'bg-gray-200 hover:bg-gray-300 text-black')}`}>إلغاء</button>
                   <button onClick={modalType==='addProject'?addProject:editProject} className={`flex-1 bg-gradient-to-r ${accent.gradient} text-white py-2.5 rounded-xl text-sm`}>{modalType==='addProject'?'إضافة':'حفظ'}</button>
                 </div>
               </>
@@ -2364,7 +2370,7 @@ export default function App() {
                   <input type="date" placeholder="تاريخ انتهاء الاشتراك" value={modalType==='addAcc'?newAccount.subscriptionDate:editingItem?.subscriptionDate||''} onChange={e=>modalType==='addAcc'?setNewAccount({...newAccount,subscriptionDate:e.target.value}):setEditingItem({...editingItem,subscriptionDate:e.target.value})} className={`w-full border rounded-xl px-4 py-2.5 text-sm ${inp}`} />
                 </div>
                 <div className="flex gap-2 mt-4">
-                  <button onClick={()=>{setShowModal(false);setEditingItem(null);}} className={`flex-1 py-2.5 rounded-xl text-sm ${darkMode?'bg-gray-700 hover:bg-gray-600 text-white':'bg-gray-200 hover:bg-gray-300 text-black'}`}>إلغاء</button>
+                  <button onClick={()=>{setShowModal(false);setEditingItem(null);}} className={`flex-1 py-2.5 rounded-xl text-sm ${tokyoNightEnabled?'bg-gray-700/50 hover:bg-gray-600/50 text-white':(darkMode?'bg-gray-700 hover:bg-gray-600 text-white':'bg-gray-200 hover:bg-gray-300 text-black')}`}>إلغاء</button>
                   <button onClick={modalType==='addAcc'?addAccount:editAccount} className={`flex-1 bg-gradient-to-r ${accent.gradient} text-white py-2.5 rounded-xl text-sm`}>{modalType==='addAcc'?'إضافة':'حفظ'}</button>
                 </div>
               </>
@@ -2383,7 +2389,7 @@ export default function App() {
                   <label className={`flex items-center gap-2 ${txt} text-sm`}><input type="checkbox" checked={modalType==='addUser'?newUser.active:editingItem?.active!==false} onChange={e=>modalType==='addUser'?setNewUser({...newUser,active:e.target.checked}):setEditingItem({...editingItem,active:e.target.checked})} className="w-4 h-4 rounded" /><span>نشط</span></label>
                 </div>
                 <div className="flex gap-2 mt-4">
-                  <button onClick={()=>{setShowModal(false);setEditingItem(null);}} className={`flex-1 py-2.5 rounded-xl text-sm ${darkMode?'bg-gray-700 hover:bg-gray-600 text-white':'bg-gray-200 hover:bg-gray-300 text-black'}`}>إلغاء</button>
+                  <button onClick={()=>{setShowModal(false);setEditingItem(null);}} className={`flex-1 py-2.5 rounded-xl text-sm ${tokyoNightEnabled?'bg-gray-700/50 hover:bg-gray-600/50 text-white':(darkMode?'bg-gray-700 hover:bg-gray-600 text-white':'bg-gray-200 hover:bg-gray-300 text-black')}`}>إلغاء</button>
                   <button onClick={modalType==='addUser'?addUser:editUser} className={`flex-1 bg-gradient-to-r ${accent.gradient} text-white py-2.5 rounded-xl text-sm`}>{modalType==='addUser'?'إضافة':'حفظ'}</button>
                 </div>
               </>
