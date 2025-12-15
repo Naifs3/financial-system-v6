@@ -1023,7 +1023,6 @@ export default function App() {
           @keyframes cardGlow{0%,100%{border-color:rgba(122,162,247,0.2);box-shadow:0 0 10px rgba(122,162,247,0.1)}50%{border-color:rgba(122,162,247,0.3);box-shadow:0 0 15px rgba(122,162,247,0.15)}}
           .tokyo-card{background:rgba(36,40,59,0.8)!important;backdrop-filter:blur(10px)!important;border:1px solid rgba(122,162,247,0.2)!important;animation:cardGlow 8s ease-in-out infinite!important;transition:all 0.5s ease!important}
           .tokyo-card:hover{transform:translateY(-2px)!important;border-color:rgba(122,162,247,0.4)!important}
-          `
         *::-webkit-scrollbar { display: none; } 
         * { scrollbar-width: none; -ms-overflow-style: none; } 
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; } 
