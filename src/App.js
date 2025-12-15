@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, setDoc, onSnapshot } from 'firebase/firestore';
-import { Calendar, CheckSquare, Users, Moon, Sun, Monitor, Plus, Archive, Clock, Activity, History, Loader, Power, Pencil, Trash2, RotateCcw, UserCog, ChevronLeft, FolderOpen, FileText, MapPin, User, X, Phone, Settings, Layers, DollarSign, Wallet, FolderPlus, AlertTriangle, Map, Type, Search, RefreshCw, Shield, CheckCircle, XCircle, Copy, ExternalLink, Eye, EyeOff, Folder, BookOpen } from 'lucide-react';
+import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, setDoc, onSnapshot, query, orderBy, runTransaction } from 'firebase/firestore';
+import { Calendar, CheckSquare, Users, Moon, Sun, Monitor, Plus, Archive, Clock, Activity, History, Loader, Power, Pencil, Trash2, RotateCcw, UserCog, ChevronLeft, ChevronDown, ChevronUp, FolderOpen, FileText, MapPin, User, X, Phone, Settings, Layers, CreditCard, DollarSign, Wallet, FolderPlus, AlertTriangle, Image, Map, Type, Search, RefreshCw, Shield, CheckCircle, XCircle, Copy, ExternalLink, Eye, EyeOff, Folder, BookOpen } from 'lucide-react';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDpzPCma5c4Tuxd5htRHOvm4aYLRbj8Qkg",
@@ -14,7 +14,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const APP_VERSION = "5.0.0";
+const APP_VERSION = "5.2.0-MultiUser";
 
 // نظام الأرقام التسلسلية
 const generateRefNumber = (prefix, counter) => {
@@ -117,6 +117,17 @@ const calcDaysRemaining = (startDate, type) => {
   return diff;
 };
 
+// تحديد حالة المصروف
+const getExpenseStatus = (expense) => {
+  if (expense.status === 'مدفوع') return 'مدفوع';
+  const days = calcDaysRemaining(expense.dueDate, expense.type);
+  if (days === null) return 'لم يتم الدفع';
+  if (expense.type === 'شهري' && days <= 7) return 'قريباً الدفع';
+  if (expense.type === 'سنوي' && days <= 15) return 'قريباً الدفع';
+  if (days < 0) return 'متأخر';
+  return 'لم يتم الدفع';
+};
+
 const fonts = [
   { id: 'cairo', name: 'Cairo', value: "'Cairo', sans-serif", url: 'https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap' },
   { id: 'tajawal', name: 'Tajawal', value: "'Tajawal', sans-serif", url: 'https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap' },
@@ -163,6 +174,52 @@ const greetings = [
   (name) => `هلا بالنشيط ${name} 🚀`,
   (name) => `يا هلا بالبطل ${name} 🏆`,
 ];
+
+// عبارات تشجيعية للصفحات المختلفة
+const encouragements = {
+  expenses: [
+    'إدارة المصروفات بذكاء = نجاح مضمون! 💰',
+    'التخطيط المالي الجيد بداية النجاح 📊',
+    'راقب مصروفاتك، تحكم بمستقبلك! 🎯',
+    'كل ريال مُدار بذكاء يصنع الفرق 💎',
+    'المتابعة الدقيقة سر التوفير 🔍',
+    'أنت على الطريق الصحيح! 🌟',
+  ],
+  tasks: [
+    'كل مهمة منجزة خطوة نحو القمة! 🏔️',
+    'النجاح يبدأ بمهمة واحدة 🚀',
+    'أنت قادر على إنجاز المزيد! 💪',
+    'التنظيم مفتاح الإنتاجية 🔑',
+    'خطوة بخطوة نحو الهدف 👣',
+    'استمر، أنت تبلي بلاءً حسناً! ⭐',
+  ],
+  projects: [
+    'كل مشروع ناجح يبدأ بخطة! 📋',
+    'الإنجازات الكبيرة تبدأ هنا 🎯',
+    'مشاريعك تعكس طموحك! 🌟',
+    'النجاح يحتاج صبراً ومتابعة 🏆',
+    'كل مشروع فرصة جديدة للتميز 💫',
+    'أنت مبدع في إدارة مشاريعك! 🚀',
+  ],
+  accounts: [
+    'حساباتك منظمة، أمورك ميسّرة! ✨',
+    'التنظيم سر النجاح 📁',
+    'إدارة ذكية = نتائج مبهرة 🎯',
+    'كل حساب في مكانه الصحيح 👌',
+    'المتابعة الدقيقة تصنع الفرق 🔍',
+  ],
+  empty: [
+    'ابدأ الآن وأضف أول عنصر! 🌱',
+    'الخطوة الأولى هي الأهم 👣',
+    'لا تتردد، ابدأ رحلتك! 🚀',
+    'كل إنجاز عظيم بدأ من هنا ⭐',
+  ]
+};
+
+const getRandomEncouragement = (type) => {
+  const msgs = encouragements[type] || encouragements.empty;
+  return msgs[Math.floor(Math.random() * msgs.length)];
+};
 
 const getRandomGreeting = (username) => {
   const randomIndex = Math.floor(Math.random() * greetings.length);
@@ -219,6 +276,7 @@ const MapPicker = ({ onSelect, onClose, darkMode }) => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [position, setPosition] = useState({ lat: 24.7136, lng: 46.6753 });
   const [locationName, setLocationName] = useState('الرياض');
+  const mapRef = useRef(null);
   const searchTimeout = useRef(null);
 
   const searchSuggestions = async (query) => {
@@ -226,7 +284,6 @@ const MapPicker = ({ onSelect, onClose, darkMode }) => {
       setSuggestions([]);
       return;
     }
-    setSearching(true);
     try {
       const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`);
       const data = await response.json();
@@ -234,8 +291,6 @@ const MapPicker = ({ onSelect, onClose, darkMode }) => {
       setShowSuggestions(true);
     } catch (error) {
       console.error('Search error:', error);
-    } finally {
-      setSearching(false);
     }
   };
 
@@ -305,6 +360,7 @@ const MapPicker = ({ onSelect, onClose, darkMode }) => {
           
           <div className="relative rounded-xl overflow-hidden border-2 border-gray-300" style={{ height: '300px' }}>
             <iframe
+              ref={mapRef}
               src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${position.lat},${position.lng}&zoom=15&maptype=roadmap&language=ar`}
               width="100%"
               height="100%"
@@ -334,6 +390,18 @@ const MapPicker = ({ onSelect, onClose, darkMode }) => {
     </div>
   );
 };
+
+// Tokyo Night Background Component
+const TokyoNightBg = () => (
+  <>
+    <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:0,boxShadow:"742px 1123px #7aa2f7,1803px 608px #bb9af7,1582px 1726px #7dcfff,1676px 994px #7aa2f7,615px 537px #9ece6a,1311px 1363px #7aa2f7,1137px 1085px #bb9af7,1995px 1975px #7dcfff,1381px 1381px #7aa2f7,1280px 407px #bb9af7,435px 1003px #7dcfff,1636px 1146px #7aa2f7,91px 1699px #9ece6a,1588px 1717px #7aa2f7,1582px 537px #bb9af7,524px 1480px #7dcfff,1447px 1279px #7aa2f7,1831px 1663px #bb9af7,1047px 1576px #7dcfff,1668px 1376px #7aa2f7,1149px 1768px #9ece6a,502px 863px #7aa2f7,1330px 1460px #bb9af7,1989px 1016px #7dcfff,1024px 1659px #7aa2f7,1913px 1088px #bb9af7,1454px 918px #7dcfff,615px 1651px #7aa2f7,1415px 1667px #9ece6a,1349px 1404px #7aa2f7,1147px 1737px #bb9af7,1683px 297px #7dcfff,1880px 1650px #7aa2f7,851px 1017px #bb9af7,1123px 561px #7dcfff,488px 1834px #7aa2f7,296px 252px #9ece6a",width:"1px",height:"1px",animation:"twinkle 3s ease-in-out infinite"}}/>
+    <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:0,boxShadow:"1433px 1850px #7aa2f7,671px 1791px #bb9af7,1865px 1019px #7dcfff,1383px 1811px #7aa2f7,1542px 1575px #9ece6a,965px 1479px #7aa2f7,1924px 1212px #bb9af7,327px 1766px #7dcfff,1677px 1675px #7aa2f7,1919px 1164px #bb9af7,1708px 1393px #7dcfff,1686px 1529px #7aa2f7",width:"2px",height:"2px",animation:"twinkle 5s ease-in-out infinite 1s"}}/>
+    <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:0,boxShadow:"1018px 1233px #7aa2f7,1786px 1710px #bb9af7,725px 1448px #7dcfff,1850px 1430px #7aa2f7,1626px 469px #9ece6a",width:"3px",height:"3px",animation:"twinkle 7s ease-in-out infinite 2s"}}/>
+    <div style={{position:"fixed",top:"-50%",left:"-50%",width:"200%",height:"200%",pointerEvents:"none",zIndex:0,opacity:0.15,background:"radial-gradient(ellipse at 20% 30%,rgba(122,162,247,0.3) 0%,transparent 50%),radial-gradient(ellipse at 80% 70%,rgba(187,154,247,0.3) 0%,transparent 50%)",animation:"aurora 20s ease-in-out infinite"}}/>
+    {[...Array(10)].map((_,i)=><div key={i} style={{position:"fixed",width:"4px",height:"4px",background:"radial-gradient(circle,rgba(122,162,247,0.8) 0%,transparent 70%)",borderRadius:"50%",pointerEvents:"none",zIndex:0,left:`${(i+1)*10}%`,animation:"float 15s ease-in-out infinite",animationDelay:`${i*2}s`}}/>)}
+  </>
+);
+
 
 export default function App() {
   const getSystemTheme = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -405,6 +473,75 @@ export default function App() {
   
   // عدادات الأرقام التسلسلية
   const [counters, setCounters] = useState({ E: 0, T: 0, P: 0, A: 0 });
+  // --- FINAL CLEAN HELPERS ---
+  const incrementCounter = async (key) => {
+    await runTransaction(db, async (t) => {
+      const ref = doc(db, 'system', 'counters');
+      const docVal = await t.get(ref);
+      t.set(ref, { ...docVal.data(), [key]: (docVal.data()?.[key] || 0) + 1 }, { merge: true });
+    });
+  };
+  
+  const addLog = async (action, type, name, itemId) => {
+    await addDoc(collection(db, 'audit'), {
+      user: currentUser?.username || 'النظام', action, itemType: type, itemName: name, itemId,
+      description: ${currentUser?.username} قام  : ,
+      timestamp: new Date().toISOString()
+    });
+  };
+  // ---------------------------
+
+
+  // --- NEW MULTI-USER LOGIC ---
+  // REMOVED DUPLICATE const incrementCounter = async (key) => {
+    await runTransaction(db, async (t) => {
+      const ref = doc(db, 'system', 'counters');
+      const docVal = await t.get(ref);
+      t.set(ref, { ...docVal.data(), [key]: (docVal.data()?.[key] || 0) + 1 }, { merge: true });
+    });
+  };
+  
+  // REMOVED DUPLICATE const addLog = async (action, type, name, itemId) => {
+    await addDoc(collection(db, 'audit'), {
+      user: currentUser?.username || 'النظام', action, itemType: type, itemName: name, itemId,
+      description: `${currentUser?.username} قام ${action === 'add' ? 'بإضافة' : action === 'edit' ? 'بتعديل' : 'بحذف'} ${type}: ${name}`,
+      timestamp: new Date().toISOString()
+    });
+  };
+
+  const handleAddExpenseNew = async () => {
+    if (!newExpense.name || !newExpense.amount) return alert('أكمل البيانات');
+    const refNum = generateRefNumber('E', counters.E + 1);
+    await addDoc(collection(db, 'expenses'), { ...newExpense, refNumber: refNum, createdAt: new Date().toISOString(), createdBy: currentUser.username });
+    await incrementCounter('E'); await addLog('add', 'مصروف', newExpense.name, refNum);
+    setNewExpense(emptyExpense); setShowModal(false);
+  };
+
+  const handleAddTaskNew = async () => {
+    if (!newTask.title) return alert('أكمل البيانات');
+    const refNum = generateRefNumber('T', counters.T + 1);
+    await addDoc(collection(db, 'tasks'), { ...newTask, refNumber: refNum, createdAt: new Date().toISOString(), createdBy: currentUser.username });
+    await incrementCounter('T'); await addLog('add', 'مهمة', newTask.title, refNum);
+    setNewTask(emptyTask); setShowModal(false);
+  };
+
+  const handleAddProjectNew = async () => {
+    if (!newProject.name) return alert('أكمل البيانات');
+    const refNum = generateRefNumber('P', counters.P + 1);
+    await addDoc(collection(db, 'projects'), { ...newProject, refNumber: refNum, createdAt: new Date().toISOString(), createdBy: currentUser.username });
+    await incrementCounter('P'); await addLog('add', 'مشروع', newProject.name, refNum);
+    setNewProject(emptyProject); setShowModal(false);
+  };
+
+  const handleAddAccountNew = async () => {
+    if (!newAccount.name) return alert('أكمل البيانات');
+    const refNum = generateRefNumber('A', counters.A + 1);
+    await addDoc(collection(db, 'accounts'), { ...newAccount, refNumber: refNum, createdAt: new Date().toISOString(), createdBy: currentUser.username });
+    await incrementCounter('A'); await addLog('add', 'حساب', newAccount.name, refNum);
+    setNewAccount(emptyAccount); setShowModal(false);
+  };
+  // ---------------------------
+
 
   const emptyExpense = { name: '', amount: '', currency: 'ر.س', dueDate: '', type: 'شهري', reason: '', status: 'لم يتم الدفع', location: '', mapUrl: '', coordinates: '', totalSpent: 0 };
   const emptyTask = { title: '', description: '', dueDate: '', assignedTo: '', priority: 'متوسط الأهمية', status: 'قيد الانتظار', projectId: '', sectionId: '', location: '', mapUrl: '', coordinates: '' };
@@ -421,7 +558,7 @@ export default function App() {
   const [newSection, setNewSection] = useState(emptySection);
 
   // دالة النسخ
-  const copyToClipboard = (text) => {
+  const copyToClipboard = (text, label) => {
     navigator.clipboard.writeText(text);
   };
 
@@ -457,26 +594,18 @@ export default function App() {
   useEffect(() => { if (currentUser) setGreeting(getRandomGreeting(currentUser.username)); }, [currentUser]);
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'data', 'main'), (snap) => {
-      if (snap.exists()) {
-        const d = snap.data();
-        setUsers(d.users || defaultUsers);
-        setExpenses(d.expenses || []);
-        setTasks(d.tasks || []);
-        setProjects(d.projects || []);
-        setTaskSections(d.taskSections || []);
-        setAccounts(d.accounts || []);
-        setAuditLog(d.auditLog || []);
-        setArchivedExpenses(d.archivedExpenses || []);
-        setArchivedTasks(d.archivedTasks || []);
-        setArchivedAccounts(d.archivedAccounts || []);
-        setArchivedProjects(d.archivedProjects || []);
-        setLoginLog(d.loginLog || []);
-        setCounters(d.counters || { E: 0, T: 0, P: 0, A: 0 });
-      }
-      setLoading(false);
-    });
-    return () => unsub();
+    setLoading(true);
+    const unsubs = [
+      onSnapshot(query(collection(db, 'expenses'), orderBy('createdAt', 'desc')), s => setExpenses(s.docs.map(d => ({id:d.id, ...d.data()})))),
+      onSnapshot(query(collection(db, 'tasks'), orderBy('createdAt', 'desc')), s => setTasks(s.docs.map(d => ({id:d.id, ...d.data()})))),
+      onSnapshot(query(collection(db, 'projects'), orderBy('createdAt', 'desc')), s => setProjects(s.docs.map(d => ({id:d.id, ...d.data()})))),
+      onSnapshot(query(collection(db, 'accounts'), orderBy('createdAt', 'desc')), s => setAccounts(s.docs.map(d => ({id:d.id, ...d.data()})))),
+      onSnapshot(collection(db, 'users'), s => { const u = s.docs.map(d => ({id:d.id, ...d.data()})); setUsers(u.length ? u : [{username:'نايف', password:'@Lion12345', role:'owner', active:true}]); }),
+      onSnapshot(doc(db, 'system', 'counters'), s => setCounters(s.exists() ? s.data() : { E:0, T:0, P:0, A:0 })),
+      onSnapshot(query(collection(db, 'audit'), orderBy('timestamp', 'desc')), s => setAuditLog(s.docs.map(d => ({id:d.id, ...d.data()})).slice(0, 50)))
+    ];
+    setLoading(false);
+    return () => unsubs.forEach(u => u());
   }, []);
 
   useEffect(() => { const t = setInterval(() => setCurrentTime(new Date()), 1000); return () => clearInterval(t); }, []);
@@ -497,7 +626,7 @@ export default function App() {
     } catch (e) { console.error(e); } 
   };
 
-  const addLog = (action, itemType, itemName, itemId) => { 
+  // REMOVED DUPLICATE const addLog = (action, itemType, itemName, itemId) => { 
     const actionText = action === 'add' ? 'بإضافة' : action === 'edit' ? 'بتعديل' : action === 'delete' ? 'بحذف' : action === 'restore' ? 'بإستعادة' : action === 'pay' ? 'بدفع' : action;
     const desc = `${currentUser?.username || 'النظام'} قام ${actionText} ${itemType}: ${itemName}`;
     const l = { id: `LOG${Date.now()}`, user: currentUser?.username || 'النظام', action, itemType, itemName, itemId, description: desc, timestamp: new Date().toISOString() }; 
@@ -547,20 +676,17 @@ export default function App() {
     if (!newExpense.name || !newExpense.amount) { alert('املأ الحقول المطلوبة'); return; }
     if (newExpense.type !== 'مرة واحدة' && !newExpense.dueDate) { alert('حدد تاريخ الاستحقاق'); return; }
     const amount = parseFloat(newExpense.amount);
-    const newCounter = counters.E + 1;
     const exp = { 
       ...newExpense, 
       id: `E${Date.now()}`, 
-      refNumber: generateRefNumber('E', newCounter),
       amount, 
       totalSpent: amount,
       createdAt: new Date().toISOString(), 
       createdBy: currentUser.username, 
       paymentHistory: [{ date: new Date().toISOString(), amount, note: 'إنشاء المصروف', by: currentUser.username }]
     };
-    const newCounters = { ...counters, E: newCounter };
     const ne = [...expenses, exp]; const al = addLog('add', 'مصروف', exp.name, exp.id);
-    setExpenses(ne); setCounters(newCounters); save({ expenses: ne, auditLog: al, counters: newCounters });
+    setExpenses(ne); save({ expenses: ne, auditLog: al });
     setNewExpense(emptyExpense); setShowModal(false);
   };
 
@@ -605,13 +731,62 @@ export default function App() {
     setExpenses(ne); setArchivedExpenses(na); save({ expenses: ne, archivedExpenses: na, auditLog: al });
   };
 
+  const markPaid = (id) => {
+    const exp = expenses.find(e => e.id === id);
+    const payment = { date: new Date().toISOString(), amount: exp.amount, paidBy: currentUser.username };
+    const ne = expenses.map(e => e.id === id ? { 
+      ...e, 
+      status: 'مدفوع', 
+      paidAt: new Date().toISOString(), 
+      totalSpent: (e.totalSpent || 0) + e.amount,
+      paymentHistory: [...(e.paymentHistory || []), { ...payment, note: 'تم الدفع' }]
+    } : e);
+    const al = addLog('pay', 'مصروف', exp.name, exp.id); 
+    setExpenses(ne); save({ expenses: ne, auditLog: al });
+  };
+
+  // تحديث المصروفات المتكررة
+  const refreshExpenses = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let updated = false;
+    
+    const ne = expenses.map(e => {
+      if (e.type === 'مرة واحدة' || e.status === 'مدفوع') return e;
+      
+      const days = calcDaysRemaining(e.dueDate, e.type);
+      if (days !== null && days <= 0) {
+        updated = true;
+        const newDueDate = new Date(e.dueDate);
+        newDueDate.setDate(newDueDate.getDate() + (e.type === 'شهري' ? 30 : 365));
+        return {
+          ...e,
+          dueDate: newDueDate.toISOString().split('T')[0],
+          status: 'لم يتم الدفع',
+          totalSpent: (e.totalSpent || 0) + e.amount,
+          paymentHistory: [...(e.paymentHistory || []), { 
+            date: new Date().toISOString(), 
+            amount: e.amount, 
+            note: 'تحديث تلقائي', 
+            by: 'النظام' 
+          }]
+        };
+      }
+      return e;
+    });
+    
+    if (updated) {
+      setExpenses(ne);
+      save({ expenses: ne });
+    } else {
+    }
+  };
+
   const addTask = () => {
     if (!newTask.title) { alert('أدخل عنوان المهمة'); return; }
-    const newCounter = counters.T + 1;
-    const t = { ...newTask, id: `T${Date.now()}`, refNumber: generateRefNumber('T', newCounter), createdAt: new Date().toISOString(), createdBy: currentUser.username };
-    const newCounters = { ...counters, T: newCounter };
+    const t = { ...newTask, id: `T${Date.now()}`, createdAt: new Date().toISOString(), createdBy: currentUser.username };
     const nt = [...tasks, t]; const al = addLog('add', 'مهمة', t.title, t.id);
-    setTasks(nt); setCounters(newCounters); save({ tasks: nt, auditLog: al, counters: newCounters });
+    setTasks(nt); save({ tasks: nt, auditLog: al });
     setNewTask(emptyTask); setShowModal(false);
   };
 
@@ -646,11 +821,9 @@ export default function App() {
 
   const addProject = () => {
     if (!newProject.name) { alert('أدخل اسم المشروع'); return; }
-    const newCounter = counters.P + 1;
-    const p = { ...newProject, id: `P${Date.now()}`, refNumber: generateRefNumber('P', newCounter), createdAt: new Date().toISOString(), createdBy: currentUser.username };
-    const newCounters = { ...counters, P: newCounter };
+    const p = { ...newProject, id: `P${Date.now()}`, createdAt: new Date().toISOString(), createdBy: currentUser.username };
     const np = [...projects, p]; const al = addLog('add', 'مشروع', p.name, p.id);
-    setProjects(np); setCounters(newCounters); save({ projects: np, auditLog: al, counters: newCounters });
+    setProjects(np); save({ projects: np, auditLog: al });
     setNewProject(emptyProject); setShowModal(false);
   };
 
@@ -677,11 +850,9 @@ export default function App() {
 
   const addAccount = () => {
     if (!newAccount.name || !newAccount.username) { alert('املأ الحقول'); return; }
-    const newCounter = counters.A + 1;
-    const a = { ...newAccount, id: `A${Date.now()}`, refNumber: generateRefNumber('A', newCounter), createdAt: new Date().toISOString(), createdBy: currentUser.username };
-    const newCounters = { ...counters, A: newCounter };
+    const a = { ...newAccount, id: `A${Date.now()}`, createdAt: new Date().toISOString(), createdBy: currentUser.username };
     const na = [...accounts, a]; const al = addLog('add', 'حساب', a.name, a.id);
-    setAccounts(na); setCounters(newCounters); save({ accounts: na, auditLog: al, counters: newCounters });
+    setAccounts(na); save({ accounts: na, auditLog: al });
     setNewAccount(emptyAccount); setShowModal(false);
   };
 
@@ -757,6 +928,7 @@ export default function App() {
   const cardPopup = darkMode ? 'bg-gray-800/95 backdrop-blur-md border-gray-700' : 'bg-white/95 backdrop-blur-md border-gray-200';
   const inp = darkMode ? 'bg-gray-700/80 border-gray-600 text-white placeholder-gray-400' : 'bg-white/90 border-gray-300 text-gray-900 placeholder-gray-400';
   const txt = darkMode ? 'text-white' : 'text-gray-900';
+  const txtMd = darkMode ? 'text-gray-200' : 'text-gray-700';
   const txtSm = darkMode ? 'text-gray-400' : 'text-gray-500';
   const iconClass = `w-3.5 h-3.5 ${txtSm}`;
 
@@ -773,7 +945,7 @@ export default function App() {
   };
 
   // مكون الفقاعة الملونة
-  const Badge = ({ status }) => {
+  const Badge = ({ type, status }) => {
     const styles = {
       // المهام
       'عالي الأهمية': 'bg-red-500/10 border-red-500/30 text-red-400',
@@ -787,7 +959,7 @@ export default function App() {
       'متأخر': 'bg-red-500/10 border-red-500/30 text-red-400',
       // المشاريع
       'جاري العمل': 'bg-blue-500/10 border-blue-500/30 text-blue-400',
-      'مكتمل': 'bg-green-500/10 border-green-500/30 text-green-400',
+      'منتهي': 'bg-green-500/10 border-green-500/30 text-green-400',
       'متوقف': 'bg-red-500/10 border-red-500/30 text-red-400',
     };
     const lightStyles = {
@@ -800,7 +972,7 @@ export default function App() {
       'قريباً الدفع': 'bg-orange-500/10 border-orange-500/30 text-orange-600',
       'متأخر': 'bg-red-500/10 border-red-500/30 text-red-600',
       'جاري العمل': 'bg-blue-500/10 border-blue-500/30 text-blue-600',
-      'مكتمل': 'bg-green-500/10 border-green-500/30 text-green-600',
+      'منتهي': 'bg-green-500/10 border-green-500/30 text-green-600',
       'متوقف': 'bg-red-500/10 border-red-500/30 text-red-600',
     };
     const styleClass = darkMode ? styles[status] : lightStyles[status];
@@ -829,13 +1001,15 @@ export default function App() {
     );
   };
 
+  const Label = ({ children }) => <span className={`text-xs ${txtSm}`}>{children}</span>;
+
   const IconBtn = ({ onClick, icon: Icon, title, disabled }) => (
     <button onClick={onClick} disabled={disabled} className={`p-2 rounded-lg ${darkMode ? 'hover:bg-white/10 text-gray-400' : 'hover:bg-gray-100 text-gray-500'} ${disabled ? 'opacity-50' : ''}`} title={title}>
       <Icon className="w-4 h-4" />
     </button>
   );
 
-  const hideScrollbar = {      scrollbarWidth: 'none',      msOverflowStyle: 'none',      WebkitOverflowScrolling: 'touch',     overscrollBehavior: 'contain'   };
+  const hideScrollbar = { scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' };
   const hideScrollbarClass = '[&::-webkit-scrollbar]:hidden';
 
   if (loading) return <div className={`min-h-screen ${bg} flex items-center justify-center`} dir="rtl"><Loader className="w-12 h-12 text-blue-500 animate-spin" /></div>;
@@ -851,17 +1025,17 @@ export default function App() {
           <p className={`text-sm ${txtSm}`}>ركائز الأولى للتعمير</p>
         </div>
         <form onSubmit={handleLogin} className="space-y-4">
-          <input type="text" name="username" placeholder="اسم المستخدم" className={`w-full p-2 border rounded-lg text-sm ${inp}`} required />
-          <input type="password" name="password" placeholder="كلمة المرور" className={`w-full p-2 border rounded-lg text-sm ${inp}`} required />
+          <input type="text" name="username" placeholder="اسم المستخدم" className={`w-full p-3 border rounded-xl text-sm ${inp}`} required />
+          <input type="password" name="password" placeholder="كلمة المرور" className={`w-full p-3 border rounded-xl text-sm ${inp}`} required />
           <button className={`w-full bg-gradient-to-r ${accent.gradient} text-white p-3 rounded-xl font-bold text-sm`}>دخول</button>
         </form>
         <div className="text-center mt-6"><button onClick={() => setShowVersions(true)} className="text-xs text-gray-400">v{APP_VERSION}</button></div>
       </div>
       {showVersions && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowVersions(false)}>
-          <div className={`${card} p-4 rounded-xl max-w-md w-full border`} onClick={e => e.stopPropagation()}>
+          <div className={`${card} p-6 rounded-2xl max-w-md w-full border`} onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4"><h3 className={`text-lg font-bold ${txt}`}>سجل النسخ</h3><button onClick={() => setShowVersions(false)} className={txtSm}><X className="w-5 h-5" /></button></div>
-            <div className={`space-y-3 max-h-80 overflow-y-auto ${hideScrollbarClass}`} style={hideScrollbar}>{versionHistory.map((v, i) => (<div key={v.version} className={`p-3 rounded-xl ${i === 0 ? `${accent.color}/20` : darkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`}><div className="flex justify-between mb-2"><span className={`font-bold text-sm ${txt}`}>v{v.version}</span><span className={`text-xs ${txtSm}`}>{v.date}</span></div><ul className={`text-xs ${txtSm} space-y-1`}>{v.changes.map((c, j) => <li key={j}>• {c}</li>)}</ul></div>))}</div>
+            <div className={`space-y-3 max-h-80 overflow-y-auto ${hideScrollbarClass}`} style={hideScrollbar}>{versionHistory.map((v, i) => (<div key={v.version} className={`tokyo-card p-3 rounded-xl ${i === 0 ? `${accent.color}/20` : darkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`}><div className="flex justify-between mb-2"><span className={`font-bold text-sm ${txt}`}>v{v.version}</span><span className={`text-xs ${txtSm}`}>{v.date}</span></div><ul className={`text-xs ${txtSm} space-y-1`}>{v.changes.map((c, j) => <li key={j}>• {c}</li>)}</ul></div>))}</div>
           </div>
         </div>
       )}
@@ -869,8 +1043,18 @@ export default function App() {
   );
 
   return (
-    <div className={`min-h-screen ${bg} relative overflow-x-hidden pb-16`} style={{ fontSize: `${fontSize}px`, fontFamily: currentFont.value, ...hideScrollbar }} dir="rtl">
+    <>
+      <TokyoNightBg />
+      <div style={{position:"relative",zIndex:1}}>
+        <div className={`min-h-screen relative overflow-x-hidden pb-16`} style={{ fontSize: `${fontSize}px`, fontFamily: currentFont.value, background: darkMode ? 'linear-gradient(135deg, #1a1b26 0%, #16161e 100%)' : 'linear-gradient(135deg, #c0caf5 0%, #a9b1d6 100%)', ...hideScrollbar }} dir="rtl">
       <style>{`
+            @keyframes twinkle{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.3;transform:scale(0.8)}}
+            @keyframes aurora{0%,100%{transform:translate(0,0) rotate(0deg)}33%{transform:translate(5%,5%) rotate(10deg)}66%{transform:translate(-5%,5%) rotate(-10deg)}}
+            @keyframes float{0%,100%{transform:translateY(0) translateX(0);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-100vh) translateX(50px);opacity:0}}
+            @keyframes cardGlow{0%,100%{border-color:rgba(122,162,247,0.2);box-shadow:0 0 10px rgba(122,162,247,0.1)}50%{border-color:rgba(122,162,247,0.3);box-shadow:0 0 15px rgba(122,162,247,0.15)}}
+            .tokyo-card{background:rgba(36,40,59,0.8)!important;backdrop-filter:blur(10px)!important;-webkit-backdrop-filter:blur(10px)!important;border:1px solid rgba(122,162,247,0.2)!important;animation:cardGlow 8s ease-in-out infinite!important;transition:all 0.5s ease!important}
+            .tokyo-card:hover{transform:translateY(-2px)!important;border-color:rgba(122,162,247,0.4)!important}
+            `
         *::-webkit-scrollbar { display: none; } 
         * { scrollbar-width: none; -ms-overflow-style: none; } 
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; } 
@@ -1030,7 +1214,7 @@ export default function App() {
           
           {currentView === 'dashboard' && (
             <div>
-              <h2 className={`text-base font-bold mb-3 ${txt}`}>لوحة التحكم</h2>
+              <h2 className={`text-lg font-bold mb-4 ${txt}`}>لوحة التحكم</h2>
               
               {/* بطاقات الإحصائيات - تصميم موحد */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
@@ -1225,9 +1409,7 @@ export default function App() {
               <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
                 <h2 className={`text-lg font-bold ${txt}`}>المصروفات</h2>
                 <button onClick={() => { setNewExpense(emptyExpense); setModalType('addExp'); setShowModal(true); }} className={`flex items-center gap-1 bg-gradient-to-r ${accent.gradient} text-white px-3 py-2 rounded-xl text-xs`}><Plus className="w-4 h-4" />إضافة</button>
-              </div>
-
-              {/* بطاقات الإحصائيات - تصميم موحد */}
+              </div>              {/* بطاقات الإحصائيات - تصميم موحد */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                 <div className={`${card} p-4 rounded-xl border`}>
                   <div className="flex justify-between items-center mb-3">
@@ -1279,6 +1461,7 @@ export default function App() {
                 <div className={`${card} p-8 rounded-xl border text-center`}>
                   <Wallet className={`w-12 h-12 mx-auto mb-3 ${txtSm}`} />
                   <p className={txtSm}>لا توجد مصروفات</p>
+                  <p className={`text-xs ${txtSm} mt-2`}>{getRandomEncouragement('empty')}</p>
                 </div>
               ) : (
                 <div className={`${card} p-4 rounded-xl border`}>
@@ -1368,9 +1551,7 @@ export default function App() {
                     <Plus className="w-4 h-4" />إضافة مهمة
                   </button>
                 </div>
-              </div>
-
-              {/* بطاقات إحصائيات المهام - تصميم موحد */}
+              </div>              {/* بطاقات إحصائيات المهام - تصميم موحد */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                 <div className={`${card} p-3 rounded-xl border`}>
                   <div className="flex justify-between items-center mb-2">
@@ -1426,6 +1607,7 @@ export default function App() {
                 <div className={`${card} p-8 rounded-xl border text-center`}>
                   <CheckSquare className={`w-12 h-12 mx-auto mb-3 ${txtSm}`} />
                   <p className={txtSm}>لا توجد مهام</p>
+                  <p className={`text-xs ${txtSm} mt-2`}>{getRandomEncouragement('empty')}</p>
                 </div>
               ) : (
                 <div className={`${card} p-4 rounded-xl border`}>
@@ -1483,9 +1665,7 @@ export default function App() {
               <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
                 <h2 className={`text-lg font-bold ${txt}`}>المشاريع</h2>
                 <button onClick={() => { setNewProject(emptyProject); setModalType('addProject'); setShowModal(true); }} className={`flex items-center gap-1 bg-gradient-to-r ${accent.gradient} text-white px-3 py-2 rounded-xl text-xs`}><Plus className="w-4 h-4" />إضافة مشروع</button>
-              </div>
-
-              {/* بطاقات إحصائيات المشاريع - تصميم موحد */}
+              </div>              {/* بطاقات إحصائيات المشاريع - تصميم موحد */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                 <div className={`${card} p-3 rounded-xl border`}>
                   <div className="flex justify-between items-center mb-2">
@@ -1525,6 +1705,7 @@ export default function App() {
                 <div className={`${card} p-8 rounded-xl border text-center`}>
                   <FolderOpen className={`w-12 h-12 mx-auto mb-3 ${txtSm}`} />
                   <p className={txtSm}>لا توجد مشاريع</p>
+                  <p className={`text-xs ${txtSm} mt-2`}>{getRandomEncouragement('empty')}</p>
                 </div>
               ) : (
                 <div className={`${card} p-4 rounded-xl border`}>
@@ -1631,7 +1812,7 @@ export default function App() {
                               }} />
                             </label>
                             <button onClick={() => {
-                              if (window.confirm('هل تريد حذف هذا المجلد؟')) {
+                              if (window.window.confirm('هل تريد حذف هذا المجلد؟')) {
                                 const newFolders = selectedProject.folders.filter((_, i) => i !== fi);
                                 const np = projects.map(p => p.id === selectedProject.id ? { ...p, folders: newFolders } : p);
                                 setProjects(np); setSelectedProject({ ...selectedProject, folders: newFolders }); save({ projects: np });
@@ -1700,9 +1881,7 @@ export default function App() {
               <div className="flex justify-between items-center mb-2 flex-wrap gap-2">
                 <h2 className={`text-lg font-bold ${txt}`}>الحسابات</h2>
                 <button onClick={() => { setNewAccount(emptyAccount); setModalType('addAcc'); setShowModal(true); }} className={`flex items-center gap-1 bg-gradient-to-r ${accent.gradient} text-white px-3 py-2 rounded-xl text-xs`}><Plus className="w-4 h-4" />إضافة</button>
-              </div>
-
-              {/* بطاقات إحصائيات الحسابات - تصميم موحد */}
+              </div>              {/* بطاقات إحصائيات الحسابات - تصميم موحد */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                 <div className={`${card} p-3 rounded-xl border`}>
                   <div className="flex justify-between items-center mb-2">
@@ -1742,6 +1921,7 @@ export default function App() {
                 <div className={`${card} p-8 rounded-xl border text-center`}>
                   <Users className={`w-12 h-12 mx-auto mb-3 ${txtSm}`} />
                   <p className={txtSm}>لا توجد حسابات</p>
+                  <p className={`text-xs ${txtSm} mt-2`}>{getRandomEncouragement('empty')}</p>
                 </div>
               ) : (
                 <div className={`${card} p-4 rounded-xl border`}>
@@ -1819,11 +1999,11 @@ export default function App() {
 
           {currentView === 'archive' && (
             <div>
-              <h2 className={`text-base font-bold mb-3 ${txt}`}>الأرشيف</h2>
+              <h2 className={`text-lg font-bold mb-4 ${txt}`}>الأرشيف</h2>
               {totalArchived === 0 ? (
                 <div className={`${card} p-8 rounded-xl border text-center`}><Archive className={`w-12 h-12 mx-auto mb-3 ${txtSm}`} /><p className={txtSm}>الأرشيف فارغ</p></div>
               ) : (
-                <div className="space-y-2.5">
+                <div className="space-y-4">
                   {archivedExpenses?.length > 0 && (
                     <div>
                       <h3 className={`font-bold text-sm mb-2 ${txt}`}>المصروفات ({formatNumber(archivedExpenses.length)})</h3>
@@ -1906,7 +2086,7 @@ export default function App() {
 
           {currentView === 'audit' && (
             <div>
-              <h2 className={`text-base font-bold mb-3 ${txt}`}>السجل</h2>
+              <h2 className={`text-lg font-bold mb-4 ${txt}`}>السجل</h2>
               <div className="flex gap-2 mb-4">
                 <button onClick={() => setAuditFilter('all')} className={`px-3 py-1.5 rounded-lg text-xs ${auditFilter === 'all' ? accent.color + ' text-white' : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>الكل</button>
                 <button onClick={() => setAuditFilter('login')} className={`px-3 py-1.5 rounded-lg text-xs ${auditFilter === 'login' ? accent.color + ' text-white' : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'}`}>تسجيل الدخول</button>
@@ -1942,126 +2122,126 @@ export default function App() {
 
       {showVersions && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowVersions(false)}>
-          <div className={`${card} p-4 rounded-xl max-w-md w-full border`} onClick={e => e.stopPropagation()}>
+          <div className={`${card} p-6 rounded-2xl max-w-md w-full border`} onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4"><h3 className={`text-lg font-bold ${txt}`}>سجل النسخ</h3><button onClick={() => setShowVersions(false)} className={txtSm}><X className="w-5 h-5" /></button></div>
-            <div className={`space-y-3 max-h-80 overflow-y-auto ${hideScrollbarClass}`} style={hideScrollbar}>{versionHistory.map((v, i) => (<div key={v.version} className={`p-3 rounded-xl ${i === 0 ? `${accent.color}/20` : darkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`}><div className="flex justify-between mb-2"><span className={`font-bold text-sm ${txt}`}>v{v.version}</span><span className={`text-xs ${txtSm}`}>{v.date}</span></div><ul className={`text-xs ${txtSm} space-y-1`}>{v.changes.map((c, j) => <li key={j}>• {c}</li>)}</ul></div>))}</div>
+            <div className={`space-y-3 max-h-80 overflow-y-auto ${hideScrollbarClass}`} style={hideScrollbar}>{versionHistory.map((v, i) => (<div key={v.version} className={`tokyo-card p-3 rounded-xl ${i === 0 ? `${accent.color}/20` : darkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`}><div className="flex justify-between mb-2"><span className={`font-bold text-sm ${txt}`}>v{v.version}</span><span className={`text-xs ${txtSm}`}>{v.date}</span></div><ul className={`text-xs ${txtSm} space-y-1`}>{v.changes.map((c, j) => <li key={j}>• {c}</li>)}</ul></div>))}</div>
           </div>
         </div>
       )}
 
       {showModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className={`${card} p-4 rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto border ${hideScrollbarClass}`} style={hideScrollbar}>
+          <div className={`${card} p-6 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border ${hideScrollbarClass}`} style={hideScrollbar}>
             
-            {modalType === 'delExp' && <><h3 className={`text-base font-bold mb-3 ${txt}`}>حذف مصروف</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.name}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-3 py-1.5 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delExpense(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
-            {modalType === 'delTask' && <><h3 className={`text-base font-bold mb-3 ${txt}`}>حذف مهمة</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.title}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-3 py-1.5 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delTask(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
-            {modalType === 'delProject' && <><h3 className={`text-base font-bold mb-3 ${txt}`}>حذف مشروع</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.name}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-3 py-1.5 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delProject(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
-            {modalType === 'delAcc' && <><h3 className={`text-base font-bold mb-3 ${txt}`}>حذف حساب</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.name}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-3 py-1.5 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delAccount(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
-            {modalType === 'delUser' && <><h3 className={`text-base font-bold mb-3 ${txt}`}>حذف مستخدم</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.username}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-3 py-1.5 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delUser(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
+            {modalType === 'delExp' && <><h3 className={`text-lg font-bold mb-4 ${txt}`}>حذف مصروف</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.name}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delExpense(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
+            {modalType === 'delTask' && <><h3 className={`text-lg font-bold mb-4 ${txt}`}>حذف مهمة</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.title}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delTask(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
+            {modalType === 'delProject' && <><h3 className={`text-lg font-bold mb-4 ${txt}`}>حذف مشروع</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.name}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delProject(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
+            {modalType === 'delAcc' && <><h3 className={`text-lg font-bold mb-4 ${txt}`}>حذف حساب</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.name}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delAccount(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
+            {modalType === 'delUser' && <><h3 className={`text-lg font-bold mb-4 ${txt}`}>حذف مستخدم</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.username}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delUser(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
 
             {modalType === 'addSection' && (
               <>
-                <h3 className={`text-base font-bold mb-3 ${txt}`}>إضافة قسم</h3>
-                <div className="space-y-2.5">
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>اسم القسم *</label><input placeholder="مثال: مهام عاجلة" value={newSection.name} onChange={e => setNewSection({ ...newSection, name: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} /></div>
+                <h3 className={`text-lg font-bold mb-4 ${txt}`}>إضافة قسم</h3>
+                <div className="space-y-4">
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>اسم القسم *</label><input placeholder="مثال: مهام عاجلة" value={newSection.name} onChange={e => setNewSection({ ...newSection, name: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
                 </div>
-                <div className="flex gap-2 justify-end mt-4"><button onClick={() => setShowModal(false)} className={`px-3 py-1.5 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={addSection} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl text-sm`}>إضافة</button></div>
+                <div className="flex gap-3 justify-end mt-6"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={addSection} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl text-sm`}>إضافة</button></div>
               </>
             )}
 
             {(modalType === 'addExp' || modalType === 'editExp') && (
               <>
-                <h3 className={`text-base font-bold mb-3 ${txt}`}>{modalType === 'addExp' ? 'إضافة مصروف' : 'تعديل مصروف'}</h3>
-                <div className="space-y-2.5">
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>اسم المصروف *</label><input value={modalType === 'addExp' ? newExpense.name : editingItem?.name || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, name: e.target.value }) : setEditingItem({ ...editingItem, name: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>المبلغ *</label><input type="number" inputMode="decimal" value={modalType === 'addExp' ? newExpense.amount : editingItem?.amount || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, amount: e.target.value }) : setEditingItem({ ...editingItem, amount: parseFloat(e.target.value) })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>النوع</label><select value={modalType === 'addExp' ? newExpense.type : editingItem?.type || 'شهري'} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, type: e.target.value }) : setEditingItem({ ...editingItem, type: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`}><option value="شهري">شهري</option><option value="سنوي">سنوي</option><option value="مرة واحدة">مرة واحدة</option></select></div>
-                  {(modalType === 'addExp' ? newExpense.type : editingItem?.type) !== 'مرة واحدة' && <div><label className={`block text-xs mb-1 ${txtSm}`}>تاريخ الاستحقاق *</label><input type="date" value={modalType === 'addExp' ? newExpense.dueDate : editingItem?.dueDate || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, dueDate: e.target.value }) : setEditingItem({ ...editingItem, dueDate: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} /></div>}
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الوصف</label><textarea value={modalType === 'addExp' ? newExpense.reason : editingItem?.reason || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, reason: e.target.value }) : setEditingItem({ ...editingItem, reason: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} rows="2" /></div>
+                <h3 className={`text-lg font-bold mb-4 ${txt}`}>{modalType === 'addExp' ? 'إضافة مصروف' : 'تعديل مصروف'}</h3>
+                <div className="space-y-4">
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>اسم المصروف *</label><input value={modalType === 'addExp' ? newExpense.name : editingItem?.name || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, name: e.target.value }) : setEditingItem({ ...editingItem, name: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>المبلغ *</label><input type="number" inputMode="decimal" value={modalType === 'addExp' ? newExpense.amount : editingItem?.amount || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, amount: e.target.value }) : setEditingItem({ ...editingItem, amount: parseFloat(e.target.value) })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>النوع</label><select value={modalType === 'addExp' ? newExpense.type : editingItem?.type || 'شهري'} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, type: e.target.value }) : setEditingItem({ ...editingItem, type: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`}><option value="شهري">شهري</option><option value="سنوي">سنوي</option><option value="مرة واحدة">مرة واحدة</option></select></div>
+                  {(modalType === 'addExp' ? newExpense.type : editingItem?.type) !== 'مرة واحدة' && <div><label className={`block text-xs mb-1 ${txtSm}`}>تاريخ الاستحقاق *</label><input type="date" value={modalType === 'addExp' ? newExpense.dueDate : editingItem?.dueDate || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, dueDate: e.target.value }) : setEditingItem({ ...editingItem, dueDate: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>}
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الوصف</label><textarea value={modalType === 'addExp' ? newExpense.reason : editingItem?.reason || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, reason: e.target.value }) : setEditingItem({ ...editingItem, reason: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} rows="2" /></div>
                   <div><label className={`block text-xs mb-1 ${txtSm}`}>الموقع</label>
                     <div className="flex gap-2">
-                      <input placeholder="مثال: جدة - حي النزهة" value={modalType === 'addExp' ? newExpense.location : editingItem?.location || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, location: e.target.value }) : setEditingItem({ ...editingItem, location: e.target.value })} className={`flex-1 p-2 border rounded-lg text-sm ${inp}`} />
-                      <button onClick={() => openMapPicker(modalType === 'addExp' ? 'newExpense' : 'editExpense')} className={`p-3 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100'}`}><Map className="w-5 h-5" /></button>
+                      <input placeholder="مثال: جدة - حي النزهة" value={modalType === 'addExp' ? newExpense.location : editingItem?.location || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, location: e.target.value }) : setEditingItem({ ...editingItem, location: e.target.value })} className={`flex-1 p-3 border rounded-xl text-sm ${inp}`} />
+                      <button onClick={() => openMapPicker(modalType === 'addExp' ? 'newExpense' : 'editExpense')} className={`tokyo-card p-3 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100'}`}><Map className="w-5 h-5" /></button>
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-2 justify-end mt-4"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-3 py-1.5 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addExp' ? addExpense : editExpense} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl text-sm`}>{modalType === 'addExp' ? 'إضافة' : 'حفظ'}</button></div>
+                <div className="flex gap-3 justify-end mt-6"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addExp' ? addExpense : editExpense} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl text-sm`}>{modalType === 'addExp' ? 'إضافة' : 'حفظ'}</button></div>
               </>
             )}
 
             {(modalType === 'addTask' || modalType === 'editTask') && (
               <>
-                <h3 className={`text-base font-bold mb-3 ${txt}`}>{modalType === 'addTask' ? 'إضافة مهمة' : 'تعديل مهمة'}</h3>
-                <div className="space-y-2.5">
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>عنوان المهمة *</label><input value={modalType === 'addTask' ? newTask.title : editingItem?.title || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, title: e.target.value }) : setEditingItem({ ...editingItem, title: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الأولوية</label><select value={modalType === 'addTask' ? newTask.priority : editingItem?.priority || 'متوسط الأهمية'} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, priority: e.target.value }) : setEditingItem({ ...editingItem, priority: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`}><option value="عالي الأهمية">عالي الأهمية</option><option value="مستعجل">مستعجل</option><option value="متوسط الأهمية">متوسط الأهمية</option><option value="منخفض الأهمية">منخفض الأهمية</option></select></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>المشروع</label><select value={modalType === 'addTask' ? newTask.projectId : editingItem?.projectId || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, projectId: e.target.value }) : setEditingItem({ ...editingItem, projectId: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`}><option value="">بدون مشروع</option>{projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
-                  {taskSections.length > 0 && <div><label className={`block text-xs mb-1 ${txtSm}`}>القسم</label><select value={modalType === 'addTask' ? newTask.sectionId : editingItem?.sectionId || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, sectionId: e.target.value }) : setEditingItem({ ...editingItem, sectionId: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`}><option value="">بدون قسم</option>{taskSections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>}
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الوصف</label><textarea value={modalType === 'addTask' ? newTask.description : editingItem?.description || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, description: e.target.value }) : setEditingItem({ ...editingItem, description: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} rows="2" /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>تاريخ التسليم</label><input type="date" value={modalType === 'addTask' ? newTask.dueDate : editingItem?.dueDate || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, dueDate: e.target.value }) : setEditingItem({ ...editingItem, dueDate: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>المسؤول</label><select value={modalType === 'addTask' ? newTask.assignedTo : editingItem?.assignedTo || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, assignedTo: e.target.value }) : setEditingItem({ ...editingItem, assignedTo: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`}><option value="">اختر</option>{users.map(u => <option key={u.id} value={u.username}>{u.username}</option>)}</select></div>
+                <h3 className={`text-lg font-bold mb-4 ${txt}`}>{modalType === 'addTask' ? 'إضافة مهمة' : 'تعديل مهمة'}</h3>
+                <div className="space-y-4">
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>عنوان المهمة *</label><input value={modalType === 'addTask' ? newTask.title : editingItem?.title || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, title: e.target.value }) : setEditingItem({ ...editingItem, title: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الأولوية</label><select value={modalType === 'addTask' ? newTask.priority : editingItem?.priority || 'متوسط الأهمية'} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, priority: e.target.value }) : setEditingItem({ ...editingItem, priority: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`}><option value="عالي الأهمية">عالي الأهمية</option><option value="مستعجل">مستعجل</option><option value="متوسط الأهمية">متوسط الأهمية</option><option value="منخفض الأهمية">منخفض الأهمية</option></select></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>المشروع</label><select value={modalType === 'addTask' ? newTask.projectId : editingItem?.projectId || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, projectId: e.target.value }) : setEditingItem({ ...editingItem, projectId: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`}><option value="">بدون مشروع</option>{projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
+                  {taskSections.length > 0 && <div><label className={`block text-xs mb-1 ${txtSm}`}>القسم</label><select value={modalType === 'addTask' ? newTask.sectionId : editingItem?.sectionId || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, sectionId: e.target.value }) : setEditingItem({ ...editingItem, sectionId: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`}><option value="">بدون قسم</option>{taskSections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>}
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الوصف</label><textarea value={modalType === 'addTask' ? newTask.description : editingItem?.description || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, description: e.target.value }) : setEditingItem({ ...editingItem, description: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} rows="2" /></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>تاريخ التسليم</label><input type="date" value={modalType === 'addTask' ? newTask.dueDate : editingItem?.dueDate || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, dueDate: e.target.value }) : setEditingItem({ ...editingItem, dueDate: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>المسؤول</label><select value={modalType === 'addTask' ? newTask.assignedTo : editingItem?.assignedTo || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, assignedTo: e.target.value }) : setEditingItem({ ...editingItem, assignedTo: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`}><option value="">اختر</option>{users.map(u => <option key={u.id} value={u.username}>{u.username}</option>)}</select></div>
                   <div><label className={`block text-xs mb-1 ${txtSm}`}>الموقع</label>
                     <div className="flex gap-2">
-                      <input placeholder="مثال: جدة" value={modalType === 'addTask' ? newTask.location : editingItem?.location || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, location: e.target.value }) : setEditingItem({ ...editingItem, location: e.target.value })} className={`flex-1 p-2 border rounded-lg text-sm ${inp}`} />
-                      <button onClick={() => openMapPicker(modalType === 'addTask' ? 'newTask' : 'editTask')} className={`p-3 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100'}`}><Map className="w-5 h-5" /></button>
+                      <input placeholder="مثال: جدة" value={modalType === 'addTask' ? newTask.location : editingItem?.location || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, location: e.target.value }) : setEditingItem({ ...editingItem, location: e.target.value })} className={`flex-1 p-3 border rounded-xl text-sm ${inp}`} />
+                      <button onClick={() => openMapPicker(modalType === 'addTask' ? 'newTask' : 'editTask')} className={`tokyo-card p-3 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100'}`}><Map className="w-5 h-5" /></button>
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-2 justify-end mt-4"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-3 py-1.5 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addTask' ? addTask : editTask} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl text-sm`}>{modalType === 'addTask' ? 'إضافة' : 'حفظ'}</button></div>
+                <div className="flex gap-3 justify-end mt-6"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addTask' ? addTask : editTask} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl text-sm`}>{modalType === 'addTask' ? 'إضافة' : 'حفظ'}</button></div>
               </>
             )}
 
             {(modalType === 'addProject' || modalType === 'editProject') && (
               <>
-                <h3 className={`text-base font-bold mb-3 ${txt}`}>{modalType === 'addProject' ? 'إضافة مشروع' : 'تعديل مشروع'}</h3>
-                <div className="space-y-2.5">
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>اسم المشروع *</label><input value={modalType === 'addProject' ? newProject.name : editingItem?.name || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, name: e.target.value }) : setEditingItem({ ...editingItem, name: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الوصف</label><textarea value={modalType === 'addProject' ? newProject.description : editingItem?.description || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, description: e.target.value }) : setEditingItem({ ...editingItem, description: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} rows="2" /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>العميل</label><input value={modalType === 'addProject' ? newProject.client : editingItem?.client || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, client: e.target.value }) : setEditingItem({ ...editingItem, client: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>رقم الهاتف</label><input value={modalType === 'addProject' ? newProject.phone : editingItem?.phone || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, phone: e.target.value }) : setEditingItem({ ...editingItem, phone: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} /></div>
+                <h3 className={`text-lg font-bold mb-4 ${txt}`}>{modalType === 'addProject' ? 'إضافة مشروع' : 'تعديل مشروع'}</h3>
+                <div className="space-y-4">
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>اسم المشروع *</label><input value={modalType === 'addProject' ? newProject.name : editingItem?.name || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, name: e.target.value }) : setEditingItem({ ...editingItem, name: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الوصف</label><textarea value={modalType === 'addProject' ? newProject.description : editingItem?.description || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, description: e.target.value }) : setEditingItem({ ...editingItem, description: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} rows="2" /></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>العميل</label><input value={modalType === 'addProject' ? newProject.client : editingItem?.client || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, client: e.target.value }) : setEditingItem({ ...editingItem, client: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>رقم الهاتف</label><input value={modalType === 'addProject' ? newProject.phone : editingItem?.phone || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, phone: e.target.value }) : setEditingItem({ ...editingItem, phone: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
                   <div><label className={`block text-xs mb-1 ${txtSm}`}>الموقع</label>
                     <div className="flex gap-2">
-                      <input value={modalType === 'addProject' ? newProject.location : editingItem?.location || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, location: e.target.value }) : setEditingItem({ ...editingItem, location: e.target.value })} className={`flex-1 p-2 border rounded-lg text-sm ${inp}`} />
-                      <button onClick={() => openMapPicker(modalType === 'addProject' ? 'newProject' : 'editProject')} className={`p-3 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100'}`}><Map className="w-5 h-5" /></button>
+                      <input value={modalType === 'addProject' ? newProject.location : editingItem?.location || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, location: e.target.value }) : setEditingItem({ ...editingItem, location: e.target.value })} className={`flex-1 p-3 border rounded-xl text-sm ${inp}`} />
+                      <button onClick={() => openMapPicker(modalType === 'addProject' ? 'newProject' : 'editProject')} className={`tokyo-card p-3 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100'}`}><Map className="w-5 h-5" /></button>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div><input type="date" placeholder="تاريخ البدء" value={modalType === 'addProject' ? newProject.startDate : editingItem?.startDate || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, startDate: e.target.value }) : setEditingItem({ ...editingItem, startDate: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} /></div>
-                    <div><input type="date" placeholder="تاريخ الانتهاء" value={modalType === 'addProject' ? newProject.endDate : editingItem?.endDate || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, endDate: e.target.value }) : setEditingItem({ ...editingItem, endDate: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} /></div>
+                    <div><input type="date" placeholder="تاريخ البدء" value={modalType === 'addProject' ? newProject.startDate : editingItem?.startDate || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, startDate: e.target.value }) : setEditingItem({ ...editingItem, startDate: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                    <div><input type="date" placeholder="تاريخ الانتهاء" value={modalType === 'addProject' ? newProject.endDate : editingItem?.endDate || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, endDate: e.target.value }) : setEditingItem({ ...editingItem, endDate: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
                   </div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الميزانية</label><input type="number" inputMode="decimal" value={modalType === 'addProject' ? newProject.budget : editingItem?.budget || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, budget: e.target.value }) : setEditingItem({ ...editingItem, budget: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الحالة</label><select value={modalType === 'addProject' ? newProject.status : editingItem?.status || 'جاري'} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, status: e.target.value }) : setEditingItem({ ...editingItem, status: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`}><option value="جاري العمل">جاري العمل</option><option value="متوقف">متوقف</option><option value="مكتمل">مكتمل</option></select></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الميزانية</label><input type="number" inputMode="decimal" value={modalType === 'addProject' ? newProject.budget : editingItem?.budget || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, budget: e.target.value }) : setEditingItem({ ...editingItem, budget: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الحالة</label><select value={modalType === 'addProject' ? newProject.status : editingItem?.status || 'جاري'} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, status: e.target.value }) : setEditingItem({ ...editingItem, status: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`}><option value="جاري العمل">جاري العمل</option><option value="متوقف">متوقف</option><option value="منتهي">منتهي</option></select></div>
                 </div>
-                <div className="flex gap-2 justify-end mt-4"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-3 py-1.5 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addProject' ? addProject : editProject} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl text-sm`}>{modalType === 'addProject' ? 'إضافة' : 'حفظ'}</button></div>
+                <div className="flex gap-3 justify-end mt-6"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addProject' ? addProject : editProject} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl text-sm`}>{modalType === 'addProject' ? 'إضافة' : 'حفظ'}</button></div>
               </>
             )}
 
             {(modalType === 'addAcc' || modalType === 'editAcc') && (
               <>
-                <h3 className={`text-base font-bold mb-3 ${txt}`}>{modalType === 'addAcc' ? 'إضافة حساب' : 'تعديل حساب'}</h3>
-                <div className="space-y-2.5">
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>اسم الحساب *</label><input value={modalType === 'addAcc' ? newAccount.name : editingItem?.name || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, name: e.target.value }) : setEditingItem({ ...editingItem, name: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الوصف</label><input value={modalType === 'addAcc' ? newAccount.description : editingItem?.description || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, description: e.target.value }) : setEditingItem({ ...editingItem, description: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>رابط الدخول</label><input value={modalType === 'addAcc' ? newAccount.loginUrl : editingItem?.loginUrl || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, loginUrl: e.target.value }) : setEditingItem({ ...editingItem, loginUrl: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>اسم المستخدم *</label><input value={modalType === 'addAcc' ? newAccount.username : editingItem?.username || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, username: e.target.value }) : setEditingItem({ ...editingItem, username: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>كلمة المرور</label><input value={modalType === 'addAcc' ? newAccount.password : editingItem?.password || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, password: e.target.value }) : setEditingItem({ ...editingItem, password: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>تاريخ الاشتراك</label><input type="date" value={modalType === 'addAcc' ? newAccount.subscriptionDate : editingItem?.subscriptionDate || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, subscriptionDate: e.target.value }) : setEditingItem({ ...editingItem, subscriptionDate: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الأيام المتبقية</label><input type="number" inputMode="numeric" value={modalType === 'addAcc' ? newAccount.daysRemaining : editingItem?.daysRemaining || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, daysRemaining: parseInt(e.target.value) }) : setEditingItem({ ...editingItem, daysRemaining: parseInt(e.target.value) })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} /></div>
+                <h3 className={`text-lg font-bold mb-4 ${txt}`}>{modalType === 'addAcc' ? 'إضافة حساب' : 'تعديل حساب'}</h3>
+                <div className="space-y-4">
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>اسم الحساب *</label><input value={modalType === 'addAcc' ? newAccount.name : editingItem?.name || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, name: e.target.value }) : setEditingItem({ ...editingItem, name: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الوصف</label><input value={modalType === 'addAcc' ? newAccount.description : editingItem?.description || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, description: e.target.value }) : setEditingItem({ ...editingItem, description: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>رابط الدخول</label><input value={modalType === 'addAcc' ? newAccount.loginUrl : editingItem?.loginUrl || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, loginUrl: e.target.value }) : setEditingItem({ ...editingItem, loginUrl: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>اسم المستخدم *</label><input value={modalType === 'addAcc' ? newAccount.username : editingItem?.username || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, username: e.target.value }) : setEditingItem({ ...editingItem, username: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>كلمة المرور</label><input value={modalType === 'addAcc' ? newAccount.password : editingItem?.password || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, password: e.target.value }) : setEditingItem({ ...editingItem, password: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>تاريخ الاشتراك</label><input type="date" value={modalType === 'addAcc' ? newAccount.subscriptionDate : editingItem?.subscriptionDate || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, subscriptionDate: e.target.value }) : setEditingItem({ ...editingItem, subscriptionDate: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الأيام المتبقية</label><input type="number" inputMode="numeric" value={modalType === 'addAcc' ? newAccount.daysRemaining : editingItem?.daysRemaining || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, daysRemaining: parseInt(e.target.value) }) : setEditingItem({ ...editingItem, daysRemaining: parseInt(e.target.value) })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
                 </div>
-                <div className="flex gap-2 justify-end mt-4"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-3 py-1.5 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addAcc' ? addAccount : editAccount} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl text-sm`}>{modalType === 'addAcc' ? 'إضافة' : 'حفظ'}</button></div>
+                <div className="flex gap-3 justify-end mt-6"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addAcc' ? addAccount : editAccount} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl text-sm`}>{modalType === 'addAcc' ? 'إضافة' : 'حفظ'}</button></div>
               </>
             )}
 
             {(modalType === 'addUser' || modalType === 'editUser') && (
               <>
-                <h3 className={`text-base font-bold mb-3 ${txt}`}>{modalType === 'addUser' ? 'إضافة مستخدم' : 'تعديل مستخدم'}</h3>
-                <div className="space-y-2.5">
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>اسم المستخدم *</label><input value={modalType === 'addUser' ? newUser.username : editingItem?.username || ''} onChange={e => modalType === 'addUser' ? setNewUser({ ...newUser, username: e.target.value }) : setEditingItem({ ...editingItem, username: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>كلمة المرور *</label><input type="password" value={modalType === 'addUser' ? newUser.password : editingItem?.password || ''} onChange={e => modalType === 'addUser' ? setNewUser({ ...newUser, password: e.target.value }) : setEditingItem({ ...editingItem, password: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الصلاحية</label><select value={modalType === 'addUser' ? newUser.role : editingItem?.role || 'member'} onChange={e => modalType === 'addUser' ? setNewUser({ ...newUser, role: e.target.value }) : setEditingItem({ ...editingItem, role: e.target.value })} className={`w-full p-2 border rounded-lg text-sm ${inp}`} disabled={editingItem?.role === 'owner'}><option value="owner">المالك</option><option value="manager">مدير</option><option value="member">عضو</option></select></div>
+                <h3 className={`text-lg font-bold mb-4 ${txt}`}>{modalType === 'addUser' ? 'إضافة مستخدم' : 'تعديل مستخدم'}</h3>
+                <div className="space-y-4">
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>اسم المستخدم *</label><input value={modalType === 'addUser' ? newUser.username : editingItem?.username || ''} onChange={e => modalType === 'addUser' ? setNewUser({ ...newUser, username: e.target.value }) : setEditingItem({ ...editingItem, username: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>كلمة المرور *</label><input type="password" value={modalType === 'addUser' ? newUser.password : editingItem?.password || ''} onChange={e => modalType === 'addUser' ? setNewUser({ ...newUser, password: e.target.value }) : setEditingItem({ ...editingItem, password: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الصلاحية</label><select value={modalType === 'addUser' ? newUser.role : editingItem?.role || 'member'} onChange={e => modalType === 'addUser' ? setNewUser({ ...newUser, role: e.target.value }) : setEditingItem({ ...editingItem, role: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} disabled={editingItem?.role === 'owner'}><option value="owner">المالك</option><option value="manager">مدير</option><option value="member">عضو</option></select></div>
                   <label className={`flex items-center gap-2 ${txt}`}><input type="checkbox" checked={modalType === 'addUser' ? newUser.active : editingItem?.active !== false} onChange={e => modalType === 'addUser' ? setNewUser({ ...newUser, active: e.target.checked }) : setEditingItem({ ...editingItem, active: e.target.checked })} className="w-4 h-4 rounded" /><span className="text-sm">نشط</span></label>
                 </div>
-                <div className="flex gap-2 justify-end mt-4"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-3 py-1.5 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addUser' ? addUser : editUser} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl text-sm`}>{modalType === 'addUser' ? 'إضافة' : 'حفظ'}</button></div>
+                <div className="flex gap-3 justify-end mt-6"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addUser' ? addUser : editUser} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl text-sm`}>{modalType === 'addUser' ? 'إضافة' : 'حفظ'}</button></div>
               </>
             )}
 
@@ -2071,8 +2251,8 @@ export default function App() {
 
       {showNewFolderModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowNewFolderModal(false)}>
-          <div className={`${cardPopup} p-4 rounded-xl max-w-sm w-full border`} onClick={e => e.stopPropagation()}>
-            <h3 className={`text-base font-bold mb-3 ${txt}`}>إضافة مجلد جديد</h3>
+          <div className={`${cardPopup} p-6 rounded-2xl max-w-sm w-full border`} onClick={e => e.stopPropagation()}>
+            <h3 className={`text-lg font-bold mb-4 ${txt}`}>إضافة مجلد جديد</h3>
             <input placeholder="اسم المجلد" value={newFolderName} onChange={e => setNewFolderName(e.target.value)} className={`w-full p-3 border rounded-xl mb-4 ${inp}`} />
             <div className="flex gap-3 justify-end">
               <button onClick={() => { setShowNewFolderModal(false); setNewFolderName(''); }} className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button>
@@ -2095,6 +2275,9 @@ export default function App() {
           <img src={previewImage} alt="preview" className="max-w-full max-h-full object-contain rounded-lg" />
         </div>
       )}
+        </div>
+      </div>
     </div>
+  </>
   );
 }
