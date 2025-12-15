@@ -391,15 +391,118 @@ const MapPicker = ({ onSelect, onClose, darkMode }) => {
   );
 };
 
-const TokyoNightBg = () => (
-  <>
-    <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:0,boxShadow:"742px 1123px #7aa2f7,1803px 608px #bb9af7,1582px 1726px #7dcfff",width:"1px",height:"1px",animation:"twinkle 3s ease-in-out infinite"}}/>
-    <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:0,boxShadow:"1433px 1850px #7aa2f7,671px 1791px #bb9af7",width:"2px",height:"2px",animation:"twinkle 5s ease-in-out infinite 1s"}}/>
-    <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:0,boxShadow:"1018px 1233px #7aa2f7,1786px 1710px #bb9af7",width:"3px",height:"3px",animation:"twinkle 7s ease-in-out infinite 2s"}}/>
-    <div style={{position:"fixed",top:"-50%",left:"-50%",width:"200%",height:"200%",pointerEvents:"none",zIndex:0,opacity:0.15,background:"radial-gradient(ellipse at 20% 30%,rgba(122,162,247,0.3) 0%,transparent 50%),radial-gradient(ellipse at 80% 70%,rgba(187,154,247,0.3) 0%,transparent 50%)",animation:"aurora 20s ease-in-out infinite"}}/>
-    {[...Array(10)].map((_,i)=><div key={i} style={{position:"fixed",width:"4px",height:"4px",background:"radial-gradient(circle,rgba(122,162,247,0.8) 0%,transparent 70%)",borderRadius:"50%",pointerEvents:"none",zIndex:0,left:`${(i+1)*10}%`,animation:"float 15s ease-in-out infinite",animationDelay:`${i*2}s`}}/>)}
-  </>
-);
+const TokyoNightBg = () => {
+  // إضافة الـ CSS animations
+  React.useEffect(() => {
+    const styleId = 'tokyo-night-styles';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.textContent = `
+        @keyframes twinkle {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.3; transform: scale(0.8); }
+        }
+        @keyframes shoot {
+          0% { transform: translateX(0) translateY(0); opacity: 1; }
+          100% { transform: translateX(-300px) translateY(300px); opacity: 0; }
+        }
+        @keyframes aurora {
+          0%, 100% { transform: translate(0, 0) rotate(0deg); }
+          33% { transform: translate(5%, 5%) rotate(10deg); }
+          66% { transform: translate(-5%, 5%) rotate(-10deg); }
+        }
+        @keyframes float {
+          0%, 100% { transform: translateY(0) translateX(0); opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { transform: translateY(-100vh) translateX(50px); opacity: 0; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
+
+  // النجوم الكثيرة - 3 طبقات
+  const stars1Shadow = "742px 1123px #7aa2f7,1803px 608px #bb9af7,1582px 1726px #7dcfff,1676px 994px #7aa2f7,615px 537px #9ece6a,1311px 1363px #7aa2f7,1137px 1085px #bb9af7,1995px 1975px #7dcfff,1381px 1381px #7aa2f7,1280px 407px #bb9af7,435px 1003px #7dcfff,1636px 1146px #7aa2f7,91px 1699px #9ece6a,1588px 1717px #7aa2f7,1582px 537px #bb9af7,524px 1480px #7dcfff,1447px 1279px #7aa2f7,1831px 1663px #bb9af7,1047px 1576px #7dcfff,1668px 1376px #7aa2f7,1149px 1768px #9ece6a,502px 863px #7aa2f7,1330px 1460px #bb9af7,1989px 1016px #7dcfff,1024px 1659px #7aa2f7,1913px 1088px #bb9af7,1454px 918px #7dcfff,615px 1651px #7aa2f7,1415px 1667px #9ece6a,1349px 1404px #7aa2f7,1147px 1737px #bb9af7,1683px 297px #7dcfff,1880px 1650px #7aa2f7,851px 1017px #bb9af7,1123px 561px #7dcfff,488px 1834px #7aa2f7,296px 252px #9ece6a,1330px 1120px #7aa2f7,1949px 1687px #bb9af7,1588px 1460px #7dcfff,734px 1306px #7aa2f7,1729px 1927px #bb9af7,1840px 1077px #7dcfff,1371px 828px #7aa2f7,863px 1750px #9ece6a,320px 890px #7aa2f7,1560px 234px #bb9af7,987px 1456px #7dcfff,1234px 789px #7aa2f7,456px 1678px #9ece6a,1890px 345px #7aa2f7,678px 1234px #bb9af7,1456px 567px #7dcfff,234px 1890px #7aa2f7,1678px 890px #bb9af7,890px 456px #7dcfff,567px 1123px #7aa2f7,1345px 678px #9ece6a,789px 1567px #7aa2f7,1901px 234px #bb9af7,345px 1789px #7dcfff,1567px 901px #7aa2f7,901px 345px #bb9af7,123px 1456px #7dcfff,1789px 678px #7aa2f7,456px 890px #9ece6a";
+  
+  const stars2Shadow = "1433px 1850px #7aa2f7,671px 1791px #bb9af7,1865px 1019px #7dcfff,1383px 1811px #7aa2f7,1542px 1575px #9ece6a,965px 1479px #7aa2f7,1924px 1212px #bb9af7,327px 1766px #7dcfff,1677px 1675px #7aa2f7,1919px 1164px #bb9af7,1708px 1393px #7dcfff,1686px 1529px #7aa2f7,1538px 1939px #9ece6a,1405px 1516px #7aa2f7,1744px 1069px #bb9af7,1805px 1764px #7dcfff,1490px 1570px #7aa2f7,1725px 1344px #bb9af7,398px 1352px #7dcfff,438px 1907px #7aa2f7,1421px 1115px #9ece6a,1841px 299px #7aa2f7,1503px 1724px #bb9af7,1659px 1053px #7dcfff,1308px 1417px #7aa2f7,1909px 1672px #bb9af7,1574px 1506px #7dcfff,1836px 1266px #7aa2f7,1238px 1390px #9ece6a,1781px 1397px #7aa2f7,298px 1543px #bb9af7,1687px 876px #7dcfff,923px 1298px #7aa2f7,1456px 432px #9ece6a,765px 1876px #7aa2f7,1234px 654px #bb9af7,543px 1432px #7dcfff,1765px 987px #7aa2f7,876px 321px #bb9af7,1543px 1765px #7dcfff,321px 1098px #7aa2f7,1987px 543px #9ece6a";
+
+  const stars3Shadow = "1018px 1233px #7aa2f7,1786px 1710px #bb9af7,725px 1448px #7dcfff,1850px 1430px #7aa2f7,1626px 469px #9ece6a,1726px 646px #7aa2f7,1263px 1992px #bb9af7,363px 1535px #7dcfff,1933px 1352px #7aa2f7,1611px 1984px #bb9af7,1451px 1583px #7dcfff,354px 1987px #7aa2f7,1636px 1374px #9ece6a,1906px 1755px #7aa2f7,1530px 1016px #bb9af7,911px 1591px #7dcfff,1996px 1506px #7aa2f7,1034px 1569px #bb9af7,1705px 1491px #7dcfff,1275px 1661px #7aa2f7,498px 1823px #9ece6a,1367px 754px #7aa2f7,823px 1367px #bb9af7,1592px 498px #7dcfff,754px 1592px #7aa2f7,1823px 823px #bb9af7,367px 1754px #7dcfff,1498px 367px #7aa2f7,592px 1498px #9ece6a";
+
+  return (
+    <>
+      {/* 3 طبقات نجوم */}
+      <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:0}}>
+        <div style={{position:"absolute",background:"transparent",boxShadow:stars1Shadow,width:"1px",height:"1px",animation:"twinkle 3s ease-in-out infinite"}}/>
+      </div>
+      <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:0}}>
+        <div style={{position:"absolute",background:"transparent",boxShadow:stars2Shadow,width:"2px",height:"2px",animation:"twinkle 5s ease-in-out infinite 1s"}}/>
+      </div>
+      <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:0}}>
+        <div style={{position:"absolute",background:"transparent",boxShadow:stars3Shadow,width:"3px",height:"3px",animation:"twinkle 7s ease-in-out infinite 2s"}}/>
+      </div>
+
+      {/* 8 شهب متساقطة */}
+      {[
+        {top:'10%',left:'85%',delay:'0s'},
+        {top:'25%',left:'70%',delay:'2s'},
+        {top:'40%',left:'90%',delay:'4s'},
+        {top:'55%',left:'75%',delay:'6s'},
+        {top:'70%',left:'85%',delay:'8s'},
+        {top:'15%',left:'60%',delay:'3s'},
+        {top:'50%',left:'95%',delay:'5s'},
+        {top:'85%',left:'80%',delay:'7s'}
+      ].map((star,i) => (
+        <div key={`shoot-${i}`} style={{
+          position:"fixed",
+          top:star.top,
+          left:star.left,
+          width:"2px",
+          height:"2px",
+          background:"#7aa2f7",
+          borderRadius:"50%",
+          boxShadow:"0 0 10px 2px #7aa2f7",
+          animation:"shoot 3s ease-out infinite",
+          animationDelay:star.delay,
+          pointerEvents:"none",
+          zIndex:0
+        }}/>
+      ))}
+
+      {/* Aurora Effect */}
+      <div style={{
+        position:"fixed",
+        top:"-50%",
+        left:"-50%",
+        width:"200%",
+        height:"200%",
+        pointerEvents:"none",
+        zIndex:0,
+        opacity:0.15,
+        background:"radial-gradient(ellipse at 20% 30%, rgba(122, 162, 247, 0.3) 0%, transparent 50%), radial-gradient(ellipse at 80% 70%, rgba(187, 154, 247, 0.3) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, rgba(125, 207, 255, 0.2) 0%, transparent 60%)",
+        animation:"aurora 20s ease-in-out infinite"
+      }}/>
+
+      {/* 10 جزيئات عائمة */}
+      {[...Array(10)].map((_,i) => (
+        <div key={`particle-${i}`} style={{
+          position:"fixed",
+          width:"4px",
+          height:"4px",
+          background:"radial-gradient(circle, rgba(122, 162, 247, 0.8) 0%, transparent 70%)",
+          borderRadius:"50%",
+          pointerEvents:"none",
+          zIndex:0,
+          left:`${(i+1)*10}%`,
+          animation:"float 15s ease-in-out infinite",
+          animationDelay:`${i*2}s`,
+          animationDuration: i % 2 === 0 ? "20s" : "15s"
+        }}/>
+      ))}
+    </>
+  );
+};
 
 export default function App() {
   const getSystemTheme = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -2129,7 +2232,19 @@ export default function App() {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-          <div className={`${card} p-5 rounded-2xl max-w-sm w-full max-h-[90vh] overflow-y-auto border ${hideScrollbarClass}`} style={hideScrollbar}>
+          <div className={`p-5 rounded-2xl max-w-sm w-full max-h-[90vh] overflow-y-auto ${hideScrollbarClass}`} style={{
+            background: tokyoNightEnabled 
+              ? 'rgba(36, 40, 59, 0.8)' 
+              : (darkMode ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)'),
+            backdropFilter: 'blur(10px)',
+            border: tokyoNightEnabled 
+              ? '1px solid rgba(122, 162, 247, 0.2)' 
+              : `1px solid ${darkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(229, 231, 235, 0.5)'}`,
+            boxShadow: tokyoNightEnabled
+              ? '0 8px 32px rgba(0, 0, 0, 0.4)'
+              : `0 20px 25px -5px ${darkMode ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'}`,
+            ...hideScrollbar
+          }}>
             
             {modalType === 'delExp' && <><h3 className={`text-lg font-bold mb-4 ${txt}`}>حذف مصروف</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.name}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delExpense(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
             {modalType === 'delTask' && <><h3 className={`text-lg font-bold mb-4 ${txt}`}>حذف مهمة</h3><p className={`mb-6 text-sm ${txtSm}`}>هل تريد حذف "{selectedItem?.title}"؟</p><div className="flex gap-3 justify-end"><button onClick={() => setShowModal(false)} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={() => delTask(selectedItem)} className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm">حذف</button></div></>}
@@ -2277,8 +2392,19 @@ export default function App() {
       )}
 
       {showNewFolderModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowNewFolderModal(false)}>
-          <div className={`${cardPopup} p-5 rounded-2xl max-w-sm w-full border`} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm" onClick={() => setShowNewFolderModal(false)}>
+          <div className="p-5 rounded-2xl max-w-sm w-full" style={{
+            background: tokyoNightEnabled 
+              ? 'rgba(36, 40, 59, 0.8)' 
+              : (darkMode ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)'),
+            backdropFilter: 'blur(10px)',
+            border: tokyoNightEnabled 
+              ? '1px solid rgba(122, 162, 247, 0.2)' 
+              : `1px solid ${darkMode ? 'rgba(75, 85, 99, 0.5)' : 'rgba(229, 231, 235, 0.5)'}`,
+            boxShadow: tokyoNightEnabled
+              ? '0 8px 32px rgba(0, 0, 0, 0.4)'
+              : `0 20px 25px -5px ${darkMode ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.1)'}`
+          }} onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <h3 className={`font-bold ${txt}`}>إضافة مجلد جديد</h3>
               <button onClick={() => { setShowNewFolderModal(false); setNewFolderName(''); }} className="text-gray-400 hover:text-white text-xl">×</button>
