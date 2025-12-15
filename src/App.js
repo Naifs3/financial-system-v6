@@ -1015,7 +1015,10 @@ export default function App() {
   );
 
   return (
-    <div className={`min-h-screen ${bg} relative overflow-x-hidden pb-16`} style={{ fontSize: `${fontSize}px`, fontFamily: currentFont.value, ...hideScrollbar }} dir="rtl">
+    <>
+      <TokyoNightBg />
+      <div style={{position:"relative",zIndex:1}}>
+        <div className={`min-h-screen relative overflow-x-hidden pb-16`} style={{ fontSize: `${fontSize}px`, fontFamily: currentFont.value, background: darkMode ? 'linear-gradient(135deg, #1a1b26 0%, #16161e 100%)' : 'linear-gradient(135deg, #c0caf5 0%, #a9b1d6 100%)', ...hideScrollbar }} dir="rtl">
       <style>{`
           @keyframes twinkle{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.3;transform:scale(0.8)}}
           @keyframes aurora{0%,100%{transform:translate(0,0) rotate(0deg)}33%{transform:translate(5%,5%) rotate(10deg)}66%{transform:translate(-5%,5%) rotate(-10deg)}}
@@ -2243,8 +2246,8 @@ export default function App() {
           <img src={previewImage} alt="preview" className="max-w-full max-h-full object-contain rounded-lg" />
         </div>
       )}
-      </div>
     </div>
+  </div>
   </>
   );
 }
