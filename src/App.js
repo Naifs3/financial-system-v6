@@ -402,7 +402,6 @@ const TokyoNightBg = () => (
   </>
 );
 
-
 export default function App() {
   const getSystemTheme = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
   
@@ -1048,13 +1047,13 @@ export default function App() {
       <div style={{position:"relative",zIndex:1}}>
         <div className={`min-h-screen relative overflow-x-hidden pb-16`} style={{ fontSize: `${fontSize}px`, fontFamily: currentFont.value, background: darkMode ? 'linear-gradient(135deg, #1a1b26 0%, #16161e 100%)' : 'linear-gradient(135deg, #c0caf5 0%, #a9b1d6 100%)', ...hideScrollbar }} dir="rtl">
       <style>{`
-            @keyframes twinkle{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.3;transform:scale(0.8)}}
-            @keyframes aurora{0%,100%{transform:translate(0,0) rotate(0deg)}33%{transform:translate(5%,5%) rotate(10deg)}66%{transform:translate(-5%,5%) rotate(-10deg)}}
-            @keyframes float{0%,100%{transform:translateY(0) translateX(0);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-100vh) translateX(50px);opacity:0}}
-            @keyframes cardGlow{0%,100%{border-color:rgba(122,162,247,0.2);box-shadow:0 0 10px rgba(122,162,247,0.1)}50%{border-color:rgba(122,162,247,0.3);box-shadow:0 0 15px rgba(122,162,247,0.15)}}
-            .tokyo-card{background:rgba(36,40,59,0.8)!important;backdrop-filter:blur(10px)!important;-webkit-backdrop-filter:blur(10px)!important;border:1px solid rgba(122,162,247,0.2)!important;animation:cardGlow 8s ease-in-out infinite!important;transition:all 0.5s ease!important}
-            .tokyo-card:hover{transform:translateY(-2px)!important;border-color:rgba(122,162,247,0.4)!important}
-            `
+          @keyframes twinkle{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.3;transform:scale(0.8)}}
+          @keyframes aurora{0%,100%{transform:translate(0,0) rotate(0deg)}33%{transform:translate(5%,5%) rotate(10deg)}66%{transform:translate(-5%,5%) rotate(-10deg)}}
+          @keyframes float{0%,100%{transform:translateY(0) translateX(0);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-100vh) translateX(50px);opacity:0}}
+          @keyframes cardGlow{0%,100%{border-color:rgba(122,162,247,0.2);box-shadow:0 0 10px rgba(122,162,247,0.1)}50%{border-color:rgba(122,162,247,0.3);box-shadow:0 0 15px rgba(122,162,247,0.15)}}
+          .tokyo-card{background:rgba(36,40,59,0.8)!important;backdrop-filter:blur(10px)!important;-webkit-backdrop-filter:blur(10px)!important;border:1px solid rgba(122,162,247,0.2)!important;animation:cardGlow 8s ease-in-out infinite!important;transition:all 0.5s ease!important}
+          .tokyo-card:hover{transform:translateY(-2px)!important;border-color:rgba(122,162,247,0.4)!important}
+          `
         *::-webkit-scrollbar { display: none; } 
         * { scrollbar-width: none; -ms-overflow-style: none; } 
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; } 
@@ -2275,7 +2274,7 @@ export default function App() {
           <img src={previewImage} alt="preview" className="max-w-full max-h-full object-contain rounded-lg" />
         </div>
       )}
-        </div>
+    </div>
       </div>
     </div>
   </>
