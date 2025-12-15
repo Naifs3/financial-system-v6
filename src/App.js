@@ -1008,10 +1008,12 @@ export default function App() {
   const headerTxt = headerColorIndex > 0 ? 'text-white' : (darkMode ? 'text-white' : 'text-gray-900');
   const headerTxtSm = headerColorIndex > 0 ? 'text-gray-300' : (darkMode ? 'text-gray-400' : 'text-gray-500');
   const cardPopup = darkMode ? 'bg-gray-800/95 backdrop-blur-md border-gray-700' : 'bg-white/95 backdrop-blur-md border-gray-200';
-  const inp = darkMode ? 'bg-gray-700/80 border-gray-600 text-white placeholder-gray-400' : 'bg-white/90 border-gray-300 text-gray-900 placeholder-gray-400';
-  const txt = darkMode ? 'text-white' : 'text-gray-900';
-  const txtMd = darkMode ? 'text-gray-200' : 'text-gray-700';
-  const txtSm = darkMode ? 'text-gray-400' : 'text-gray-500';
+  const inp = tokyoNightEnabled 
+    ? 'bg-gray-700/50 border-gray-600/50 text-white placeholder-gray-500 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20' 
+    : (darkMode ? 'bg-gray-700/80 border-gray-600 text-white placeholder-gray-400' : 'bg-white/90 border-gray-300 text-gray-900 placeholder-gray-400');
+  const txt = tokyoNightEnabled ? 'text-gray-100' : (darkMode ? 'text-white' : 'text-gray-900');
+  const txtMd = tokyoNightEnabled ? 'text-gray-300' : (darkMode ? 'text-gray-200' : 'text-gray-700');
+  const txtSm = tokyoNightEnabled ? 'text-gray-400' : (darkMode ? 'text-gray-400' : 'text-gray-500');
   const iconClass = `w-3.5 h-3.5 ${txtSm}`;
 
   const totalArchived = (archivedExpenses?.length || 0) + (archivedTasks?.length || 0) + (archivedAccounts?.length || 0) + (archivedProjects?.length || 0);
