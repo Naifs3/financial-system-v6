@@ -391,11 +391,10 @@ const MapPicker = ({ onSelect, onClose, darkMode }) => {
   );
 };
 
-// Tokyo Night Background Component
 const TokyoNightBg = () => (
   <>
-    <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:0,boxShadow:"742px 1123px #7aa2f7,1803px 608px #bb9af7,1582px 1726px #7dcfff,1676px 994px #7aa2f7,615px 537px #9ece6a,1311px 1363px #7aa2f7,1137px 1085px #bb9af7,1995px 1975px #7dcfff,1381px 1381px #7aa2f7,1280px 407px #bb9af7,435px 1003px #7dcfff,1636px 1146px #7aa2f7",width:"1px",height:"1px",animation:"twinkle 3s ease-in-out infinite"}}/>
-    <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:0,boxShadow:"1433px 1850px #7aa2f7,671px 1791px #bb9af7,1865px 1019px #7dcfff,1383px 1811px #7aa2f7,1542px 1575px #9ece6a",width:"2px",height:"2px",animation:"twinkle 5s ease-in-out infinite 1s"}}/>
+    <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:0,boxShadow:"742px 1123px #7aa2f7,1803px 608px #bb9af7,1582px 1726px #7dcfff,1676px 994px #7aa2f7,615px 537px #9ece6a,1311px 1363px #7aa2f7",width:"1px",height:"1px",animation:"twinkle 3s ease-in-out infinite"}}/>
+    <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:0,boxShadow:"1433px 1850px #7aa2f7,671px 1791px #bb9af7,1865px 1019px #7dcfff",width:"2px",height:"2px",animation:"twinkle 5s ease-in-out infinite 1s"}}/>
     <div style={{position:"fixed",top:0,left:0,width:"100%",height:"100%",pointerEvents:"none",zIndex:0,boxShadow:"1018px 1233px #7aa2f7,1786px 1710px #bb9af7,725px 1448px #7dcfff",width:"3px",height:"3px",animation:"twinkle 7s ease-in-out infinite 2s"}}/>
     <div style={{position:"fixed",top:"-50%",left:"-50%",width:"200%",height:"200%",pointerEvents:"none",zIndex:0,opacity:0.15,background:"radial-gradient(ellipse at 20% 30%,rgba(122,162,247,0.3) 0%,transparent 50%),radial-gradient(ellipse at 80% 70%,rgba(187,154,247,0.3) 0%,transparent 50%)",animation:"aurora 20s ease-in-out infinite"}}/>
     {[...Array(10)].map((_,i)=><div key={i} style={{position:"fixed",width:"4px",height:"4px",background:"radial-gradient(circle,rgba(122,162,247,0.8) 0%,transparent 70%)",borderRadius:"50%",pointerEvents:"none",zIndex:0,left:`${(i+1)*10}%`,animation:"float 15s ease-in-out infinite",animationDelay:`${i*2}s`}}/>)}
@@ -484,11 +483,29 @@ export default function App() {
   const addLog = async (action, type, name, itemId) => {
     await addDoc(collection(db, 'audit'), {
       user: currentUser?.username || 'النظام', action, itemType: type, itemName: name, itemId,
-      description: `${currentUser?.username} قام ${action === 'add' ? 'بإضافة' : action === 'edit' ? 'بتعديل' : 'بحذف'} ${type}: ${name}`,
+      description: ${currentUser?.username} قام  : ,
       timestamp: new Date().toISOString()
     });
   };
   // ---------------------------
+
+
+  // --- NEW MULTI-USER LOGIC ---
+  const incrementCounter = async (key) => {
+    await runTransaction(db, async (t) => {
+      const ref = doc(db, 'system', 'counters');
+      const docVal = await t.get(ref);
+      t.set(ref, { ...docVal.data(), [key]: (docVal.data()?.[key] || 0) + 1 }, { merge: true });
+    });
+  };
+  
+  const addLog = async (action, type, name, itemId) => {
+    await addDoc(collection(db, 'audit'), {
+      user: currentUser?.username || 'النظام', action, itemType: type, itemName: name, itemId,
+      description: `${currentUser?.username} قام ${action === 'add' ? 'بإضافة' : action === 'edit' ? 'بتعديل' : 'بحذف'} ${type}: ${name}`,
+      timestamp: new Date().toISOString()
+    });
+  };
 
   const handleAddExpenseNew = async () => {
     if (!newExpense.name || !newExpense.amount) return alert('أكمل البيانات');
@@ -1030,7 +1047,7 @@ export default function App() {
           @keyframes aurora{0%,100%{transform:translate(0,0) rotate(0deg)}33%{transform:translate(5%,5%) rotate(10deg)}66%{transform:translate(-5%,5%) rotate(-10deg)}}
           @keyframes float{0%,100%{transform:translateY(0) translateX(0);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(-100vh) translateX(50px);opacity:0}}
           @keyframes cardGlow{0%,100%{border-color:rgba(122,162,247,0.2);box-shadow:0 0 10px rgba(122,162,247,0.1)}50%{border-color:rgba(122,162,247,0.3);box-shadow:0 0 15px rgba(122,162,247,0.15)}}
-          .tokyo-card{background:rgba(36,40,59,0.8)!important;backdrop-filter:blur(10px)!important;-webkit-backdrop-filter:blur(10px)!important;border:1px solid rgba(122,162,247,0.2)!important;animation:cardGlow 8s ease-in-out infinite!important;transition:all 0.5s ease!important}
+          .tokyo-card{background:rgba(36,40,59,0.8)!important;backdrop-filter:blur(10px)!important;border:1px solid rgba(122,162,247,0.2)!important;animation:cardGlow 8s ease-in-out infinite!important;transition:all 0.5s ease!important}
           .tokyo-card:hover{transform:translateY(-2px)!important;border-color:rgba(122,162,247,0.4)!important}
           `
         *::-webkit-scrollbar { display: none; } 
