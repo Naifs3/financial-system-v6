@@ -2149,97 +2149,388 @@ export default function App() {
 
             {(modalType === 'addExp' || modalType === 'editExp') && (
               <>
-                <h3 className={`text-lg font-bold mb-4 ${txt}`}>{modalType === 'addExp' ? 'إضافة مصروف' : 'تعديل مصروف'}</h3>
-                <div className="space-y-4">
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>اسم المصروف *</label><input value={modalType === 'addExp' ? newExpense.name : editingItem?.name || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, name: e.target.value }) : setEditingItem({ ...editingItem, name: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>المبلغ *</label><input type="number" inputMode="decimal" value={modalType === 'addExp' ? newExpense.amount : editingItem?.amount || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, amount: e.target.value }) : setEditingItem({ ...editingItem, amount: parseFloat(e.target.value) })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>النوع</label><select value={modalType === 'addExp' ? newExpense.type : editingItem?.type || 'شهري'} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, type: e.target.value }) : setEditingItem({ ...editingItem, type: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`}><option value="شهري">شهري</option><option value="سنوي">سنوي</option><option value="مرة واحدة">مرة واحدة</option></select></div>
-                  {(modalType === 'addExp' ? newExpense.type : editingItem?.type) !== 'مرة واحدة' && <div><label className={`block text-xs mb-1 ${txtSm}`}>تاريخ الاستحقاق *</label><input type="date" value={modalType === 'addExp' ? newExpense.dueDate : editingItem?.dueDate || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, dueDate: e.target.value }) : setEditingItem({ ...editingItem, dueDate: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>}
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الوصف</label><textarea value={modalType === 'addExp' ? newExpense.reason : editingItem?.reason || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, reason: e.target.value }) : setEditingItem({ ...editingItem, reason: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} rows="2" /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الموقع</label>
+                <div className="flex items-center justify-between" style={{height:'32px',marginBottom:'16px'}}>
+                  <h3 className="text-lg font-bold flex items-center gap-2" style={{fontSize:'17px',color:'#7dcfff',textShadow:'0 0 10px rgba(125,207,255,0.35)',fontFamily:'"Cairo",-apple-system,sans-serif'}}>
+                    <span style={{fontFamily:'"Apple Color Emoji","Segoe UI Emoji",sans-serif'}}>💰</span>
+                    {modalType === 'addExp' ? 'إضافة مصروف' : 'تعديل مصروف'}
+                  </h3>
+                  <button onClick={()=>{setShowModal(false);setEditingItem(null);}} className="text-gray-400 hover:text-white transition-all rounded-lg hover:bg-white/5" style={{fontSize:'20px',width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+                </div>
+
+                <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                  <div>
+                    <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#7dcfff',textShadow:'0 0 6px rgba(125,207,255,0.3)'}}>اسم المصروف *</label>
+                    <input placeholder="مثال: إيجار المكتب" value={modalType==='addExp'?newExpense.name:editingItem?.name||''} onChange={e=>modalType==='addExp'?setNewExpense({...newExpense,name:e.target.value}):setEditingItem({...editingItem,name:e.target.value})} className={`w-full border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(122,162,247,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(122,162,247,0.08), inset 0 0 20px rgba(122,162,247,0.04)':undefined}} />
+                  </div>
+
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
+                    <div>
+                      <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#7dcfff',textShadow:'0 0 6px rgba(125,207,255,0.3)'}}>المبلغ *</label>
+                      <input type="number" placeholder="0" value={modalType==='addExp'?newExpense.amount:editingItem?.amount||''} onChange={e=>modalType==='addExp'?setNewExpense({...newExpense,amount:e.target.value}):setEditingItem({...editingItem,amount:parseFloat(e.target.value)})} className={`w-full border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(122,162,247,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(122,162,247,0.08), inset 0 0 20px rgba(122,162,247,0.04)':undefined}} />
+                    </div>
+                    <div>
+                      <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#7dcfff',textShadow:'0 0 6px rgba(125,207,255,0.3)'}}>النوع</label>
+                      <select value={modalType==='addExp'?newExpense.type:editingItem?.type||'شهري'} onChange={e=>modalType==='addExp'?setNewExpense({...newExpense,type:e.target.value}):setEditingItem({...editingItem,type:e.target.value})} className={`w-full border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(122,162,247,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(122,162,247,0.08), inset 0 0 20px rgba(122,162,247,0.04)':undefined}}><option value="شهري">شهري</option><option value="سنوي">سنوي</option><option value="مرة واحدة">مرة واحدة</option></select>
+                    </div>
+                  </div>
+
+                  {(modalType==='addExp'?newExpense.type:editingItem?.type)!=='مرة واحدة'&&(
+                    <div>
+                      <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#7dcfff',textShadow:'0 0 6px rgba(125,207,255,0.3)'}}>فترة الاستحقاق</label>
+                      <div style={{display:'flex',alignItems:'center',gap:'8px',height:'36px'}}>
+                        <div onClick={()=>document.getElementById('exp-start-'+modalType).click()} className="cursor-pointer transition-all hover:opacity-80" style={{flex:1,height:'36px',background:tokyoNightEnabled?'linear-gradient(135deg,rgba(26,27,38,0.9) 0%,rgba(20,21,30,0.95) 100%)':'rgba(0,0,0,0.05)',border:'0.8px solid',borderColor:tokyoNightEnabled?'rgba(122,162,247,0.35)':'rgba(0,0,0,0.1)',borderRadius:'10px',padding:'0 10px',display:'flex',alignItems:'center',gap:'8px',boxShadow:tokyoNightEnabled?'0 0 8px rgba(122,162,247,0.08)':'none'}}>
+                          <span style={{fontSize:'15px',opacity:0.6,fontFamily:'"Apple Color Emoji","Segoe UI Emoji",sans-serif'}}>📅</span>
+                          <div style={{flex:1,display:'flex',flexDirection:'column',gap:'2px'}}>
+                            <div style={{color:'rgba(192,202,245,0.5)',fontSize:'9px',fontWeight:'600',textTransform:'uppercase'}}>من</div>
+                            <div style={{color:tokyoNightEnabled?'#c0caf5':'inherit',fontSize:'11px',fontWeight:'500'}}>
+                              {(modalType==='addExp'?newExpense.dueDate:editingItem?.dueDate)?new Date(modalType==='addExp'?newExpense.dueDate:editingItem?.dueDate).toLocaleDateString('ar-SA',{day:'numeric',month:'short'}):'اختر'}
+                            </div>
+                          </div>
+                        </div>
+                        <input id={'exp-start-'+modalType} type="date" className="hidden" value={modalType==='addExp'?newExpense.dueDate:editingItem?.dueDate||''} onChange={e=>modalType==='addExp'?setNewExpense({...newExpense,dueDate:e.target.value}):setEditingItem({...editingItem,dueDate:e.target.value})} />
+                        
+                        <span style={{color:'rgba(192,202,245,0.3)',fontSize:'16px'}}>→</span>
+
+                        <div className="cursor-pointer transition-all hover:opacity-80" style={{flex:1,height:'36px',background:tokyoNightEnabled?'linear-gradient(135deg,rgba(26,27,38,0.9) 0%,rgba(20,21,30,0.95) 100%)':'rgba(0,0,0,0.05)',border:'0.8px solid',borderColor:tokyoNightEnabled?'rgba(122,162,247,0.35)':'rgba(0,0,0,0.1)',borderRadius:'10px',padding:'0 10px',display:'flex',alignItems:'center',gap:'8px',boxShadow:tokyoNightEnabled?'0 0 8px rgba(122,162,247,0.08)':'none'}}>
+                          <span style={{fontSize:'15px',opacity:0.6,fontFamily:'"Apple Color Emoji","Segoe UI Emoji",sans-serif'}}>📆</span>
+                          <div style={{flex:1,display:'flex',flexDirection:'column',gap:'2px'}}>
+                            <div style={{color:'rgba(192,202,245,0.5)',fontSize:'9px',fontWeight:'600',textTransform:'uppercase'}}>إلى</div>
+                            <div style={{color:tokyoNightEnabled?'#c0caf5':'inherit',fontSize:'11px',fontWeight:'500'}}>اختر</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#7dcfff',textShadow:'0 0 6px rgba(125,207,255,0.3)'}}>الوصف</label>
+                    <textarea placeholder="ملاحظات..." value={modalType==='addExp'?newExpense.reason:editingItem?.reason||''} onChange={e=>modalType==='addExp'?setNewExpense({...newExpense,reason:e.target.value}):setEditingItem({...editingItem,reason:e.target.value})} className={`w-full border rounded-xl resize-none ${inp}`} style={{height:'72px',padding:'10px 12px',fontSize:'13px',lineHeight:'1.4',borderColor:tokyoNightEnabled?'rgba(122,162,247,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(122,162,247,0.08), inset 0 0 20px rgba(122,162,247,0.04)':undefined}} />
+                  </div>
+
+                  <div>
+                    <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#7dcfff',textShadow:'0 0 6px rgba(125,207,255,0.3)'}}>الموقع</label>
                     <div className="flex gap-2">
-                      <input placeholder="مثال: الأحساء- عين نجم - حي الهفوف" value={modalType === 'addExp' ? newExpense.location : editingItem?.location || ''} onChange={e => modalType === 'addExp' ? setNewExpense({ ...newExpense, location: e.target.value }) : setEditingItem({ ...editingItem, location: e.target.value })} className={`flex-1 p-3 border rounded-xl text-sm ${inp}`} />
-                      <button onClick={() => openMapPicker(modalType === 'addExp' ? 'newExpense' : 'editExpense')} className={`p-3 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100'}`}><Map className="w-5 h-5" /></button>
+                      <input placeholder="مثال: جدة - حي النزهة" value={modalType==='addExp'?newExpense.location:editingItem?.location||''} onChange={e=>modalType==='addExp'?setNewExpense({...newExpense,location:e.target.value}):setEditingItem({...editingItem,location:e.target.value})} className={`flex-1 border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(122,162,247,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(122,162,247,0.08)':undefined}} />
+                      <button onClick={()=>openMapPicker(modalType==='addExp'?'newExpense':'editExpense')} className={`rounded-xl ${darkMode?'bg-gray-700 text-white':'bg-gray-100'}`} style={{height:'36px',width:'36px',display:'flex',alignItems:'center',justifyContent:'center'}}><Map className="w-4 h-4"/></button>
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-3 justify-end mt-6"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addExp' ? addExpense : editExpense} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl text-sm`}>{modalType === 'addExp' ? 'إضافة' : 'حفظ'}</button></div>
+
+                <div className="flex gap-2" style={{marginTop:'16px'}}>
+                  <button onClick={()=>{setShowModal(false);setEditingItem(null);}} className={`px-5 py-2 rounded-xl transition-all ${darkMode?'bg-gray-700 hover:bg-gray-600 text-white':'bg-gray-200 hover:bg-gray-300 text-black'}`} style={{height:'36px',fontSize:'13px',fontWeight:'600'}}>إلغاء</button>
+                  <button onClick={modalType==='addExp'?addExpense:editExpense} className="flex-1 px-5 py-2 text-white rounded-xl transition-all" style={{height:'36px',fontSize:'13px',fontWeight:'600',background:'linear-gradient(135deg,rgba(122,162,247,0.7) 0%,rgba(125,207,255,0.6) 100%)',border:'0.8px solid rgba(122,162,247,0.5)',boxShadow:'0 0 12px rgba(122,162,247,0.15)'}}>
+                    <span style={{fontFamily:'"Apple Color Emoji","Segoe UI Emoji",sans-serif'}}>✓</span> {modalType==='addExp'?'إضافة':'حفظ'}
+                  </button>
+                </div>
               </>
             )}
 
             {(modalType === 'addTask' || modalType === 'editTask') && (
               <>
-                <h3 className={`text-lg font-bold mb-4 ${txt}`}>{modalType === 'addTask' ? 'إضافة مهمة' : 'تعديل مهمة'}</h3>
-                <div className="space-y-4">
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>عنوان المهمة *</label><input value={modalType === 'addTask' ? newTask.title : editingItem?.title || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, title: e.target.value }) : setEditingItem({ ...editingItem, title: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الأولوية</label><select value={modalType === 'addTask' ? newTask.priority : editingItem?.priority || 'متوسط الأهمية'} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, priority: e.target.value }) : setEditingItem({ ...editingItem, priority: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`}><option value="عالي الأهمية">عالي الأهمية</option><option value="مستعجل">مستعجل</option><option value="متوسط الأهمية">متوسط الأهمية</option><option value="منخفض الأهمية">منخفض الأهمية</option></select></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>المشروع</label><select value={modalType === 'addTask' ? newTask.projectId : editingItem?.projectId || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, projectId: e.target.value }) : setEditingItem({ ...editingItem, projectId: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`}><option value="">بدون مشروع</option>{projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
-                  {taskSections.length > 0 && <div><label className={`block text-xs mb-1 ${txtSm}`}>القسم</label><select value={modalType === 'addTask' ? newTask.sectionId : editingItem?.sectionId || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, sectionId: e.target.value }) : setEditingItem({ ...editingItem, sectionId: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`}><option value="">بدون قسم</option>{taskSections.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}</select></div>}
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الوصف</label><textarea value={modalType === 'addTask' ? newTask.description : editingItem?.description || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, description: e.target.value }) : setEditingItem({ ...editingItem, description: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} rows="2" /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>تاريخ التسليم</label><input type="date" value={modalType === 'addTask' ? newTask.dueDate : editingItem?.dueDate || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, dueDate: e.target.value }) : setEditingItem({ ...editingItem, dueDate: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>المسؤول</label><select value={modalType === 'addTask' ? newTask.assignedTo : editingItem?.assignedTo || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, assignedTo: e.target.value }) : setEditingItem({ ...editingItem, assignedTo: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`}><option value="">اختر</option>{users.map(u => <option key={u.id} value={u.username}>{u.username}</option>)}</select></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الموقع</label>
+                <div className="flex items-center justify-between" style={{height:'32px',marginBottom:'16px'}}>
+                  <h3 className="text-lg font-bold flex items-center gap-2" style={{fontSize:'17px',color:'#bb9af7',textShadow:'0 0 10px rgba(187,154,247,0.35)',fontFamily:'"Cairo",-apple-system,sans-serif'}}>
+                    <span style={{fontFamily:'"Apple Color Emoji","Segoe UI Emoji",sans-serif'}}>✅</span>
+                    {modalType === 'addTask' ? 'إضافة مهمة' : 'تعديل مهمة'}
+                  </h3>
+                  <button onClick={()=>{setShowModal(false);setEditingItem(null);}} className="text-gray-400 hover:text-white transition-all rounded-lg hover:bg-white/5" style={{fontSize:'20px',width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+                </div>
+
+                <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                  <div>
+                    <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#bb9af7',textShadow:'0 0 6px rgba(187,154,247,0.3)'}}>عنوان المهمة *</label>
+                    <input placeholder="مثال: مراجعة التقرير" value={modalType==='addTask'?newTask.title:editingItem?.title||''} onChange={e=>modalType==='addTask'?setNewTask({...newTask,title:e.target.value}):setEditingItem({...editingItem,title:e.target.value})} className={`w-full border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(187,154,247,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(187,154,247,0.08), inset 0 0 20px rgba(187,154,247,0.04)':undefined}} />
+                  </div>
+
+                  <div>
+                    <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#bb9af7',textShadow:'0 0 6px rgba(187,154,247,0.3)'}}>الأولوية</label>
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(3, 1fr)',gap:'8px'}}>
+                      <button onClick={()=>modalType==='addTask'?setNewTask({...newTask,priority:'عالي الأهمية'}):setEditingItem({...editingItem,priority:'عالي الأهمية'})} className="transition-all" style={{height:'32px',background:tokyoNightEnabled?'linear-gradient(135deg,rgba(26,27,38,0.8) 0%,rgba(20,21,30,0.9) 100%)':'rgba(0,0,0,0.05)',border:'0.8px solid rgba(187,154,247,0.3)',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:'11px',fontWeight:'600',color:'#f7768e'}}>
+                        <span style={{fontFamily:'"Apple Color Emoji","Segoe UI Emoji",sans-serif'}}>🔴</span> عالي
+                      </button>
+                      <button onClick={()=>modalType==='addTask'?setNewTask({...newTask,priority:'متوسط الأهمية'}):setEditingItem({...editingItem,priority:'متوسط الأهمية'})} className="transition-all" style={{height:'32px',background:tokyoNightEnabled?'linear-gradient(135deg,rgba(26,27,38,0.8) 0%,rgba(20,21,30,0.9) 100%)':'rgba(0,0,0,0.05)',border:'0.8px solid rgba(187,154,247,0.3)',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:'11px',fontWeight:'600',color:'#e0af68'}}>
+                        <span style={{fontFamily:'"Apple Color Emoji","Segoe UI Emoji",sans-serif'}}>🟡</span> متوسط
+                      </button>
+                      <button onClick={()=>modalType==='addTask'?setNewTask({...newTask,priority:'منخفض الأهمية'}):setEditingItem({...editingItem,priority:'منخفض الأهمية'})} className="transition-all" style={{height:'32px',background:tokyoNightEnabled?'linear-gradient(135deg,rgba(26,27,38,0.8) 0%,rgba(20,21,30,0.9) 100%)':'rgba(0,0,0,0.05)',border:'0.8px solid rgba(187,154,247,0.3)',borderRadius:'8px',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',fontSize:'11px',fontWeight:'600',color:'#9ece6a'}}>
+                        <span style={{fontFamily:'"Apple Color Emoji","Segoe UI Emoji",sans-serif'}}>🟢</span> منخفض
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
+                    <div>
+                      <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#bb9af7',textShadow:'0 0 6px rgba(187,154,247,0.3)'}}>المشروع</label>
+                      <select value={modalType==='addTask'?newTask.projectId:editingItem?.projectId||''} onChange={e=>modalType==='addTask'?setNewTask({...newTask,projectId:e.target.value}):setEditingItem({...editingItem,projectId:e.target.value})} className={`w-full border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(187,154,247,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(187,154,247,0.08)':undefined}}><option value="">بدون مشروع</option>{projects.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select>
+                    </div>
+                    {taskSections.length>0&&(
+                      <div>
+                        <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#bb9af7',textShadow:'0 0 6px rgba(187,154,247,0.3)'}}>القسم</label>
+                        <select value={modalType==='addTask'?newTask.sectionId:editingItem?.sectionId||''} onChange={e=>modalType==='addTask'?setNewTask({...newTask,sectionId:e.target.value}):setEditingItem({...editingItem,sectionId:e.target.value})} className={`w-full border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(187,154,247,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(187,154,247,0.08)':undefined}}><option value="">بدون قسم</option>{taskSections.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select>
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#bb9af7',textShadow:'0 0 6px rgba(187,154,247,0.3)'}}>فترة الإنجاز</label>
+                    <div style={{display:'flex',alignItems:'center',gap:'8px',height:'36px'}}>
+                      <div onClick={()=>document.getElementById('task-start-'+modalType).click()} className="cursor-pointer transition-all hover:opacity-80" style={{flex:1,height:'36px',background:tokyoNightEnabled?'linear-gradient(135deg,rgba(26,27,38,0.9) 0%,rgba(20,21,30,0.95) 100%)':'rgba(0,0,0,0.05)',border:'0.8px solid',borderColor:tokyoNightEnabled?'rgba(187,154,247,0.35)':'rgba(0,0,0,0.1)',borderRadius:'10px',padding:'0 10px',display:'flex',alignItems:'center',gap:'8px',boxShadow:tokyoNightEnabled?'0 0 8px rgba(187,154,247,0.08)':'none'}}>
+                        <span style={{fontSize:'15px',opacity:0.6,fontFamily:'"Apple Color Emoji","Segoe UI Emoji",sans-serif'}}>📅</span>
+                        <div style={{flex:1,display:'flex',flexDirection:'column',gap:'2px'}}>
+                          <div style={{color:'rgba(192,202,245,0.5)',fontSize:'9px',fontWeight:'600',textTransform:'uppercase'}}>بداية</div>
+                          <div style={{color:tokyoNightEnabled?'#c0caf5':'inherit',fontSize:'11px',fontWeight:'500'}}>
+                            {(modalType==='addTask'?newTask.dueDate:editingItem?.dueDate)?new Date(modalType==='addTask'?newTask.dueDate:editingItem?.dueDate).toLocaleDateString('ar-SA',{day:'numeric',month:'short'}):'اختر'}
+                          </div>
+                        </div>
+                      </div>
+                      <input id={'task-start-'+modalType} type="date" className="hidden" value={modalType==='addTask'?newTask.dueDate:editingItem?.dueDate||''} onChange={e=>modalType==='addTask'?setNewTask({...newTask,dueDate:e.target.value}):setEditingItem({...editingItem,dueDate:e.target.value})} />
+                      
+                      <span style={{color:'rgba(192,202,245,0.3)',fontSize:'16px'}}>→</span>
+
+                      <div className="cursor-pointer transition-all hover:opacity-80" style={{flex:1,height:'36px',background:tokyoNightEnabled?'linear-gradient(135deg,rgba(26,27,38,0.9) 0%,rgba(20,21,30,0.95) 100%)':'rgba(0,0,0,0.05)',border:'0.8px solid',borderColor:tokyoNightEnabled?'rgba(187,154,247,0.35)':'rgba(0,0,0,0.1)',borderRadius:'10px',padding:'0 10px',display:'flex',alignItems:'center',gap:'8px',boxShadow:tokyoNightEnabled?'0 0 8px rgba(187,154,247,0.08)':'none'}}>
+                        <span style={{fontSize:'15px',opacity:0.6,fontFamily:'"Apple Color Emoji","Segoe UI Emoji",sans-serif'}}>📆</span>
+                        <div style={{flex:1,display:'flex',flexDirection:'column',gap:'2px'}}>
+                          <div style={{color:'rgba(192,202,245,0.5)',fontSize:'9px',fontWeight:'600',textTransform:'uppercase'}}>نهاية</div>
+                          <div style={{color:tokyoNightEnabled?'#c0caf5':'inherit',fontSize:'11px',fontWeight:'500'}}>اختر</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#bb9af7',textShadow:'0 0 6px rgba(187,154,247,0.3)'}}>المسؤول</label>
+                    <select value={modalType==='addTask'?newTask.assignedTo:editingItem?.assignedTo||''} onChange={e=>modalType==='addTask'?setNewTask({...newTask,assignedTo:e.target.value}):setEditingItem({...editingItem,assignedTo:e.target.value})} className={`w-full border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(187,154,247,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(187,154,247,0.08)':undefined}}><option value="">اختر</option>{users.map(u=><option key={u.id} value={u.username}>{u.username}</option>)}</select>
+                  </div>
+
+                  <div>
+                    <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#bb9af7',textShadow:'0 0 6px rgba(187,154,247,0.3)'}}>الوصف</label>
+                    <textarea placeholder="تفاصيل المهمة..." value={modalType==='addTask'?newTask.description:editingItem?.description||''} onChange={e=>modalType==='addTask'?setNewTask({...newTask,description:e.target.value}):setEditingItem({...editingItem,description:e.target.value})} className={`w-full border rounded-xl resize-none ${inp}`} style={{height:'72px',padding:'10px 12px',fontSize:'13px',lineHeight:'1.4',borderColor:tokyoNightEnabled?'rgba(187,154,247,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(187,154,247,0.08), inset 0 0 20px rgba(187,154,247,0.04)':undefined}} />
+                  </div>
+
+                  <div>
+                    <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#bb9af7',textShadow:'0 0 6px rgba(187,154,247,0.3)'}}>الموقع</label>
                     <div className="flex gap-2">
-                      <input placeholder="مثال: الأحساء- عين نجم" value={modalType === 'addTask' ? newTask.location : editingItem?.location || ''} onChange={e => modalType === 'addTask' ? setNewTask({ ...newTask, location: e.target.value }) : setEditingItem({ ...editingItem, location: e.target.value })} className={`flex-1 p-3 border rounded-xl text-sm ${inp}`} />
-                      <button onClick={() => openMapPicker(modalType === 'addTask' ? 'newTask' : 'editTask')} className={`p-3 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100'}`}><Map className="w-5 h-5" /></button>
+                      <input placeholder="مثال: جدة" value={modalType==='addTask'?newTask.location:editingItem?.location||''} onChange={e=>modalType==='addTask'?setNewTask({...newTask,location:e.target.value}):setEditingItem({...editingItem,location:e.target.value})} className={`flex-1 border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(187,154,247,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(187,154,247,0.08)':undefined}} />
+                      <button onClick={()=>openMapPicker(modalType==='addTask'?'newTask':'editTask')} className={`rounded-xl ${darkMode?'bg-gray-700 text-white':'bg-gray-100'}`} style={{height:'36px',width:'36px',display:'flex',alignItems:'center',justifyContent:'center'}}><Map className="w-4 h-4"/></button>
                     </div>
                   </div>
                 </div>
-                <div className="flex gap-3 justify-end mt-6"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addTask' ? addTask : editTask} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl text-sm`}>{modalType === 'addTask' ? 'إضافة' : 'حفظ'}</button></div>
+
+                <div className="flex gap-2" style={{marginTop:'16px'}}>
+                  <button onClick={()=>{setShowModal(false);setEditingItem(null);}} className={`px-5 py-2 rounded-xl transition-all ${darkMode?'bg-gray-700 hover:bg-gray-600 text-white':'bg-gray-200 hover:bg-gray-300 text-black'}`} style={{height:'36px',fontSize:'13px',fontWeight:'600'}}>إلغاء</button>
+                  <button onClick={modalType==='addTask'?addTask:editTask} className="flex-1 px-5 py-2 text-white rounded-xl transition-all" style={{height:'36px',fontSize:'13px',fontWeight:'600',background:'linear-gradient(135deg,rgba(187,154,247,0.7) 0%,rgba(187,154,247,0.6) 100%)',border:'0.8px solid rgba(187,154,247,0.5)',boxShadow:'0 0 12px rgba(187,154,247,0.15)'}}>
+                    <span style={{fontFamily:'"Apple Color Emoji","Segoe UI Emoji",sans-serif'}}>✓</span> {modalType==='addTask'?'إضافة':'حفظ'}
+                  </button>
+                </div>
               </>
             )}
 
             {(modalType === 'addProject' || modalType === 'editProject') && (
               <>
-                <h3 className={`text-lg font-bold mb-4 ${txt}`}>{modalType === 'addProject' ? 'إضافة مشروع' : 'تعديل مشروع'}</h3>
-                <div className="space-y-4">
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>اسم المشروع *</label><input value={modalType === 'addProject' ? newProject.name : editingItem?.name || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, name: e.target.value }) : setEditingItem({ ...editingItem, name: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الوصف</label><textarea value={modalType === 'addProject' ? newProject.description : editingItem?.description || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, description: e.target.value }) : setEditingItem({ ...editingItem, description: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} rows="2" /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>العميل</label><input value={modalType === 'addProject' ? newProject.client : editingItem?.client || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, client: e.target.value }) : setEditingItem({ ...editingItem, client: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>رقم الهاتف</label><input value={modalType === 'addProject' ? newProject.phone : editingItem?.phone || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, phone: e.target.value }) : setEditingItem({ ...editingItem, phone: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الموقع</label>
-                    <div className="flex gap-2">
-                      <input value={modalType === 'addProject' ? newProject.location : editingItem?.location || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, location: e.target.value }) : setEditingItem({ ...editingItem, location: e.target.value })} className={`flex-1 p-3 border rounded-xl text-sm ${inp}`} />
-                      <button onClick={() => openMapPicker(modalType === 'addProject' ? 'newProject' : 'editProject')} className={`p-3 rounded-xl ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-100'}`}><Map className="w-5 h-5" /></button>
+                <div className="flex items-center justify-between" style={{height:'32px',marginBottom:'16px'}}>
+                  <h3 className="text-lg font-bold flex items-center gap-2" style={{fontSize:'17px',color:'#9ece6a',textShadow:'0 0 10px rgba(158,206,106,0.35)',fontFamily:'"Cairo",-apple-system,sans-serif'}}>
+                    <span style={{fontFamily:'"Apple Color Emoji","Segoe UI Emoji",sans-serif'}}>📁</span>
+                    {modalType === 'addProject' ? 'إضافة مشروع' : 'تعديل مشروع'}
+                  </h3>
+                  <button onClick={()=>{setShowModal(false);setEditingItem(null);}} className="text-gray-400 hover:text-white transition-all rounded-lg hover:bg-white/5" style={{fontSize:'20px',width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+                </div>
+
+                <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                  <div>
+                    <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#9ece6a',textShadow:'0 0 6px rgba(158,206,106,0.3)'}}>اسم المشروع *</label>
+                    <input placeholder="مثال: تطوير التطبيق" value={modalType==='addProject'?newProject.name:editingItem?.name||''} onChange={e=>modalType==='addProject'?setNewProject({...newProject,name:e.target.value}):setEditingItem({...editingItem,name:e.target.value})} className={`w-full border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(158,206,106,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(158,206,106,0.08), inset 0 0 20px rgba(158,206,106,0.04)':undefined}} />
+                  </div>
+
+                  <div>
+                    <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#9ece6a',textShadow:'0 0 6px rgba(158,206,106,0.3)'}}>فترة المشروع</label>
+                    <div style={{display:'flex',alignItems:'center',gap:'8px',height:'36px'}}>
+                      <div onClick={()=>document.getElementById('project-start-'+modalType).click()} className="cursor-pointer transition-all hover:opacity-80" style={{flex:1,height:'36px',background:tokyoNightEnabled?'linear-gradient(135deg,rgba(26,27,38,0.9) 0%,rgba(20,21,30,0.95) 100%)':'rgba(0,0,0,0.05)',border:'0.8px solid',borderColor:tokyoNightEnabled?'rgba(158,206,106,0.35)':'rgba(0,0,0,0.1)',borderRadius:'10px',padding:'0 10px',display:'flex',alignItems:'center',gap:'8px',boxShadow:tokyoNightEnabled?'0 0 8px rgba(158,206,106,0.08)':'none'}}>
+                        <span style={{fontSize:'15px',opacity:0.6,fontFamily:'"Apple Color Emoji","Segoe UI Emoji",sans-serif'}}>📅</span>
+                        <div style={{flex:1,display:'flex',flexDirection:'column',gap:'2px'}}>
+                          <div style={{color:'rgba(192,202,245,0.5)',fontSize:'9px',fontWeight:'600',textTransform:'uppercase'}}>بداية</div>
+                          <div style={{color:tokyoNightEnabled?'#c0caf5':'inherit',fontSize:'11px',fontWeight:'500'}}>
+                            {(modalType==='addProject'?newProject.startDate:editingItem?.startDate)?new Date(modalType==='addProject'?newProject.startDate:editingItem?.startDate).toLocaleDateString('ar-SA',{day:'numeric',month:'short'}):'اختر'}
+                          </div>
+                        </div>
+                      </div>
+                      <input id={'project-start-'+modalType} type="date" className="hidden" value={modalType==='addProject'?newProject.startDate:editingItem?.startDate||''} onChange={e=>modalType==='addProject'?setNewProject({...newProject,startDate:e.target.value}):setEditingItem({...editingItem,startDate:e.target.value})} />
+                      
+                      <span style={{color:'rgba(192,202,245,0.3)',fontSize:'16px'}}>→</span>
+
+                      <div onClick={()=>document.getElementById('project-end-'+modalType).click()} className="cursor-pointer transition-all hover:opacity-80" style={{flex:1,height:'36px',background:tokyoNightEnabled?'linear-gradient(135deg,rgba(26,27,38,0.9) 0%,rgba(20,21,30,0.95) 100%)':'rgba(0,0,0,0.05)',border:'0.8px solid',borderColor:tokyoNightEnabled?'rgba(158,206,106,0.35)':'rgba(0,0,0,0.1)',borderRadius:'10px',padding:'0 10px',display:'flex',alignItems:'center',gap:'8px',boxShadow:tokyoNightEnabled?'0 0 8px rgba(158,206,106,0.08)':'none'}}>
+                        <span style={{fontSize:'15px',opacity:0.6,fontFamily:'"Apple Color Emoji","Segoe UI Emoji",sans-serif'}}>📆</span>
+                        <div style={{flex:1,display:'flex',flexDirection:'column',gap:'2px'}}>
+                          <div style={{color:'rgba(192,202,245,0.5)',fontSize:'9px',fontWeight:'600',textTransform:'uppercase'}}>نهاية</div>
+                          <div style={{color:tokyoNightEnabled?'#c0caf5':'inherit',fontSize:'11px',fontWeight:'500'}}>
+                            {(modalType==='addProject'?newProject.endDate:editingItem?.endDate)?new Date(modalType==='addProject'?newProject.endDate:editingItem?.endDate).toLocaleDateString('ar-SA',{day:'numeric',month:'short'}):'اختر'}
+                          </div>
+                        </div>
+                      </div>
+                      <input id={'project-end-'+modalType} type="date" className="hidden" value={modalType==='addProject'?newProject.endDate:editingItem?.endDate||''} onChange={e=>modalType==='addProject'?setNewProject({...newProject,endDate:e.target.value}):setEditingItem({...editingItem,endDate:e.target.value})} />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><input type="date" placeholder="تاريخ البدء" value={modalType === 'addProject' ? newProject.startDate : editingItem?.startDate || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, startDate: e.target.value }) : setEditingItem({ ...editingItem, startDate: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                    <div><input type="date" placeholder="تاريخ الانتهاء" value={modalType === 'addProject' ? newProject.endDate : editingItem?.endDate || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, endDate: e.target.value }) : setEditingItem({ ...editingItem, endDate: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
+                    <div>
+                      <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#9ece6a',textShadow:'0 0 6px rgba(158,206,106,0.3)'}}>العميل</label>
+                      <input placeholder="اسم العميل" value={modalType==='addProject'?newProject.client:editingItem?.client||''} onChange={e=>modalType==='addProject'?setNewProject({...newProject,client:e.target.value}):setEditingItem({...editingItem,client:e.target.value})} className={`w-full border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(158,206,106,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(158,206,106,0.08)':undefined}} />
+                    </div>
+                    <div>
+                      <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#9ece6a',textShadow:'0 0 6px rgba(158,206,106,0.3)'}}>رقم الهاتف</label>
+                      <input placeholder="05xxxxxxxx" value={modalType==='addProject'?newProject.phone:editingItem?.phone||''} onChange={e=>modalType==='addProject'?setNewProject({...newProject,phone:e.target.value}):setEditingItem({...editingItem,phone:e.target.value})} className={`w-full border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(158,206,106,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(158,206,106,0.08)':undefined}} />
+                    </div>
                   </div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الميزانية</label><input type="number" inputMode="decimal" value={modalType === 'addProject' ? newProject.budget : editingItem?.budget || ''} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, budget: e.target.value }) : setEditingItem({ ...editingItem, budget: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الحالة</label><select value={modalType === 'addProject' ? newProject.status : editingItem?.status || 'جاري'} onChange={e => modalType === 'addProject' ? setNewProject({ ...newProject, status: e.target.value }) : setEditingItem({ ...editingItem, status: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`}><option value="جاري العمل">جاري العمل</option><option value="متوقف">متوقف</option><option value="منتهي">منتهي</option></select></div>
+
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
+                    <div>
+                      <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#9ece6a',textShadow:'0 0 6px rgba(158,206,106,0.3)'}}>الميزانية</label>
+                      <input type="number" placeholder="0" value={modalType==='addProject'?newProject.budget:editingItem?.budget||''} onChange={e=>modalType==='addProject'?setNewProject({...newProject,budget:e.target.value}):setEditingItem({...editingItem,budget:e.target.value})} className={`w-full border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(158,206,106,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(158,206,106,0.08)':undefined}} />
+                    </div>
+                    <div>
+                      <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#9ece6a',textShadow:'0 0 6px rgba(158,206,106,0.3)'}}>الحالة</label>
+                      <select value={modalType==='addProject'?newProject.status:editingItem?.status||'جاري العمل'} onChange={e=>modalType==='addProject'?setNewProject({...newProject,status:e.target.value}):setEditingItem({...editingItem,status:e.target.value})} className={`w-full border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(158,206,106,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(158,206,106,0.08)':undefined}}><option value="جاري العمل">🔵 جاري العمل</option><option value="متوقف">⏸️ متوقف</option><option value="منتهي">✅ منتهي</option></select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#9ece6a',textShadow:'0 0 6px rgba(158,206,106,0.3)'}}>الوصف</label>
+                    <textarea placeholder="تفاصيل المشروع..." value={modalType==='addProject'?newProject.description:editingItem?.description||''} onChange={e=>modalType==='addProject'?setNewProject({...newProject,description:e.target.value}):setEditingItem({...editingItem,description:e.target.value})} className={`w-full border rounded-xl resize-none ${inp}`} style={{height:'72px',padding:'10px 12px',fontSize:'13px',lineHeight:'1.4',borderColor:tokyoNightEnabled?'rgba(158,206,106,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(158,206,106,0.08), inset 0 0 20px rgba(158,206,106,0.04)':undefined}} />
+                  </div>
+
+                  <div>
+                    <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#9ece6a',textShadow:'0 0 6px rgba(158,206,106,0.3)'}}>الموقع</label>
+                    <div className="flex gap-2">
+                      <input placeholder="مثال: الرياض" value={modalType==='addProject'?newProject.location:editingItem?.location||''} onChange={e=>modalType==='addProject'?setNewProject({...newProject,location:e.target.value}):setEditingItem({...editingItem,location:e.target.value})} className={`flex-1 border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(158,206,106,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(158,206,106,0.08)':undefined}} />
+                      <button onClick={()=>openMapPicker(modalType==='addProject'?'newProject':'editProject')} className={`rounded-xl ${darkMode?'bg-gray-700 text-white':'bg-gray-100'}`} style={{height:'36px',width:'36px',display:'flex',alignItems:'center',justifyContent:'center'}}><Map className="w-4 h-4"/></button>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex gap-3 justify-end mt-6"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addProject' ? addProject : editProject} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl text-sm`}>{modalType === 'addProject' ? 'إضافة' : 'حفظ'}</button></div>
+
+                <div className="flex gap-2" style={{marginTop:'16px'}}>
+                  <button onClick={()=>{setShowModal(false);setEditingItem(null);}} className={`px-5 py-2 rounded-xl transition-all ${darkMode?'bg-gray-700 hover:bg-gray-600 text-white':'bg-gray-200 hover:bg-gray-300 text-black'}`} style={{height:'36px',fontSize:'13px',fontWeight:'600'}}>إلغاء</button>
+                  <button onClick={modalType==='addProject'?addProject:editProject} className="flex-1 px-5 py-2 text-white rounded-xl transition-all" style={{height:'36px',fontSize:'13px',fontWeight:'600',background:'linear-gradient(135deg,rgba(158,206,106,0.7) 0%,rgba(158,206,106,0.6) 100%)',border:'0.8px solid rgba(158,206,106,0.5)',boxShadow:'0 0 12px rgba(158,206,106,0.15)'}}>
+                    <span style={{fontFamily:'"Apple Color Emoji","Segoe UI Emoji",sans-serif'}}>✓</span> {modalType==='addProject'?'إضافة':'حفظ'}
+                  </button>
+                </div>
               </>
             )}
 
             {(modalType === 'addAcc' || modalType === 'editAcc') && (
               <>
-                <h3 className={`text-lg font-bold mb-4 ${txt}`}>{modalType === 'addAcc' ? 'إضافة حساب' : 'تعديل حساب'}</h3>
-                <div className="space-y-4">
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>اسم الحساب *</label><input value={modalType === 'addAcc' ? newAccount.name : editingItem?.name || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, name: e.target.value }) : setEditingItem({ ...editingItem, name: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الوصف</label><input value={modalType === 'addAcc' ? newAccount.description : editingItem?.description || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, description: e.target.value }) : setEditingItem({ ...editingItem, description: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>رابط الدخول</label><input value={modalType === 'addAcc' ? newAccount.loginUrl : editingItem?.loginUrl || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, loginUrl: e.target.value }) : setEditingItem({ ...editingItem, loginUrl: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>اسم المستخدم *</label><input value={modalType === 'addAcc' ? newAccount.username : editingItem?.username || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, username: e.target.value }) : setEditingItem({ ...editingItem, username: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>كلمة المرور</label><input value={modalType === 'addAcc' ? newAccount.password : editingItem?.password || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, password: e.target.value }) : setEditingItem({ ...editingItem, password: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>تاريخ الاشتراك</label><input type="date" value={modalType === 'addAcc' ? newAccount.subscriptionDate : editingItem?.subscriptionDate || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, subscriptionDate: e.target.value }) : setEditingItem({ ...editingItem, subscriptionDate: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الأيام المتبقية</label><input type="number" inputMode="numeric" value={modalType === 'addAcc' ? newAccount.daysRemaining : editingItem?.daysRemaining || ''} onChange={e => modalType === 'addAcc' ? setNewAccount({ ...newAccount, daysRemaining: parseInt(e.target.value) }) : setEditingItem({ ...editingItem, daysRemaining: parseInt(e.target.value) })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
+                <div className="flex items-center justify-between" style={{height:'32px',marginBottom:'16px'}}>
+                  <h3 className="text-lg font-bold flex items-center gap-2" style={{fontSize:'17px',color:'#f7768e',textShadow:'0 0 10px rgba(247,118,142,0.35)',fontFamily:'"Cairo",-apple-system,sans-serif'}}>
+                    <span style={{fontFamily:'"Apple Color Emoji","Segoe UI Emoji",sans-serif'}}>🔐</span>
+                    {modalType === 'addAcc' ? 'إضافة حساب' : 'تعديل حساب'}
+                  </h3>
+                  <button onClick={()=>{setShowModal(false);setEditingItem(null);}} className="text-gray-400 hover:text-white transition-all rounded-lg hover:bg-white/5" style={{fontSize:'20px',width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
                 </div>
-                <div className="flex gap-3 justify-end mt-6"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addAcc' ? addAccount : editAccount} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl text-sm`}>{modalType === 'addAcc' ? 'إضافة' : 'حفظ'}</button></div>
+
+                <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                  <div>
+                    <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#f7768e',textShadow:'0 0 6px rgba(247,118,142,0.3)'}}>اسم الخدمة *</label>
+                    <input placeholder="مثال: AWS Hosting" value={modalType==='addAcc'?newAccount.name:editingItem?.name||''} onChange={e=>modalType==='addAcc'?setNewAccount({...newAccount,name:e.target.value}):setEditingItem({...editingItem,name:e.target.value})} className={`w-full border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(247,118,142,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(247,118,142,0.08), inset 0 0 20px rgba(247,118,142,0.04)':undefined}} />
+                  </div>
+
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'12px'}}>
+                    <div>
+                      <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#f7768e',textShadow:'0 0 6px rgba(247,118,142,0.3)'}}>اسم المستخدم *</label>
+                      <input placeholder="username" value={modalType==='addAcc'?newAccount.username:editingItem?.username||''} onChange={e=>modalType==='addAcc'?setNewAccount({...newAccount,username:e.target.value}):setEditingItem({...editingItem,username:e.target.value})} className={`w-full border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(247,118,142,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(247,118,142,0.08)':undefined}} />
+                    </div>
+                    <div>
+                      <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#f7768e',textShadow:'0 0 6px rgba(247,118,142,0.3)'}}>كلمة المرور</label>
+                      <input type="password" placeholder="••••••••" value={modalType==='addAcc'?newAccount.password:editingItem?.password||''} onChange={e=>modalType==='addAcc'?setNewAccount({...newAccount,password:e.target.value}):setEditingItem({...editingItem,password:e.target.value})} className={`w-full border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(247,118,142,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(247,118,142,0.08)':undefined}} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#f7768e',textShadow:'0 0 6px rgba(247,118,142,0.3)'}}>رابط الدخول</label>
+                    <input placeholder="https://..." value={modalType==='addAcc'?newAccount.loginUrl:editingItem?.loginUrl||''} onChange={e=>modalType==='addAcc'?setNewAccount({...newAccount,loginUrl:e.target.value}):setEditingItem({...editingItem,loginUrl:e.target.value})} className={`w-full border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(247,118,142,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(247,118,142,0.08)':undefined}} />
+                  </div>
+
+                  <div>
+                    <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#f7768e',textShadow:'0 0 6px rgba(247,118,142,0.3)'}}>فترة الاشتراك</label>
+                    <div style={{display:'flex',alignItems:'center',gap:'8px',height:'36px'}}>
+                      <div onClick={()=>document.getElementById('acc-start-'+modalType).click()} className="cursor-pointer transition-all hover:opacity-80" style={{flex:1,height:'36px',background:tokyoNightEnabled?'linear-gradient(135deg,rgba(26,27,38,0.9) 0%,rgba(20,21,30,0.95) 100%)':'rgba(0,0,0,0.05)',border:'0.8px solid',borderColor:tokyoNightEnabled?'rgba(247,118,142,0.35)':'rgba(0,0,0,0.1)',borderRadius:'10px',padding:'0 10px',display:'flex',alignItems:'center',gap:'8px',boxShadow:tokyoNightEnabled?'0 0 8px rgba(247,118,142,0.08)':'none'}}>
+                        <span style={{fontSize:'15px',opacity:0.6,fontFamily:'"Apple Color Emoji","Segoe UI Emoji",sans-serif'}}>📅</span>
+                        <div style={{flex:1,display:'flex',flexDirection:'column',gap:'2px'}}>
+                          <div style={{color:'rgba(192,202,245,0.5)',fontSize:'9px',fontWeight:'600',textTransform:'uppercase'}}>بداية</div>
+                          <div style={{color:tokyoNightEnabled?'#c0caf5':'inherit',fontSize:'11px',fontWeight:'500'}}>
+                            {(modalType==='addAcc'?newAccount.subscriptionDate:editingItem?.subscriptionDate)?new Date(modalType==='addAcc'?newAccount.subscriptionDate:editingItem?.subscriptionDate).toLocaleDateString('ar-SA',{day:'numeric',month:'short'}):'اختر'}
+                          </div>
+                        </div>
+                      </div>
+                      <input id={'acc-start-'+modalType} type="date" className="hidden" value={modalType==='addAcc'?newAccount.subscriptionDate:editingItem?.subscriptionDate||''} onChange={e=>modalType==='addAcc'?setNewAccount({...newAccount,subscriptionDate:e.target.value}):setEditingItem({...editingItem,subscriptionDate:e.target.value})} />
+                      
+                      <span style={{color:'rgba(192,202,245,0.3)',fontSize:'16px'}}>→</span>
+
+                      <div className="cursor-pointer transition-all hover:opacity-80" style={{flex:1,height:'36px',background:tokyoNightEnabled?'linear-gradient(135deg,rgba(26,27,38,0.9) 0%,rgba(20,21,30,0.95) 100%)':'rgba(0,0,0,0.05)',border:'0.8px solid',borderColor:tokyoNightEnabled?'rgba(247,118,142,0.35)':'rgba(0,0,0,0.1)',borderRadius:'10px',padding:'0 10px',display:'flex',alignItems:'center',gap:'8px',boxShadow:tokyoNightEnabled?'0 0 8px rgba(247,118,142,0.08)':'none'}}>
+                        <span style={{fontSize:'15px',opacity:0.6,fontFamily:'"Apple Color Emoji","Segoe UI Emoji",sans-serif'}}>📆</span>
+                        <div style={{flex:1,display:'flex',flexDirection:'column',gap:'2px'}}>
+                          <div style={{color:'rgba(192,202,245,0.5)',fontSize:'9px',fontWeight:'600',textTransform:'uppercase'}}>انتهاء</div>
+                          <div style={{color:tokyoNightEnabled?'#c0caf5':'inherit',fontSize:'11px',fontWeight:'500'}}>
+                            {(modalType==='addAcc'?newAccount.daysRemaining:editingItem?.daysRemaining)?`بعد ${modalType==='addAcc'?newAccount.daysRemaining:editingItem?.daysRemaining} يوم`:'اختر'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#f7768e',textShadow:'0 0 6px rgba(247,118,142,0.3)'}}>الأيام المتبقية</label>
+                    <input type="number" placeholder="30" value={modalType==='addAcc'?newAccount.daysRemaining:editingItem?.daysRemaining||''} onChange={e=>modalType==='addAcc'?setNewAccount({...newAccount,daysRemaining:parseInt(e.target.value)}):setEditingItem({...editingItem,daysRemaining:parseInt(e.target.value)})} className={`w-full border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(247,118,142,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(247,118,142,0.08)':undefined}} />
+                  </div>
+
+                  <div>
+                    <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#f7768e',textShadow:'0 0 6px rgba(247,118,142,0.3)'}}>ملاحظات</label>
+                    <textarea placeholder="معلومات إضافية..." value={modalType==='addAcc'?newAccount.description:editingItem?.description||''} onChange={e=>modalType==='addAcc'?setNewAccount({...newAccount,description:e.target.value}):setEditingItem({...editingItem,description:e.target.value})} className={`w-full border rounded-xl resize-none ${inp}`} style={{height:'72px',padding:'10px 12px',fontSize:'13px',lineHeight:'1.4',borderColor:tokyoNightEnabled?'rgba(247,118,142,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(247,118,142,0.08), inset 0 0 20px rgba(247,118,142,0.04)':undefined}} />
+                  </div>
+                </div>
+
+                <div className="flex gap-2" style={{marginTop:'16px'}}>
+                  <button onClick={()=>{setShowModal(false);setEditingItem(null);}} className={`px-5 py-2 rounded-xl transition-all ${darkMode?'bg-gray-700 hover:bg-gray-600 text-white':'bg-gray-200 hover:bg-gray-300 text-black'}`} style={{height:'36px',fontSize:'13px',fontWeight:'600'}}>إلغاء</button>
+                  <button onClick={modalType==='addAcc'?addAccount:editAccount} className="flex-1 px-5 py-2 text-white rounded-xl transition-all" style={{height:'36px',fontSize:'13px',fontWeight:'600',background:'linear-gradient(135deg,rgba(247,118,142,0.7) 0%,rgba(247,118,142,0.6) 100%)',border:'0.8px solid rgba(247,118,142,0.5)',boxShadow:'0 0 12px rgba(247,118,142,0.15)'}}>
+                    <span style={{fontFamily:'"Apple Color Emoji","Segoe UI Emoji",sans-serif'}}>✓</span> {modalType==='addAcc'?'إضافة':'حفظ'}
+                  </button>
+                </div>
               </>
             )}
 
             {(modalType === 'addUser' || modalType === 'editUser') && (
               <>
-                <h3 className={`text-lg font-bold mb-4 ${txt}`}>{modalType === 'addUser' ? 'إضافة مستخدم' : 'تعديل مستخدم'}</h3>
-                <div className="space-y-4">
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>اسم المستخدم *</label><input value={modalType === 'addUser' ? newUser.username : editingItem?.username || ''} onChange={e => modalType === 'addUser' ? setNewUser({ ...newUser, username: e.target.value }) : setEditingItem({ ...editingItem, username: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>كلمة المرور *</label><input type="password" value={modalType === 'addUser' ? newUser.password : editingItem?.password || ''} onChange={e => modalType === 'addUser' ? setNewUser({ ...newUser, password: e.target.value }) : setEditingItem({ ...editingItem, password: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} /></div>
-                  <div><label className={`block text-xs mb-1 ${txtSm}`}>الصلاحية</label><select value={modalType === 'addUser' ? newUser.role : editingItem?.role || 'member'} onChange={e => modalType === 'addUser' ? setNewUser({ ...newUser, role: e.target.value }) : setEditingItem({ ...editingItem, role: e.target.value })} className={`w-full p-3 border rounded-xl text-sm ${inp}`} disabled={editingItem?.role === 'owner'}><option value="owner">المالك</option><option value="manager">مدير</option><option value="member">عضو</option></select></div>
-                  <label className={`flex items-center gap-2 ${txt}`}><input type="checkbox" checked={modalType === 'addUser' ? newUser.active : editingItem?.active !== false} onChange={e => modalType === 'addUser' ? setNewUser({ ...newUser, active: e.target.checked }) : setEditingItem({ ...editingItem, active: e.target.checked })} className="w-4 h-4 rounded" /><span className="text-sm">نشط</span></label>
+                <div className="flex items-center justify-between" style={{height:'32px',marginBottom:'16px'}}>
+                  <h3 className="text-lg font-bold flex items-center gap-2" style={{fontSize:'17px',color:'#7aa2f7',textShadow:'0 0 10px rgba(122,162,247,0.35)',fontFamily:'"Cairo",-apple-system,sans-serif'}}>
+                    <span style={{fontFamily:'"Apple Color Emoji","Segoe UI Emoji",sans-serif'}}>👤</span>
+                    {modalType === 'addUser' ? 'إضافة مستخدم' : 'تعديل مستخدم'}
+                  </h3>
+                  <button onClick={()=>{setShowModal(false);setEditingItem(null);}} className="text-gray-400 hover:text-white transition-all rounded-lg hover:bg-white/5" style={{fontSize:'20px',width:'32px',height:'32px',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
                 </div>
-                <div className="flex gap-3 justify-end mt-6"><button onClick={() => { setShowModal(false); setEditingItem(null); }} className={`px-4 py-2 rounded-xl text-sm ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-200 text-black'}`}>إلغاء</button><button onClick={modalType === 'addUser' ? addUser : editUser} className={`px-4 py-2 bg-gradient-to-r ${accent.gradient} text-white rounded-xl text-sm`}>{modalType === 'addUser' ? 'إضافة' : 'حفظ'}</button></div>
+
+                <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                  <div>
+                    <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#7aa2f7',textShadow:'0 0 6px rgba(122,162,247,0.3)'}}>اسم المستخدم *</label>
+                    <input placeholder="مثال: أحمد" value={modalType==='addUser'?newUser.username:editingItem?.username||''} onChange={e=>modalType==='addUser'?setNewUser({...newUser,username:e.target.value}):setEditingItem({...editingItem,username:e.target.value})} className={`w-full border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(122,162,247,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(122,162,247,0.08), inset 0 0 20px rgba(122,162,247,0.04)':undefined}} />
+                  </div>
+
+                  <div>
+                    <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#7aa2f7',textShadow:'0 0 6px rgba(122,162,247,0.3)'}}>كلمة المرور *</label>
+                    <input type="password" placeholder="••••••••" value={modalType==='addUser'?newUser.password:editingItem?.password||''} onChange={e=>modalType==='addUser'?setNewUser({...newUser,password:e.target.value}):setEditingItem({...editingItem,password:e.target.value})} className={`w-full border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(122,162,247,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(122,162,247,0.08), inset 0 0 20px rgba(122,162,247,0.04)':undefined}} />
+                  </div>
+
+                  <div>
+                    <label className={`block ${txtSm}`} style={{fontSize:'11px',fontWeight:'600',marginBottom:'6px',color:'#7aa2f7',textShadow:'0 0 6px rgba(122,162,247,0.3)'}}>الصلاحية</label>
+                    <select value={modalType==='addUser'?newUser.role:editingItem?.role||'member'} onChange={e=>modalType==='addUser'?setNewUser({...newUser,role:e.target.value}):setEditingItem({...editingItem,role:e.target.value})} disabled={editingItem?.role==='owner'} className={`w-full border rounded-xl ${inp}`} style={{height:'36px',padding:'0 12px',fontSize:'13px',borderColor:tokyoNightEnabled?'rgba(122,162,247,0.3)':undefined,boxShadow:tokyoNightEnabled?'0 0 8px rgba(122,162,247,0.08)':undefined}}><option value="owner">👑 المالك</option><option value="manager">⭐ مدير</option><option value="member">👥 عضو</option></select>
+                  </div>
+
+                  <label className={`flex items-center gap-2 ${txt}`} style={{padding:'8px 12px',background:tokyoNightEnabled?'rgba(122,162,247,0.05)':'rgba(0,0,0,0.02)',borderRadius:'10px',cursor:'pointer',transition:'all 0.3s'}}>
+                    <input type="checkbox" checked={modalType==='addUser'?newUser.active:editingItem?.active!==false} onChange={e=>modalType==='addUser'?setNewUser({...newUser,active:e.target.checked}):setEditingItem({...editingItem,active:e.target.checked})} className="w-4 h-4 rounded" style={{accentColor:tokyoNightEnabled?'#7aa2f7':'#3b82f6'}} />
+                    <span style={{fontSize:'13px',fontWeight:'500'}}>الحساب نشط</span>
+                  </label>
+                </div>
+
+                <div className="flex gap-2" style={{marginTop:'16px'}}>
+                  <button onClick={()=>{setShowModal(false);setEditingItem(null);}} className={`px-5 py-2 rounded-xl transition-all ${darkMode?'bg-gray-700 hover:bg-gray-600 text-white':'bg-gray-200 hover:bg-gray-300 text-black'}`} style={{height:'36px',fontSize:'13px',fontWeight:'600'}}>إلغاء</button>
+                  <button onClick={modalType==='addUser'?addUser:editUser} className="flex-1 px-5 py-2 text-white rounded-xl transition-all" style={{height:'36px',fontSize:'13px',fontWeight:'600',background:'linear-gradient(135deg,rgba(122,162,247,0.7) 0%,rgba(125,207,255,0.6) 100%)',border:'0.8px solid rgba(122,162,247,0.5)',boxShadow:'0 0 12px rgba(122,162,247,0.15)'}}>
+                    <span style={{fontFamily:'"Apple Color Emoji","Segoe UI Emoji",sans-serif'}}>✓</span> {modalType==='addUser'?'إضافة':'حفظ'}
+                  </button>
+                </div>
               </>
             )}
 
