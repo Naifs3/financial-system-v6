@@ -600,8 +600,8 @@ export default function App() {
 
   const addLog = async (action, type, name, itemId) => {
     const actionText = action === 'add' ? 'بإضافة' : action === 'edit' ? 'بتعديل' : action === 'delete' ? 'بحذف' : action === 'restore' ? 'بإستعادة' : action === 'pay' ? 'بدفع' : action;
-    const desc = `${currentUser?.username || 'النظام'} قام ${actionText} ${itemType}: ${itemName}`;
-    const l = { id: `LOG${Date.now()}`, user: currentUser?.username || 'النظام', action, itemType, itemName, itemId, description: desc, timestamp: new Date().toISOString() }; 
+    const desc = `${currentUser?.username || 'النظام'} قام ${actionText} ${type}: ${name}`;
+    const l = { id: `LOG${Date.now()}`, user: currentUser?.username || 'النظام', action, itemType: type, itemName: name, itemId, description: desc, timestamp: new Date().toISOString() }; 
     const nl = [l, ...auditLog]; 
     setAuditLog(nl); 
     setNewNotifications(p => p + 1); 
