@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, setDoc, onSnapshot, query, orderBy, runTransaction } from 'firebase/firestore';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
 import { Calendar, CheckSquare, Users, Moon, Sun, Monitor, Plus, Archive, Clock, Activity, History, Loader, Power, Pencil, Trash2, RotateCcw, UserCog, ChevronLeft, ChevronDown, ChevronUp, FolderOpen, FileText, MapPin, User, X, Phone, Settings, Layers, CreditCard, DollarSign, Wallet, FolderPlus, AlertTriangle, Image, Map, Type, Search, RefreshCw, Shield, CheckCircle, XCircle, Copy, ExternalLink, Eye, EyeOff, Folder, BookOpen } from 'lucide-react';
 
 const firebaseConfig = {
@@ -14,7 +15,8 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const APP_VERSION = "5.2.0-MultiUser";
+const auth = getAuth(app);
+const APP_VERSION = "5.3.0-FirebaseAuth";
 
 // نظام الأرقام التسلسلية
 const generateRefNumber = (prefix, counter) => {
@@ -553,7 +555,8 @@ export default function App() {
     { id: 2, username: 'منوّر', password: '@Lion12345', role: 'manager', active: true, createdAt: new Date().toISOString() }
   ];
 
-  const [users, setUsers] = useState(defaultUsers);
+  const [users, setUsers] = useState([]);
+  const [pendingUsers, setPendingUsers] = useState([]);
   const [expenses, setExpenses] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -676,7 +679,14 @@ export default function App() {
       onSnapshot(query(collection(db, 'tasks'), orderBy('createdAt', 'desc')), s => setTasks(s.docs.map(d => ({id:d.id, ...d.data()})))),
       onSnapshot(query(collection(db, 'projects'), orderBy('createdAt', 'desc')), s => setProjects(s.docs.map(d => ({id:d.id, ...d.data()})))),
       onSnapshot(query(collection(db, 'accounts'), orderBy('createdAt', 'desc')), s => setAccounts(s.docs.map(d => ({id:d.id, ...d.data()})))),
-      onSnapshot(collection(db, 'users'), s => { const u = s.docs.map(d => ({id:d.id, ...d.data()})); setUsers(u.length ? u : [{username:'نايف', password:'@Lion12345', role:'owner', active:true}]); }),
+      onSnapshot(collection(db, 'users'), s => { 
+        const allUsers = s.docs.map(d => ({id:d.id, ...d.data()})); 
+        setUsers(allUsers.filter(u => u.status === 'approved'));
+        setPendingUsers(allUsers.filter(u => u.status === 'pending'));
+        if (allUsers.length === 0) {
+          setUsers([{id:'default', name:'نايف', email:'naif@rkz.com', password:'@Lion12345', role:'owner', status:'approved', active:true}]);
+        }
+      }),
       onSnapshot(doc(db, 'system', 'counters'), s => setCounters(s.exists() ? s.data() : { E:0, T:0, P:0, A:0 })),
       onSnapshot(query(collection(db, 'audit'), orderBy('timestamp', 'desc')), s => setAuditLog(s.docs.map(d => ({id:d.id, ...d.data()})).slice(0, 50)))
     ];
@@ -730,21 +740,79 @@ export default function App() {
   };
 
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    const u = e.target.username.value.trim(), p = e.target.password.value.trim();
-    const user = users.find(x => x.username === u && x.password === p && x.active !== false);
-    if (user) {
-      setCurrentUser(user); setIsLoggedIn(true); setSessionStart(Date.now());
-      const ll = [{ id: `L${Date.now()}`, user: u, timestamp: new Date().toISOString(), action: 'دخول', duration: 0 }, ...loginLog];
-      setLoginLog(ll); save({ loginLog: ll });
-    } else alert('خطأ في البيانات');
+    const email = e.target.email.value.trim();
+    const password = e.target.password.value.trim();
+    
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+      
+      const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+      
+      if (!userDoc.exists()) {
+        await signOut(auth);
+        return alert('المستخدم غير موجود');
+      }
+      
+      const userData = userDoc.data();
+      
+      if (userData.status === 'pending') {
+        await signOut(auth);
+        return alert('⏸️ حسابك قيد المراجعة. يرجى الانتظار حتى تتم الموافقة عليه.');
+      }
+      
+      if (userData.status === 'rejected') {
+        await signOut(auth);
+        return alert('❌ تم رفض طلب انضمامك. يرجى التواصل مع الإدارة.');
+      }
+      
+      if (userData.status === 'disabled') {
+        await signOut(auth);
+        return alert('⏸️ حسابك معطل. يرجى التواصل مع الإدارة.');
+      }
+      
+      setCurrentUser(userData);
+      setIsLoggedIn(true);
+      setSessionStart(Date.now());
+      
+      await updateDoc(doc(db, 'users', firebaseUser.uid), {
+        lastLogin: new Date().toISOString()
+      });
+      
+      const ll = [{ 
+        id: `L${Date.now()}`, 
+        user: userData.name, 
+        timestamp: new Date().toISOString(), 
+        action: 'دخول', 
+        duration: 0 
+      }, ...loginLog];
+      setLoginLog(ll);
+      save({ loginLog: ll });
+      
+    } catch (error) {
+      console.error(error);
+      let message = 'حدث خطأ أثناء تسجيل الدخول';
+      
+      if (error.code === 'auth/invalid-credential') {
+        message = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
+      } else if (error.code === 'auth/user-not-found') {
+        message = 'المستخدم غير موجود';
+      } else if (error.code === 'auth/wrong-password') {
+        message = 'كلمة المرور غير صحيحة';
+      }
+      
+      alert(message);
+    }
   };
 
-  const logout = () => {
+  const logout = async () => {
     const duration = getSessionMinutes();
-    const ll = [{ id: `L${Date.now()}`, user: currentUser.username, timestamp: new Date().toISOString(), action: 'خروج', duration }, ...loginLog];
-    setLoginLog(ll); save({ loginLog: ll }); setIsLoggedIn(false); setCurrentUser(null); setSessionStart(null);
+    const ll = [{ id: `L${Date.now()}`, user: currentUser.name, timestamp: new Date().toISOString(), action: 'خروج', duration }, ...loginLog];
+    setLoginLog(ll); save({ loginLog: ll }); 
+    await signOut(auth);
+    setIsLoggedIn(false); setCurrentUser(null); setSessionStart(null);
     localStorage.removeItem('isLoggedIn'); localStorage.removeItem('currentUser');
   };
 
@@ -1111,11 +1179,12 @@ export default function App() {
       <div className={`${card} p-8 rounded-2xl shadow-2xl w-full max-w-md border relative z-10`}>
         <div className="text-center mb-8">
           <div className="w-20 h-20 mx-auto mb-4 rounded-2xl flex items-center justify-center text-gray-700 text-2xl font-bold" style={{ backgroundColor: '#dcdddc' }}>RKZ</div>
-          <h1 className={`text-xl font-bold ${txt}`}>نظام الإدارة المالية</h1>
-          <p className={`text-sm ${txtSm}`}>ركائز الأولى للتعمير</p>
+          <h1 className={`text-xl font-bold ${txt}`}>ركائز الأولى للتعمير</h1>
+          <p className={`text-sm ${txtSm}`}>منصة الإدارة والمشاريع</p>
+          <p className={`text-xs ${txtSm} mt-1`}>بوابة النظام</p>
         </div>
         <form onSubmit={handleLogin} className="space-y-4">
-          <input type="text" name="username" placeholder="اسم المستخدم" className={`w-full p-3 border rounded-xl text-sm ${inp}`} required />
+          <input type="email" name="email" placeholder="البريد الإلكتروني" className={`w-full p-3 border rounded-xl text-sm ${inp}`} required />
           <input type="password" name="password" placeholder="كلمة المرور" className={`w-full p-3 border rounded-xl text-sm ${inp}`} required />
           <button className={`w-full bg-gradient-to-r ${accent.gradient} text-white p-3 rounded-xl font-bold text-sm`}>دخول</button>
         </form>
@@ -1311,9 +1380,25 @@ export default function App() {
       <div className="flex flex-col md:flex-row">
         <div className={`w-full md:w-48 ${headerCard} border-b md:border-l p-2`}>
           <nav className="flex md:flex-col gap-1 flex-wrap">
-            {[{ id: 'dashboard', icon: Activity, label: 'الرئيسية' },{ id: 'expenses', icon: Wallet, label: 'المصروفات' },{ id: 'tasks', icon: CheckSquare, label: 'المهام' },{ id: 'projects', icon: FolderOpen, label: 'المشاريع' },{ id: 'accounts', icon: Users, label: 'الحسابات' },{ id: 'users', icon: UserCog, label: 'المستخدمين' },{ id: 'archive', icon: Archive, label: 'الأرشيف' },{ id: 'audit', icon: History, label: 'السجل' }].map(item => (
-              <button key={item.id} onClick={() => { setCurrentView(item.id); setSelectedProject(null); setProjectFilter(null); }} className={`flex items-center gap-2 p-2 rounded-xl transition-all ${currentView === item.id ? `bg-gradient-to-r ${accent.gradient} text-white` : headerColorIndex > 0 ? 'hover:bg-white/10 text-gray-300' : (darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600')}`}>
-                <item.icon className="w-4 h-4" /><span>{item.label}</span>
+            {[
+              { id: 'dashboard', icon: Activity, label: 'الرئيسية' },
+              { id: 'expenses', icon: Wallet, label: 'المصروفات' },
+              { id: 'tasks', icon: CheckSquare, label: 'المهام' },
+              { id: 'projects', icon: FolderOpen, label: 'المشاريع' },
+              { id: 'accounts', icon: Users, label: 'الحسابات' },
+              { id: 'users', icon: UserCog, label: 'المستخدمين' },
+              ...(currentUser?.role === 'owner' ? [{ id: 'pending', icon: Shield, label: 'طلبات الانضمام', badge: pendingUsers.length }] : []),
+              { id: 'archive', icon: Archive, label: 'الأرشيف' },
+              { id: 'audit', icon: History, label: 'السجل' }
+            ].map(item => (
+              <button key={item.id} onClick={() => { setCurrentView(item.id); setSelectedProject(null); setProjectFilter(null); }} className={`flex items-center gap-2 p-2 rounded-xl transition-all relative ${currentView === item.id ? `bg-gradient-to-r ${accent.gradient} text-white` : headerColorIndex > 0 ? 'hover:bg-white/10 text-gray-300' : (darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600')}`}>
+                <item.icon className="w-4 h-4" />
+                <span>{item.label}</span>
+                {item.badge > 0 && (
+                  <span className="absolute left-2 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
+                    {item.badge}
+                  </span>
+                )}
               </button>
             ))}
           </nav>
@@ -2082,27 +2167,135 @@ export default function App() {
           {currentView === 'users' && (
             <div>
               <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-                <h2 className={`text-lg font-bold ${txt}`}>المستخدمين</h2>
-                <button onClick={() => { setNewUser(emptyUser); setModalType('addUser'); setShowModal(true); }} className={`flex items-center gap-1 bg-gradient-to-r ${accent.gradient} text-white px-3 py-2 rounded-xl text-xs`}><Plus className="w-4 h-4" />إضافة</button>
+                <h2 className={`text-lg font-bold ${txt}`}>المستخدمين النشطين</h2>
               </div>
               <div className="space-y-3">{users.map(u => (
                 <div key={u.id} className={`${card} p-4 rounded-xl border`}>
-                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+                  <div className="flex flex-col gap-3">
                     <div className="flex-1">
-                      <h3 className={`font-bold ${txt}`}>{u.username}</h3>
-                      <p className={`${txtSm} mb-2`}>{u.role === 'owner' ? 'المالك' : u.role === 'manager' ? 'مدير' : 'عضو'}</p>
-                      <div className={`${txtSm} flex flex-wrap items-center gap-x-3 gap-y-1`}>
+                      <h3 className={`font-bold ${txt}`}>{u.name}</h3>
+                      <p className={`${txtSm} text-xs mb-1`}>{u.email}</p>
+                      <p className={`${txtSm} mb-2 text-xs`}>{u.role === 'owner' ? 'المالك' : u.role === 'manager' ? 'مدير' : 'عضو'}</p>
+                      
+                      <div className="flex items-center gap-2 mt-2 p-2 rounded-lg" style={{background: darkMode ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)'}}>
+                        <Shield className="w-4 h-4 text-red-400" />
+                        <span className={`text-xs ${txt}`}>كلمة المرور:</span>
+                        <code className={`text-xs font-mono ${txtSm}`}>
+                          {showPasswordId === u.id ? (u.password || '••••••••') : '••••••••'}
+                        </code>
+                        <button
+                          onClick={() => setShowPasswordId(showPasswordId === u.id ? null : u.id)}
+                          className="text-blue-400 hover:text-blue-300 ml-auto"
+                        >
+                          {showPasswordId === u.id ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                      
+                      <div className={`${txtSm} flex flex-wrap items-center gap-x-3 gap-y-1 mt-2`}>
                         <InfoItem icon={u.active !== false ? CheckCircle : XCircle}>{u.active !== false ? 'نشط' : 'معطل'}</InfoItem>
-                        {u.createdBy && <InfoItem icon={User}>{u.createdBy}</InfoItem>}
+                        {u.approvedDate && <span className="text-xs">انضم: {new Date(u.approvedDate).toLocaleDateString('ar-SA')}</span>}
                       </div>
                     </div>
-                    <div className="flex gap-1">
-                      <IconBtn onClick={() => { setEditingItem({ ...u }); setModalType('editUser'); setShowModal(true); }} icon={Pencil} title="تعديل" />
-                      {u.role !== 'owner' && <IconBtn onClick={() => { setSelectedItem(u); setModalType('delUser'); setShowModal(true); }} icon={Trash2} title="حذف" />}
-                    </div>
+                    {u.role !== 'owner' && (
+                      <div className="flex gap-1">
+                        <IconBtn onClick={() => { setEditingItem({ ...u }); setModalType('editUser'); setShowModal(true); }} icon={Pencil} title="تعديل" />
+                        <IconBtn onClick={() => { setSelectedItem(u); setModalType('delUser'); setShowModal(true); }} icon={Trash2} title="حذف" />
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}</div>
+            </div>
+          )}
+
+          {currentView === 'pending' && (
+            <div>
+              <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+                <h2 className={`text-lg font-bold ${txt}`}>طلبات الانضمام</h2>
+                <span className="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded-lg text-xs font-bold">
+                  {pendingUsers.length} طلب
+                </span>
+              </div>
+              
+              {pendingUsers.length === 0 ? (
+                <div className={`${card} p-8 rounded-xl border text-center`}>
+                  <p className={txtSm}>لا توجد طلبات معلقة</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {pendingUsers.map(user => (
+                    <div key={user.id} className={`${card} p-4 rounded-xl border`}>
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className={`font-bold ${txt}`}>{user.name}</h3>
+                          <p className={`${txtSm} text-xs`}>{user.email}</p>
+                          <p className={`text-xs ${txtSm} mt-1`}>
+                            تاريخ الطلب: {new Date(user.requestDate).toLocaleDateString('ar-SA')}
+                          </p>
+                        </div>
+                        <span className="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded text-xs font-bold">
+                          قيد المراجعة
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 mb-3 p-2 rounded-lg" style={{background: darkMode ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.05)'}}>
+                        <Shield className="w-4 h-4 text-red-400" />
+                        <span className={`text-xs ${txt}`}>كلمة المرور:</span>
+                        <code className={`text-xs font-mono ${txtSm}`}>
+                          {showPasswordId === user.id ? (user.password || '••••••••') : '••••••••'}
+                        </code>
+                        <button
+                          onClick={() => setShowPasswordId(showPasswordId === user.id ? null : user.id)}
+                          className="text-blue-400 hover:text-blue-300 ml-auto"
+                        >
+                          {showPasswordId === user.id ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <button
+                          onClick={async () => {
+                            try {
+                              await updateDoc(doc(db, 'users', user.uid), {
+                                status: 'approved',
+                                approvedDate: new Date().toISOString(),
+                                approvedBy: currentUser.uid || currentUser.id
+                              });
+                              alert(`✅ تمت الموافقة على ${user.name}`);
+                            } catch (error) {
+                              console.error(error);
+                              alert('حدث خطأ');
+                            }
+                          }}
+                          className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-xl text-xs font-bold transition-all"
+                        >
+                          قبول
+                        </button>
+                        
+                        <button
+                          onClick={async () => {
+                            if (!confirm(`هل تريد رفض طلب ${user.name}؟`)) return;
+                            try {
+                              await updateDoc(doc(db, 'users', user.uid), {
+                                status: 'rejected',
+                                rejectedDate: new Date().toISOString(),
+                                rejectedBy: currentUser.uid || currentUser.id
+                              });
+                              alert(`❌ تم رفض ${user.name}`);
+                            } catch (error) {
+                              console.error(error);
+                              alert('حدث خطأ');
+                            }
+                          }}
+                          className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-xl text-xs font-bold transition-all"
+                        >
+                          رفض
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
