@@ -1,6 +1,6 @@
 // src/components/Expenses.jsx
 import React, { useState } from 'react';
-import { Receipt, Plus, Search, Filter, Edit, Trash2, CheckCircle, RefreshCw } from 'lucide-react';
+import { Receipt, Plus, Search, Edit, Trash2, CheckCircle, RefreshCw } from 'lucide-react';
 import { calcDaysRemaining, getStatusColorByDays, formatNumber } from '../utils/helpers';
 import { STATUS_COLORS } from '../config/constants';
 
@@ -8,9 +8,7 @@ const Expenses = ({ expenses, onAdd, onEdit, onDelete, onMarkPaid, onRefresh, da
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [showAddModal, setShowAddModal] = useState(false);
 
-  // تصفية المصروفات
   const filteredExpenses = expenses.filter(expense => {
     const matchSearch = expense.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchType = filterType === 'all' || expense.type === filterType;
@@ -18,14 +16,12 @@ const Expenses = ({ expenses, onAdd, onEdit, onDelete, onMarkPaid, onRefresh, da
     return matchSearch && matchType && matchStatus;
   });
 
-  // حساب الإحصائيات
   const monthlyTotal = expenses.filter(e => e.type === 'monthly').reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
   const yearlyTotal = expenses.filter(e => e.type === 'yearly').reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
   const unpaidCount = expenses.filter(e => e.status === 'غير مدفوع').length;
 
   return (
     <div className="p-4 space-y-6 pb-20 md:pb-6">
-      {/* العنوان */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className={`text-2xl font-bold ${txt} flex items-center gap-2`}>
@@ -43,7 +39,7 @@ const Expenses = ({ expenses, onAdd, onEdit, onDelete, onMarkPaid, onRefresh, da
             تحديث
           </button>
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {}}
             className={`px-4 py-2 rounded-xl bg-gradient-to-r ${accentGradient} text-white transition-all hover:opacity-90 flex items-center gap-2`}
           >
             <Plus className="w-4 h-4" />
@@ -52,7 +48,6 @@ const Expenses = ({ expenses, onAdd, onEdit, onDelete, onMarkPaid, onRefresh, da
         </div>
       </div>
 
-      {/* الإحصائيات */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className={`${card} p-4 rounded-xl border ${darkMode ? 'border-blue-500/30' : 'border-blue-200'} bg-blue-500/10`}>
           <p className={`text-sm ${txtSm} mb-1`}>المصروفات الشهرية</p>
@@ -68,7 +63,6 @@ const Expenses = ({ expenses, onAdd, onEdit, onDelete, onMarkPaid, onRefresh, da
         </div>
       </div>
 
-      {/* البحث والتصفية */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1 relative">
           <Search className={`absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 ${txtSm}`} />
@@ -106,7 +100,6 @@ const Expenses = ({ expenses, onAdd, onEdit, onDelete, onMarkPaid, onRefresh, da
         </select>
       </div>
 
-      {/* قائمة المصروفات */}
       {filteredExpenses.length === 0 ? (
         <div className={`${card} p-12 rounded-2xl text-center border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
           <Receipt className={`w-16 h-16 mx-auto mb-4 ${txtSm}`} />
@@ -204,5 +197,3 @@ const Expenses = ({ expenses, onAdd, onEdit, onDelete, onMarkPaid, onRefresh, da
 };
 
 export default Expenses;
-```
-
