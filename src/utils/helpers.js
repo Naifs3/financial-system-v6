@@ -1,10 +1,7 @@
 // src/utils/helpers.js
 import CryptoJS from 'crypto-js';
 
-// مفتاح التشفير (يجب تغييره في الإنتاج!)
 const SECRET_KEY = 'RKZ-FINANCIAL-SYSTEM-2024-SECRET-KEY';
-
-// ==================== التشفير ====================
 
 export const encrypt = (text) => {
   if (!text) return '';
@@ -22,8 +19,6 @@ export const decrypt = (ciphertext) => {
   }
 };
 
-// ==================== الأرقام المرجعية ====================
-
 export const generateRefNumber = (prefix, number) => {
   return `${prefix}-${String(number).padStart(4, '0')}`;
 };
@@ -35,8 +30,6 @@ export const formatNumber = (num) => {
 export const formatCurrency = (amount) => {
   return `${formatNumber(amount)} ريال`;
 };
-
-// ==================== التواريخ ====================
 
 export const calcDaysRemaining = (dueDate) => {
   if (!dueDate) return null;
@@ -87,8 +80,6 @@ export const formatTime12 = (date) => {
     hour12: true
   });
 };
-
-// ==================== ضغط الصور ====================
 
 export const compressImage = (file, maxWidth = 1920, maxHeight = 1080, quality = 0.8) => {
   return new Promise((resolve, reject) => {
@@ -142,8 +133,6 @@ export const blobToBase64 = (blob) => {
   });
 };
 
-// ==================== التحقق من الملفات ====================
-
 export const validateFileType = (file, allowedTypes) => {
   return allowedTypes.some(type => file.type.startsWith(type));
 };
@@ -152,15 +141,11 @@ export const validateFileSize = (file, maxSize) => {
   return file.size <= maxSize;
 };
 
-// ==================== المشاريع ====================
-
 export const calculateProgress = (project) => {
   if (!project.folders || project.folders.length === 0) return 0;
   const totalFiles = project.folders.reduce((sum, folder) => sum + (folder.files?.length || 0), 0);
   return Math.min(100, Math.round(totalFiles * 10));
 };
-
-// ==================== الصلاحيات ====================
 
 export const hasPermission = (userRole, requiredLevel) => {
   const roles = {
@@ -170,8 +155,6 @@ export const hasPermission = (userRole, requiredLevel) => {
   };
   return roles[userRole] >= requiredLevel;
 };
-
-// ==================== الأدوات العامة ====================
 
 export const copyToClipboard = async (text) => {
   try {
@@ -187,7 +170,7 @@ export const calculateSessionDuration = (startTime) => {
   if (!startTime) return 0;
   const now = Date.now();
   const diff = now - startTime;
-  return Math.floor(diff / 60000); // minutes
+  return Math.floor(diff / 60000);
 };
 
 export const generateId = () => {
@@ -204,8 +187,6 @@ export const isValidPhone = (phone) => {
   return regex.test(phone);
 };
 
-// ==================== التحيات والاقتباسات ====================
-
 export const getRandomGreeting = (greetings, username) => {
   const greeting = greetings[Math.floor(Math.random() * greetings.length)];
   return `${greeting} ${username}`;
@@ -214,6 +195,3 @@ export const getRandomGreeting = (greetings, username) => {
 export const getRandomQuote = (quotes) => {
   return quotes[Math.floor(Math.random() * quotes.length)];
 };
-```
-
----
