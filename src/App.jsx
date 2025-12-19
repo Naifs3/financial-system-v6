@@ -1,8 +1,7 @@
-// src/App.jsx
 import React, { useState, useEffect } from 'react';
 import { 
   collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, 
-  query, orderBy, runTransaction
+  query, orderBy
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from './config/firebase';
@@ -14,7 +13,6 @@ import {
   THEMES, FONTS, ACCENT_COLORS, HEADER_COLORS
 } from './config/constants';
 
-// استيراد المكونات
 import Login from './components/Login';
 import Header from './components/Header';
 import Navigation from './components/Navigation';
@@ -49,6 +47,7 @@ function App() {
   const [fontIndex, setFontIndex] = useState(0);
 
   const [sessionStart, setSessionStart] = useState(null);
+  const [defaultUserCreated, setDefaultUserCreated] = useState(false);
 
   useEffect(() => {
     const savedLogin = localStorage.getItem('isLoggedIn') === 'true';
@@ -61,9 +60,16 @@ function App() {
     const savedFontIndex = parseInt(localStorage.getItem('fontIndex')) || 0;
 
     if (savedLogin && savedUser) {
-      setIsLoggedIn(true);
-      setCurrentUser(JSON.parse(savedUser));
-      setSessionStart(Date.now());
+      try {
+        const user = JSON.parse(savedUser);
+        setIsLoggedIn(true);
+        setCurrentUser(user);
+        setSessionStart(Date.now());
+      } catch (error) {
+        console.error('Error parsing saved user:', error);
+        localStorage.removeItem('isLoggedIn');
+        localStorage.removeItem('currentUser');
+      }
     }
 
     setThemeMode(savedThemeMode);
@@ -115,44 +121,62 @@ function App() {
   }, [fontIndex]);
 
   useEffect(() => {
+    const unsubscribeUsers = onSnapshot(
+      collection(db, 'users'),
+      async (snapshot) => {
+        const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        if (usersData.length === 0 && !defaultUserCreated) {
+          setDefaultUserCreated(true);
+          try {
+            await addDoc(collection(db, 'users'), {
+              username: encrypt('نايف'), 
+              password: encrypt('@Lion12345'), 
+              role: 'owner', 
+              active: true,
+              approved: true,
+              createdAt: new Date().toISOString()
+            });
+          } catch (error) {
+            console.error('Error creating default user:', error);
+          }
+        }
+        
+        setUsers(usersData);
+      }
+    );
+
+    return () => unsubscribeUsers();
+  }, [defaultUserCreated]);
+
+  useEffect(() => {
     if (!isLoggedIn) return;
 
     const unsubscribes = [
       onSnapshot(
         query(collection(db, 'expenses'), orderBy('createdAt', 'desc')),
-        snapshot => setExpenses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))
+        snapshot => setExpenses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))),
+        error => console.error('Error fetching expenses:', error)
       ),
       onSnapshot(
         query(collection(db, 'tasks'), orderBy('createdAt', 'desc')),
-        snapshot => setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))
+        snapshot => setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))),
+        error => console.error('Error fetching tasks:', error)
       ),
       onSnapshot(
         query(collection(db, 'projects'), orderBy('createdAt', 'desc')),
-        snapshot => setProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))
+        snapshot => setProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))),
+        error => console.error('Error fetching projects:', error)
       ),
       onSnapshot(
         query(collection(db, 'accounts'), orderBy('createdAt', 'desc')),
-        snapshot => setAccounts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))
-      ),
-      onSnapshot(
-        collection(db, 'users'),
-        snapshot => {
-          const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setUsers(usersData.length ? usersData : [
-            { 
-              id: 'default-1',
-              username: encrypt('نايف'), 
-              password: encrypt('@Lion12345'), 
-              role: 'owner', 
-              active: true,
-              approved: true 
-            }
-          ]);
-        }
+        snapshot => setAccounts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))),
+        error => console.error('Error fetching accounts:', error)
       ),
       onSnapshot(
         collection(db, 'categories'),
-        snapshot => setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })))
+        snapshot => setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))),
+        error => console.error('Error fetching categories:', error)
       )
     ];
 
@@ -165,11 +189,20 @@ function App() {
   }, []);
 
   const handleLogin = (user) => {
-    setCurrentUser(user);
+    const userData = {
+      id: user.id,
+      username: typeof user.username === 'string' ? user.username : decrypt(user.username),
+      role: user.role,
+      active: user.active,
+      approved: user.approved
+    };
+    
+    setCurrentUser(userData);
     setIsLoggedIn(true);
     setSessionStart(Date.now());
+    
     localStorage.setItem('isLoggedIn', 'true');
-    localStorage.setItem('currentUser', JSON.stringify(user));
+    localStorage.setItem('currentUser', JSON.stringify(userData));
   };
 
   const handleLogout = () => {
@@ -181,181 +214,272 @@ function App() {
   };
 
   const handleAddExpense = async (expense) => {
-    await addDoc(collection(db, 'expenses'), {
-      ...expense,
-      createdAt: new Date().toISOString(),
-      createdBy: currentUser.username
-    });
+    try {
+      await addDoc(collection(db, 'expenses'), {
+        ...expense,
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser.username
+      });
+    } catch (error) {
+      console.error('Error adding expense:', error);
+    }
   };
 
   const handleEditExpense = async (expense) => {
-    await updateDoc(doc(db, 'expenses', expense.id), expense);
+    try {
+      await updateDoc(doc(db, 'expenses', expense.id), expense);
+    } catch (error) {
+      console.error('Error editing expense:', error);
+    }
   };
 
   const handleDeleteExpense = async (expenseId) => {
-    await deleteDoc(doc(db, 'expenses', expenseId));
+    try {
+      await deleteDoc(doc(db, 'expenses', expenseId));
+    } catch (error) {
+      console.error('Error deleting expense:', error);
+    }
   };
 
   const handleMarkPaid = async (expenseId) => {
-    const expense = expenses.find(e => e.id === expenseId);
-    await updateDoc(doc(db, 'expenses', expenseId), {
-      status: 'مدفوع',
-      paidAt: new Date().toISOString()
-    });
+    try {
+      await updateDoc(doc(db, 'expenses', expenseId), {
+        status: 'مدفوع',
+        paidAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error marking expense as paid:', error);
+    }
   };
 
   const handleRefreshExpenses = async () => {
-    // تحديث المصروفات
+    console.log('Refreshing expenses...');
   };
 
   const handleAddTask = async (task) => {
-    await addDoc(collection(db, 'tasks'), {
-      ...task,
-      createdAt: new Date().toISOString(),
-      createdBy: currentUser.username
-    });
+    try {
+      await addDoc(collection(db, 'tasks'), {
+        ...task,
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser.username
+      });
+    } catch (error) {
+      console.error('Error adding task:', error);
+    }
   };
 
   const handleEditTask = async (task) => {
-    await updateDoc(doc(db, 'tasks', task.id), task);
+    try {
+      await updateDoc(doc(db, 'tasks', task.id), task);
+    } catch (error) {
+      console.error('Error editing task:', error);
+    }
   };
 
   const handleDeleteTask = async (taskId) => {
-    await deleteDoc(doc(db, 'tasks', taskId));
+    try {
+      await deleteDoc(doc(db, 'tasks', taskId));
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
   };
 
   const handleToggleTaskStatus = async (taskId) => {
-    const task = tasks.find(t => t.id === taskId);
-    await updateDoc(doc(db, 'tasks', taskId), { 
-      status: task.status === 'مكتمل' ? 'قيد الانتظار' : 'مكتمل' 
-    });
+    try {
+      const task = tasks.find(t => t.id === taskId);
+      await updateDoc(doc(db, 'tasks', taskId), { 
+        status: task.status === 'مكتمل' ? 'قيد الانتظار' : 'مكتمل' 
+      });
+    } catch (error) {
+      console.error('Error toggling task status:', error);
+    }
   };
 
   const handleAddProject = async (project) => {
-    await addDoc(collection(db, 'projects'), {
-      ...project,
-      folders: [],
-      createdAt: new Date().toISOString(),
-      createdBy: currentUser.username
-    });
+    try {
+      await addDoc(collection(db, 'projects'), {
+        ...project,
+        folders: [],
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser.username
+      });
+    } catch (error) {
+      console.error('Error adding project:', error);
+    }
   };
 
   const handleEditProject = async (project) => {
-    await updateDoc(doc(db, 'projects', project.id), project);
+    try {
+      await updateDoc(doc(db, 'projects', project.id), project);
+    } catch (error) {
+      console.error('Error editing project:', error);
+    }
   };
 
   const handleDeleteProject = async (projectId) => {
-    await deleteDoc(doc(db, 'projects', projectId));
+    try {
+      await deleteDoc(doc(db, 'projects', projectId));
+    } catch (error) {
+      console.error('Error deleting project:', error);
+    }
   };
 
   const handleAddFolder = async (projectId, folderName) => {
-    const project = projects.find(p => p.id === projectId);
-    const newFolder = {
-      id: generateId(),
-      name: folderName,
-      files: [],
-      createdAt: new Date().toISOString()
-    };
-    await updateDoc(doc(db, 'projects', projectId), {
-      folders: [...(project.folders || []), newFolder]
-    });
+    try {
+      const project = projects.find(p => p.id === projectId);
+      const newFolder = {
+        id: generateId(),
+        name: folderName,
+        files: [],
+        createdAt: new Date().toISOString()
+      };
+      await updateDoc(doc(db, 'projects', projectId), {
+        folders: [...(project.folders || []), newFolder]
+      });
+    } catch (error) {
+      console.error('Error adding folder:', error);
+    }
   };
 
   const handleUploadFile = async (projectId, folderId, file) => {
-    const project = projects.find(p => p.id === projectId);
-    
-    let fileToUpload = file;
-    if (file.type.startsWith('image/')) {
-      const compressed = await compressImage(file);
-      fileToUpload = new File([compressed], file.name, { type: file.type });
+    try {
+      const project = projects.find(p => p.id === projectId);
+      
+      let fileToUpload = file;
+      if (file.type.startsWith('image/')) {
+        const compressed = await compressImage(file);
+        fileToUpload = new File([compressed], file.name, { type: file.type });
+      }
+      
+      const storageRef = ref(storage, `projects/${projectId}/${folderId}/${Date.now()}_${file.name}`);
+      const snapshot = await uploadBytes(storageRef, fileToUpload);
+      const url = await getDownloadURL(snapshot.ref);
+      
+      const newFile = {
+        id: generateId(),
+        name: file.name,
+        type: file.type,
+        url,
+        storagePath: snapshot.ref.fullPath,
+        uploadedAt: new Date().toISOString(),
+        uploadedBy: currentUser.username
+      };
+      
+      const updatedFolders = project.folders.map(f => 
+        f.id === folderId 
+          ? { ...f, files: [...(f.files || []), newFile] }
+          : f
+      );
+      
+      await updateDoc(doc(db, 'projects', projectId), { folders: updatedFolders });
+    } catch (error) {
+      console.error('Error uploading file:', error);
     }
-    
-    const storageRef = ref(storage, `projects/${projectId}/${folderId}/${Date.now()}_${file.name}`);
-    const snapshot = await uploadBytes(storageRef, fileToUpload);
-    const url = await getDownloadURL(snapshot.ref);
-    
-    const newFile = {
-      id: generateId(),
-      name: file.name,
-      type: file.type,
-      url,
-      storagePath: snapshot.ref.fullPath,
-      uploadedAt: new Date().toISOString(),
-      uploadedBy: currentUser.username
-    };
-    
-    const updatedFolders = project.folders.map(f => 
-      f.id === folderId 
-        ? { ...f, files: [...(f.files || []), newFile] }
-        : f
-    );
-    
-    await updateDoc(doc(db, 'projects', projectId), { folders: updatedFolders });
   };
 
   const handleDeleteFile = async (projectId, folderId, fileId) => {
-    const project = projects.find(p => p.id === projectId);
-    const folder = project.folders.find(f => f.id === folderId);
-    const file = folder.files.find(f => f.id === fileId);
-    
-    if (file.storagePath) {
-      await deleteObject(ref(storage, file.storagePath));
+    try {
+      const project = projects.find(p => p.id === projectId);
+      const folder = project.folders.find(f => f.id === folderId);
+      const file = folder.files.find(f => f.id === fileId);
+      
+      if (file.storagePath) {
+        await deleteObject(ref(storage, file.storagePath));
+      }
+      
+      const updatedFolders = project.folders.map(f =>
+        f.id === folderId
+          ? { ...f, files: f.files.filter(file => file.id !== fileId) }
+          : f
+      );
+      
+      await updateDoc(doc(db, 'projects', projectId), { folders: updatedFolders });
+    } catch (error) {
+      console.error('Error deleting file:', error);
     }
-    
-    const updatedFolders = project.folders.map(f =>
-      f.id === folderId
-        ? { ...f, files: f.files.filter(file => file.id !== fileId) }
-        : f
-    );
-    
-    await updateDoc(doc(db, 'projects', projectId), { folders: updatedFolders });
   };
 
   const handleAddAccount = async (account) => {
-    await addDoc(collection(db, 'accounts'), {
-      ...account,
-      createdAt: new Date().toISOString(),
-      createdBy: currentUser.username
-    });
+    try {
+      await addDoc(collection(db, 'accounts'), {
+        ...account,
+        createdAt: new Date().toISOString(),
+        createdBy: currentUser.username
+      });
+    } catch (error) {
+      console.error('Error adding account:', error);
+    }
   };
 
   const handleEditAccount = async (account) => {
-    await updateDoc(doc(db, 'accounts', account.id), account);
+    try {
+      await updateDoc(doc(db, 'accounts', account.id), account);
+    } catch (error) {
+      console.error('Error editing account:', error);
+    }
   };
 
   const handleDeleteAccount = async (accountId) => {
-    await deleteDoc(doc(db, 'accounts', accountId));
+    try {
+      await deleteDoc(doc(db, 'accounts', accountId));
+    } catch (error) {
+      console.error('Error deleting account:', error);
+    }
   };
 
   const handleAddCategory = async (categoryName) => {
-    await addDoc(collection(db, 'categories'), {
-      name: categoryName,
-      createdAt: new Date().toISOString()
-    });
+    try {
+      await addDoc(collection(db, 'categories'), {
+        name: categoryName,
+        createdAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error adding category:', error);
+    }
   };
 
   const handleDeleteCategory = async (categoryId) => {
-    await deleteDoc(doc(db, 'categories', categoryId));
+    try {
+      await deleteDoc(doc(db, 'categories', categoryId));
+    } catch (error) {
+      console.error('Error deleting category:', error);
+    }
   };
 
   const handleAddUser = async (user) => {
-    await addDoc(collection(db, 'users'), {
-      ...user,
-      createdAt: new Date().toISOString()
-    });
+    try {
+      await addDoc(collection(db, 'users'), {
+        ...user,
+        createdAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error adding user:', error);
+    }
   };
 
   const handleApproveUser = async (userId) => {
-    await updateDoc(doc(db, 'users', userId), { approved: true });
+    try {
+      await updateDoc(doc(db, 'users', userId), { approved: true });
+    } catch (error) {
+      console.error('Error approving user:', error);
+    }
   };
 
   const handleToggleUserActive = async (userId) => {
-    const user = users.find(u => u.id === userId);
-    await updateDoc(doc(db, 'users', userId), { active: !user.active });
+    try {
+      const user = users.find(u => u.id === userId);
+      await updateDoc(doc(db, 'users', userId), { active: !user.active });
+    } catch (error) {
+      console.error('Error toggling user active status:', error);
+    }
   };
 
   const handleDeleteUser = async (userId) => {
-    await deleteDoc(doc(db, 'users', userId));
+    try {
+      await deleteDoc(doc(db, 'users', userId));
+    } catch (error) {
+      console.error('Error deleting user:', error);
+    }
   };
 
   const bg = darkMode 
@@ -492,8 +616,6 @@ function App() {
             onAdd={handleAddAccount}
             onEdit={handleEditAccount}
             onDelete={handleDeleteAccount}
-            onAddCategory={handleAddCategory}
-            onDeleteCategory={handleDeleteCategory}
             darkMode={darkMode}
             txt={txt}
             txtSm={txtSm}
