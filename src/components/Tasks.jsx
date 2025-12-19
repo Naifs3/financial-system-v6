@@ -6,9 +6,7 @@ const Tasks = ({ tasks, projects, onAdd, onEdit, onDelete, onToggleStatus, darkM
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [showAddModal, setShowAddModal] = useState(false);
 
-  // تصفية المهام
   const filteredTasks = tasks.filter(task => {
     const matchSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase());
     const matchPriority = filterPriority === 'all' || task.priority === filterPriority;
@@ -16,12 +14,10 @@ const Tasks = ({ tasks, projects, onAdd, onEdit, onDelete, onToggleStatus, darkM
     return matchSearch && matchPriority && matchStatus;
   });
 
-  // حساب الإحصائيات
   const urgentCount = tasks.filter(t => t.priority === 'urgent' && t.status !== 'مكتمل').length;
   const completedCount = tasks.filter(t => t.status === 'مكتمل').length;
   const completionRate = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
 
-  // ألوان الأولوية
   const getPriorityColor = (priority) => {
     switch (priority) {
       case 'urgent': return { bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30' };
@@ -42,7 +38,6 @@ const Tasks = ({ tasks, projects, onAdd, onEdit, onDelete, onToggleStatus, darkM
 
   return (
     <div className="p-4 space-y-6 pb-20 md:pb-6">
-      {/* العنوان */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className={`text-2xl font-bold ${txt} flex items-center gap-2`}>
@@ -52,7 +47,7 @@ const Tasks = ({ tasks, projects, onAdd, onEdit, onDelete, onToggleStatus, darkM
           <p className={`text-sm ${txtSm} mt-1`}>إدارة المهام مع متابعة الوقت</p>
         </div>
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={() => {}}
           className={`px-4 py-2 rounded-xl bg-gradient-to-r ${accentGradient} text-white transition-all hover:opacity-90 flex items-center gap-2`}
         >
           <Plus className="w-4 h-4" />
@@ -60,7 +55,6 @@ const Tasks = ({ tasks, projects, onAdd, onEdit, onDelete, onToggleStatus, darkM
         </button>
       </div>
 
-      {/* الإحصائيات */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className={`${card} p-4 rounded-xl border ${darkMode ? 'border-red-500/30' : 'border-red-200'} bg-red-500/10`}>
           <p className={`text-sm ${txtSm} mb-1`}>مستعجل</p>
@@ -76,7 +70,6 @@ const Tasks = ({ tasks, projects, onAdd, onEdit, onDelete, onToggleStatus, darkM
         </div>
       </div>
 
-      {/* البحث والتصفية */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1 relative">
           <Search className={`absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 ${txtSm}`} />
@@ -116,7 +109,6 @@ const Tasks = ({ tasks, projects, onAdd, onEdit, onDelete, onToggleStatus, darkM
         </select>
       </div>
 
-      {/* قائمة المهام */}
       {filteredTasks.length === 0 ? (
         <div className={`${card} p-12 rounded-2xl text-center border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
           <CheckSquare className={`w-16 h-16 mx-auto mb-4 ${txtSm}`} />
@@ -213,7 +205,6 @@ const Tasks = ({ tasks, projects, onAdd, onEdit, onDelete, onToggleStatus, darkM
                   )}
                 </div>
 
-                {/* Timer (مبسط) */}
                 {task.timerSeconds !== undefined && (
                   <div className={`mt-4 pt-4 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'} flex items-center justify-between`}>
                     <div className="flex items-center gap-2">
@@ -242,6 +233,3 @@ const Tasks = ({ tasks, projects, onAdd, onEdit, onDelete, onToggleStatus, darkM
 };
 
 export default Tasks;
-```
-
----
