@@ -27,7 +27,7 @@ const Accounts = ({ accounts, categories, onAdd, onEdit, onDelete, onAddCategory
     return days !== null && days >= 0 && days <= 30;
   }).length;
 
-  const handleCopy = async (text, field) => {
+  const handleCopy = async (text) => {
     await copyToClipboard(text);
   };
 
@@ -187,7 +187,7 @@ const Accounts = ({ accounts, categories, onAdd, onEdit, onDelete, onAddCategory
                     <div className="flex items-center justify-between mb-1">
                       <span className={`text-xs ${txtSm}`}>اسم المستخدم</span>
                       <button
-                        onClick={() => handleCopy(decrypt(account.username), 'username')}
+                        onClick={() => handleCopy(decrypt(account.username))}
                         className={`p-1 rounded ${darkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-200'} transition-colors`}
                         title="نسخ"
                       >
@@ -209,7 +209,7 @@ const Accounts = ({ accounts, categories, onAdd, onEdit, onDelete, onAddCategory
                           {showPassword ? <EyeOff className={`w-3 h-3 ${txtSm}`} /> : <Eye className={`w-3 h-3 ${txtSm}`} />}
                         </button>
                         <button
-                          onClick={() => handleCopy(decrypt(account.password), 'password')}
+                          onClick={() => handleCopy(decrypt(account.password))}
                           className={`p-1 rounded ${darkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-200'} transition-colors`}
                           title="نسخ"
                         >
@@ -237,7 +237,7 @@ const Accounts = ({ accounts, categories, onAdd, onEdit, onDelete, onAddCategory
                             <ExternalLink className={`w-3 h-3 ${txtSm}`} />
                           </a>
                           <button
-                            onClick={() => handleCopy(account.url, 'url')}
+                            onClick={() => handleCopy(account.url)}
                             className={`p-1 rounded ${darkMode ? 'hover:bg-gray-600' : 'hover:bg-gray-200'} transition-colors`}
                             title="نسخ"
                           >
@@ -249,20 +249,22 @@ const Accounts = ({ accounts, categories, onAdd, onEdit, onDelete, onAddCategory
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 gap-2">
-                    {account.subscriptionType && (
-                      <div className={`${darkMode ? 'bg-gray-700/50' : 'bg-gray-100'} p-2 rounded-xl`}>
-                        <p className={`text-xs ${txtSm}`}>نوع الاشتراك</p>
-                        <p className={`text-sm font-bold ${txt}`}>{account.subscriptionType}</p>
-                      </div>
-                    )}
-                    {account.expiryDate && (
-                      <div className={`${darkMode ? 'bg-gray-700/50' : 'bg-gray-100'} p-2 rounded-xl`}>
-                        <p className={`text-xs ${txtSm}`}>تاريخ الانتهاء</p>
-                        <p className={`text-sm font-bold ${txt}`}>{account.expiryDate}</p>
-                      </div>
-                    )}
-                  </div>
+                  {(account.subscriptionType || account.expiryDate) && (
+                    <div className="grid grid-cols-2 gap-2">
+                      {account.subscriptionType && (
+                        <div className={`${darkMode ? 'bg-gray-700/50' : 'bg-gray-100'} p-2 rounded-xl`}>
+                          <p className={`text-xs ${txtSm}`}>نوع الاشتراك</p>
+                          <p className={`text-sm font-bold ${txt}`}>{account.subscriptionType}</p>
+                        </div>
+                      )}
+                      {account.expiryDate && (
+                        <div className={`${darkMode ? 'bg-gray-700/50' : 'bg-gray-100'} p-2 rounded-xl`}>
+                          <p className={`text-xs ${txtSm}`}>تاريخ الانتهاء</p>
+                          <p className={`text-sm font-bold ${txt}`}>{account.expiryDate}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {account.notes && (
                     <div className={`text-xs ${txtSm} p-2 rounded ${darkMode ? 'bg-gray-700/50' : 'bg-gray-100'}`}>
