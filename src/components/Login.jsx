@@ -1,4 +1,3 @@
-// src/components/Login.jsx
 import React, { useState } from 'react';
 import { LogIn, Eye, EyeOff } from 'lucide-react';
 import { decrypt } from '../utils/helpers';
@@ -10,58 +9,46 @@ const Login = ({ onLogin, users, darkMode, accentGradient }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    try {
-      const user = users.find(u => {
-        const decryptedUsername = decrypt(u.username);
-        const decryptedPassword = decrypt(u.password);
-        return decryptedUsername === username && decryptedPassword === password;
-      });
-
-      if (!user) {
-        setError('اسم المستخدم أو كلمة المرور غير صحيحة');
-        setLoading(false);
-        return;
-      }
-
-      if (!user.active) {
-        setError('هذا الحساب غير نشط. الرجاء التواصل مع المدير');
-        setLoading(false);
-        return;
-      }
-
-      if (!user.approved) {
-        setError('حسابك في انتظار الموافقة من المدير');
-        setLoading(false);
-        return;
-      }
-
-      onLogin({ ...user, username: decrypt(user.username) });
-    } catch (error) {
-      setError('حدث خطأ أثناء تسجيل الدخول');
+    if (users.length === 0) {
+      setError('جاري تحميل المستخدمين...');
       setLoading(false);
+      return;
     }
+
+    const user = users.find(u => {
+      const decryptedUsername = decrypt(u.username);
+      const decryptedPassword = decrypt(u.password);
+      return decryptedUsername === username && decryptedPassword === password;
+    });
+
+    if (!user) {
+      setError('اسم المستخدم أو كلمة المرور غير صحيحة');
+      setLoading(false);
+      return;
+    }
+
+    if (!user.active) {
+      setError('هذا الحساب غير نشط');
+      setLoading(false);
+      return;
+    }
+
+    if (!user.approved) {
+      setError('حسابك في انتظار الموافقة');
+      setLoading(false);
+      return;
+    }
+
+    onLogin(user);
   };
 
   return (
     <div className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${darkMode ? 'from-gray-900 via-gray-800 to-gray-900' : 'from-gray-50 via-white to-gray-50'} p-4`}>
-      <div className="absolute inset-0 overflow-hidden opacity-5">
-        <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <pattern id="financial-pattern" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
-              <text x="10" y="30" fontSize="40" fill="currentColor">₪</text>
-              <text x="50" y="70" fontSize="40" fill="currentColor">$</text>
-              <text x="20" y="90" fontSize="40" fill="currentColor">€</text>
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#financial-pattern)" />
-        </svg>
-      </div>
-
       <div className={`relative w-full max-w-md ${darkMode ? 'bg-gray-800/90' : 'bg-white/90'} backdrop-blur-sm rounded-2xl shadow-2xl p-8 border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
         <div className="text-center mb-8">
           <div className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br ${accentGradient} mb-4`}>
