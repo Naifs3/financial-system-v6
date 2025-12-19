@@ -1,32 +1,71 @@
 import React, { useState } from 'react';
-import { LogIn, Eye, EyeOff, User, Lock } from 'lucide-react';
+import { LogIn, Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../config/firebase';
 
 const Login = ({ onLogin }) => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    setTimeout(() => {
-      if (username === 'نايف' && password === '@Lion12345') {
-        onLogin({
-          id: 'default-user',
-          username: 'نايف',
-          role: 'owner',
-          active: true,
-          approved: true
-        });
-      } else {
-        setError('اسم المستخدم أو كلمة المرور غير صحيحة');
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const uid = userCredential.user.uid;
+      
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      
+      if (!userDoc.exists()) {
+        setError('بيانات المستخدم غير موجودة');
         setLoading(false);
+        return;
       }
-    }, 500);
+
+      const userData = userDoc.data();
+
+      if (!userData.active) {
+        setError('هذا الحساب غير نشط');
+        setLoading(false);
+        return;
+      }
+
+      if (!userData.approved) {
+        setError('حسابك في انتظار الموافقة');
+        setLoading(false);
+        return;
+      }
+
+      onLogin({
+        id: uid,
+        email: userCredential.user.email,
+        username: userData.username,
+        role: userData.role,
+        active: userData.active,
+        approved: userData.approved
+      });
+
+    } catch (error) {
+      console.error('Login error:', error);
+      if (error.code === 'auth/invalid-credential') {
+        setError('البريد الإلكتروني أو كلمة المرور غير صحيحة');
+      } else if (error.code === 'auth/user-not-found') {
+        setError('المستخدم غير موجود');
+      } else if (error.code === 'auth/wrong-password') {
+        setError('كلمة المرور غير صحيحة');
+      } else if (error.code === 'auth/too-many-requests') {
+        setError('محاولات كثيرة. حاول مرة أخرى لاحقاً');
+      } else {
+        setError('حدث خطأ في تسجيل الدخول');
+      }
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,16 +90,16 @@ const Login = ({ onLogin }) => {
           <form onSubmit={handleSubmit} className="space-y-5">
             
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">اسم المستخدم</label>
+              <label className="block text-sm font-medium text-gray-300 mb-2">البريد الإلكتروني</label>
               <div className="relative">
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                  <User className="w-5 h-5" />
+                  <Mail className="w-5 h-5" />
                 </div>
                 <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="أدخل اسم المستخدم"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="أدخل البريد الإلكتروني"
                   className="w-full pr-11 pl-4 py-3 bg-gray-900/50 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   required
                   disabled={loading}
@@ -117,10 +156,6 @@ const Login = ({ onLogin }) => {
           <div className="mt-6 pt-6 border-t border-gray-700 text-center">
             <p className="text-xs text-gray-500">نظام الإدارة المالية v6.0</p>
             <p className="text-xs text-gray-600 mt-1">جميع الحقوق محفوظة © 2024</p>
-          </div>
-
-          <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl">
-            <p className="text-xs text-blue-400 text-center">للتجربة: نايف / @Lion12345</p>
           </div>
 
         </div>
