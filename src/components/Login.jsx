@@ -49,7 +49,6 @@ const Login = ({ onLogin, users, darkMode, accentGradient }) => {
 
   return (
     <div className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${darkMode ? 'from-gray-900 via-gray-800 to-gray-900' : 'from-gray-50 via-white to-gray-50'} p-4`}>
-      {/* الخلفية المالية */}
       <div className="absolute inset-0 overflow-hidden opacity-5">
         <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
           <defs>
@@ -63,9 +62,7 @@ const Login = ({ onLogin, users, darkMode, accentGradient }) => {
         </svg>
       </div>
 
-      {/* صندوق تسجيل الدخول */}
       <div className={`relative w-full max-w-md ${darkMode ? 'bg-gray-800/90' : 'bg-white/90'} backdrop-blur-sm rounded-2xl shadow-2xl p-8 border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-        {/* الشعار */}
         <div className="text-center mb-8">
           <div className={`inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br ${accentGradient} mb-4`}>
             <span className="text-3xl font-bold text-white">RKZ</span>
@@ -78,16 +75,13 @@ const Login = ({ onLogin, users, darkMode, accentGradient }) => {
           </p>
         </div>
 
-        {/* رسالة الخطأ */}
         {error && (
           <div className="mb-6 p-4 bg-red-500/20 border border-red-500/30 rounded-xl">
             <p className="text-red-400 text-sm text-center">{error}</p>
           </div>
         )}
 
-        {/* النموذج */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* اسم المستخدم */}
           <div>
             <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
               اسم المستخدم
@@ -107,7 +101,6 @@ const Login = ({ onLogin, users, darkMode, accentGradient }) => {
             />
           </div>
 
-          {/* كلمة المرور */}
           <div>
             <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
               كلمة المرور
@@ -136,7 +129,6 @@ const Login = ({ onLogin, users, darkMode, accentGradient }) => {
             </div>
           </div>
 
-          {/* زر تسجيل الدخول */}
           <button
             type="submit"
             disabled={loading}
@@ -156,7 +148,6 @@ const Login = ({ onLogin, users, darkMode, accentGradient }) => {
           </button>
         </form>
 
-        {/* معلومات إضافية */}
         <div className={`mt-6 pt-6 border-t ${darkMode ? 'border-gray-700' : 'border-gray-200'} text-center`}>
           <p className={`text-xs ${darkMode ? 'text-gray-500' : 'text-gray-600'}`}>
             نظام الإدارة المالية v6.0
@@ -166,7 +157,6 @@ const Login = ({ onLogin, users, darkMode, accentGradient }) => {
           </p>
         </div>
 
-        {/* بيانات التجربة */}
         <div className={`mt-4 p-3 rounded-xl ${darkMode ? 'bg-blue-500/10' : 'bg-blue-50'} border ${darkMode ? 'border-blue-500/30' : 'border-blue-200'}`}>
           <p className={`text-xs ${darkMode ? 'text-blue-400' : 'text-blue-600'} text-center`}>
             للتجربة: نايف / @Lion12345
@@ -178,6 +168,3 @@ const Login = ({ onLogin, users, darkMode, accentGradient }) => {
 };
 
 export default Login;
-```
-
----
