@@ -4,32 +4,27 @@ import { Receipt, CheckSquare, FolderKanban, Shield, TrendingUp, AlertCircle } f
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 const Dashboard = ({ expenses, tasks, projects, accounts, darkMode, txt, txtSm, card }) => {
-  // حساب الإحصائيات
   const totalExpenses = expenses.reduce((sum, exp) => sum + (parseFloat(exp.amount) || 0), 0);
   const completedTasks = tasks.filter(t => t.status === 'مكتمل').length;
   const activeProjects = projects.filter(p => p.status === 'active').length;
   const totalAccounts = accounts.length;
 
-  // بيانات الرسم البياني للمصروفات
   const expenseData = [
     { name: 'شهري', value: expenses.filter(e => e.type === 'monthly').length, color: '#3B82F6' },
     { name: 'سنوي', value: expenses.filter(e => e.type === 'yearly').length, color: '#10B981' }
   ];
 
-  // بيانات الرسم البياني للمشاريع
   const projectData = [
     { name: 'نشط', value: projects.filter(p => p.status === 'active').length },
     { name: 'متوقف', value: projects.filter(p => p.status === 'paused').length },
     { name: 'مكتمل', value: projects.filter(p => p.status === 'completed').length }
   ];
 
-  // التنبيهات
   const unpaidExpenses = expenses.filter(e => e.status === 'غير مدفوع').length;
   const urgentTasks = tasks.filter(t => t.priority === 'urgent' && t.status !== 'مكتمل').length;
 
   return (
     <div className="p-4 space-y-6 pb-20 md:pb-6">
-      {/* العنوان */}
       <div>
         <h2 className={`text-2xl font-bold ${txt} flex items-center gap-2`}>
           <TrendingUp className="w-6 h-6" />
@@ -38,15 +33,13 @@ const Dashboard = ({ expenses, tasks, projects, accounts, darkMode, txt, txtSm, 
         <p className={`text-sm ${txtSm} mt-1`}>نظرة عامة على النظام</p>
       </div>
 
-      {/* البطاقات الإحصائية */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* المصروفات */}
         <div className={`${card} p-6 rounded-2xl border ${darkMode ? 'border-blue-500/30' : 'border-blue-200'} bg-blue-500/10`}>
           <div className="flex items-center justify-between mb-4">
             <Receipt className="w-8 h-8 text-blue-400" />
             <span className={`text-xs ${txtSm}`}>المصروفات</span>
           </div>
-          <p className={`text-3xl font-bold text-blue-400 mb-1`}>
+          <p className="text-3xl font-bold text-blue-400 mb-1">
             {expenses.length}
           </p>
           <p className={`text-sm ${txtSm}`}>
@@ -54,13 +47,12 @@ const Dashboard = ({ expenses, tasks, projects, accounts, darkMode, txt, txtSm, 
           </p>
         </div>
 
-        {/* المهام */}
         <div className={`${card} p-6 rounded-2xl border ${darkMode ? 'border-green-500/30' : 'border-green-200'} bg-green-500/10`}>
           <div className="flex items-center justify-between mb-4">
             <CheckSquare className="w-8 h-8 text-green-400" />
             <span className={`text-xs ${txtSm}`}>المهام</span>
           </div>
-          <p className={`text-3xl font-bold text-green-400 mb-1`}>
+          <p className="text-3xl font-bold text-green-400 mb-1">
             {completedTasks}/{tasks.length}
           </p>
           <p className={`text-sm ${txtSm}`}>
@@ -68,13 +60,12 @@ const Dashboard = ({ expenses, tasks, projects, accounts, darkMode, txt, txtSm, 
           </p>
         </div>
 
-        {/* المشاريع */}
         <div className={`${card} p-6 rounded-2xl border ${darkMode ? 'border-purple-500/30' : 'border-purple-200'} bg-purple-500/10`}>
           <div className="flex items-center justify-between mb-4">
             <FolderKanban className="w-8 h-8 text-purple-400" />
             <span className={`text-xs ${txtSm}`}>المشاريع</span>
           </div>
-          <p className={`text-3xl font-bold text-purple-400 mb-1`}>
+          <p className="text-3xl font-bold text-purple-400 mb-1">
             {activeProjects}
           </p>
           <p className={`text-sm ${txtSm}`}>
@@ -82,20 +73,18 @@ const Dashboard = ({ expenses, tasks, projects, accounts, darkMode, txt, txtSm, 
           </p>
         </div>
 
-        {/* الحسابات */}
         <div className={`${card} p-6 rounded-2xl border ${darkMode ? 'border-cyan-500/30' : 'border-cyan-200'} bg-cyan-500/10`}>
           <div className="flex items-center justify-between mb-4">
             <Shield className="w-8 h-8 text-cyan-400" />
             <span className={`text-xs ${txtSm}`}>الحسابات</span>
           </div>
-          <p className={`text-3xl font-bold text-cyan-400 mb-1`}>
+          <p className="text-3xl font-bold text-cyan-400 mb-1">
             {totalAccounts}
           </p>
           <p className={`text-sm ${txtSm}`}>حساب مشفر</p>
         </div>
       </div>
 
-      {/* التنبيهات */}
       {(unpaidExpenses > 0 || urgentTasks > 0) && (
         <div className={`${card} p-6 rounded-2xl border border-orange-500/30 bg-orange-500/10`}>
           <div className="flex items-center gap-2 mb-4">
@@ -117,9 +106,7 @@ const Dashboard = ({ expenses, tasks, projects, accounts, darkMode, txt, txtSm, 
         </div>
       )}
 
-      {/* الرسوم البيانية */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* رسم بياني دائري للمصروفات */}
         <div className={`${card} p-6 rounded-2xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
           <h3 className={`font-bold ${txt} mb-4`}>توزيع المصروفات</h3>
           {expenses.length > 0 ? (
@@ -162,7 +149,6 @@ const Dashboard = ({ expenses, tasks, projects, accounts, darkMode, txt, txtSm, 
           </div>
         </div>
 
-        {/* رسم بياني شريطي للمشاريع */}
         <div className={`${card} p-6 rounded-2xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
           <h3 className={`font-bold ${txt} mb-4`}>حالة المشاريع</h3>
           {projects.length > 0 ? (
@@ -195,25 +181,24 @@ const Dashboard = ({ expenses, tasks, projects, accounts, darkMode, txt, txtSm, 
         </div>
       </div>
 
-      {/* ملخص سريع */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className={`${card} p-4 rounded-xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'} text-center`}>
-          <p className={`text-2xl font-bold text-blue-400`}>{expenses.filter(e => e.type === 'monthly').length}</p>
+          <p className="text-2xl font-bold text-blue-400">{expenses.filter(e => e.type === 'monthly').length}</p>
           <p className={`text-xs ${txtSm} mt-1`}>مصروف شهري</p>
         </div>
         
         <div className={`${card} p-4 rounded-xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'} text-center`}>
-          <p className={`text-2xl font-bold text-green-400`}>{expenses.filter(e => e.type === 'yearly').length}</p>
+          <p className="text-2xl font-bold text-green-400">{expenses.filter(e => e.type === 'yearly').length}</p>
           <p className={`text-xs ${txtSm} mt-1`}>مصروف سنوي</p>
         </div>
         
         <div className={`${card} p-4 rounded-xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'} text-center`}>
-          <p className={`text-2xl font-bold text-orange-400`}>{tasks.filter(t => t.priority === 'urgent').length}</p>
+          <p className="text-2xl font-bold text-orange-400">{tasks.filter(t => t.priority === 'urgent').length}</p>
           <p className={`text-xs ${txtSm} mt-1`}>مهمة مستعجلة</p>
         </div>
         
         <div className={`${card} p-4 rounded-xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'} text-center`}>
-          <p className={`text-2xl font-bold text-purple-400`}>{projects.filter(p => p.status === 'completed').length}</p>
+          <p className="text-2xl font-bold text-purple-400">{projects.filter(p => p.status === 'completed').length}</p>
           <p className={`text-xs ${txtSm} mt-1`}>مشروع مكتمل</p>
         </div>
       </div>
@@ -222,6 +207,3 @@ const Dashboard = ({ expenses, tasks, projects, accounts, darkMode, txt, txtSm, 
 };
 
 export default Dashboard;
-```
-
----
