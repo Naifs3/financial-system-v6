@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { LogIn, Eye, EyeOff, User, Lock } from 'lucide-react';
-import { decrypt } from '../utils/helpers';
 
-const Login = ({ onLogin, users }) => {
+const Login = ({ onLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -14,37 +13,20 @@ const Login = ({ onLogin, users }) => {
     setError('');
     setLoading(true);
 
-    if (users.length === 0) {
-      setError('جاري تحميل المستخدمين...');
-      setLoading(false);
-      return;
-    }
-
-    const user = users.find((u) => {
-      const decryptedUsername = decrypt(u.username);
-      const decryptedPassword = decrypt(u.password);
-      return decryptedUsername === username && decryptedPassword === password;
-    });
-
-    if (!user) {
-      setError('اسم المستخدم أو كلمة المرور غير صحيحة');
-      setLoading(false);
-      return;
-    }
-
-    if (!user.active) {
-      setError('هذا الحساب غير نشط');
-      setLoading(false);
-      return;
-    }
-
-    if (!user.approved) {
-      setError('حسابك في انتظار الموافقة');
-      setLoading(false);
-      return;
-    }
-
-    onLogin(user);
+    setTimeout(() => {
+      if (username === 'نايف' && password === '@Lion12345') {
+        onLogin({
+          id: 'default-user',
+          username: 'نايف',
+          role: 'owner',
+          active: true,
+          approved: true
+        });
+      } else {
+        setError('اسم المستخدم أو كلمة المرور غير صحيحة');
+        setLoading(false);
+      }
+    }, 500);
   };
 
   return (
