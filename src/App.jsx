@@ -6,8 +6,7 @@ import {
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from './config/firebase';
 import {
-  encrypt, decrypt, generateRefNumber, 
-  calcDaysRemaining, calculateSessionDuration, generateId, compressImage
+  encrypt, decrypt, generateId, compressImage, calculateSessionDuration
 } from './utils/helpers';
 import {
   THEMES, FONTS, ACCENT_COLORS, HEADER_COLORS
@@ -47,11 +46,11 @@ function App() {
   const [fontIndex, setFontIndex] = useState(0);
 
   const [sessionStart, setSessionStart] = useState(null);
-  const [defaultUserCreated, setDefaultUserCreated] = useState(false);
 
   useEffect(() => {
     const savedLogin = localStorage.getItem('isLoggedIn') === 'true';
     const savedUser = localStorage.getItem('currentUser');
+    const savedSessionStart = localStorage.getItem('sessionStart');
     const savedThemeMode = localStorage.getItem('themeMode') || 'dark';
     const savedBgIndex = parseInt(localStorage.getItem('bgIndex')) || 0;
     const savedAccentIndex = parseInt(localStorage.getItem('accentIndex')) || 0;
@@ -62,13 +61,14 @@ function App() {
     if (savedLogin && savedUser) {
       try {
         const user = JSON.parse(savedUser);
-        setIsLoggedIn(true);
         setCurrentUser(user);
-        setSessionStart(Date.now());
+        setIsLoggedIn(true);
+        setSessionStart(savedSessionStart ? parseInt(savedSessionStart) : Date.now());
       } catch (error) {
-        console.error('Error parsing saved user:', error);
+        console.error('Error loading saved session:', error);
         localStorage.removeItem('isLoggedIn');
         localStorage.removeItem('currentUser');
+        localStorage.removeItem('sessionStart');
       }
     }
 
@@ -80,6 +80,48 @@ function App() {
     setFontIndex(savedFontIndex);
     
     setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    let defaultUserCreated = false;
+
+    const unsubscribe = onSnapshot(
+      collection(db, 'users'),
+      async (snapshot) => {
+        const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        if (usersData.length === 0 && !defaultUserCreated) {
+          defaultUserCreated = true;
+          try {
+            await addDoc(collection(db, 'users'), {
+              username: encrypt('نايف'), 
+              password: encrypt('@Lion12345'), 
+              role: 'owner', 
+              active: true,
+              approved: true,
+              createdAt: new Date().toISOString()
+            });
+          } catch (error) {
+            console.error('Error creating default user:', error);
+          }
+        }
+        
+        setUsers(usersData);
+      },
+      (error) => {
+        console.error('Error loading users:', error);
+        setUsers([{
+          id: 'local-default',
+          username: encrypt('نايف'),
+          password: encrypt('@Lion12345'),
+          role: 'owner',
+          active: true,
+          approved: true
+        }]);
+      }
+    );
+
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -96,58 +138,12 @@ function App() {
     }
   }, [themeMode]);
 
-  useEffect(() => {
-    localStorage.setItem('themeMode', themeMode);
-  }, [themeMode]);
-
-  useEffect(() => {
-    localStorage.setItem('bgIndex', bgIndex);
-  }, [bgIndex]);
-
-  useEffect(() => {
-    localStorage.setItem('accentIndex', accentIndex);
-  }, [accentIndex]);
-
-  useEffect(() => {
-    localStorage.setItem('headerColorIndex', headerColorIndex);
-  }, [headerColorIndex]);
-
-  useEffect(() => {
-    localStorage.setItem('fontSize', fontSize);
-  }, [fontSize]);
-
-  useEffect(() => {
-    localStorage.setItem('fontIndex', fontIndex);
-  }, [fontIndex]);
-
-  useEffect(() => {
-    const unsubscribeUsers = onSnapshot(
-      collection(db, 'users'),
-      async (snapshot) => {
-        const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        if (usersData.length === 0 && !defaultUserCreated) {
-          setDefaultUserCreated(true);
-          try {
-            await addDoc(collection(db, 'users'), {
-              username: encrypt('نايف'), 
-              password: encrypt('@Lion12345'), 
-              role: 'owner', 
-              active: true,
-              approved: true,
-              createdAt: new Date().toISOString()
-            });
-          } catch (error) {
-            console.error('Error creating default user:', error);
-          }
-        }
-        
-        setUsers(usersData);
-      }
-    );
-
-    return () => unsubscribeUsers();
-  }, [defaultUserCreated]);
+  useEffect(() => { localStorage.setItem('themeMode', themeMode); }, [themeMode]);
+  useEffect(() => { localStorage.setItem('bgIndex', bgIndex); }, [bgIndex]);
+  useEffect(() => { localStorage.setItem('accentIndex', accentIndex); }, [accentIndex]);
+  useEffect(() => { localStorage.setItem('headerColorIndex', headerColorIndex); }, [headerColorIndex]);
+  useEffect(() => { localStorage.setItem('fontSize', fontSize); }, [fontSize]);
+  useEffect(() => { localStorage.setItem('fontIndex', fontIndex); }, [fontIndex]);
 
   useEffect(() => {
     if (!isLoggedIn) return;
@@ -156,27 +152,27 @@ function App() {
       onSnapshot(
         query(collection(db, 'expenses'), orderBy('createdAt', 'desc')),
         snapshot => setExpenses(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))),
-        error => console.error('Error fetching expenses:', error)
+        error => console.error('Expenses error:', error)
       ),
       onSnapshot(
         query(collection(db, 'tasks'), orderBy('createdAt', 'desc')),
         snapshot => setTasks(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))),
-        error => console.error('Error fetching tasks:', error)
+        error => console.error('Tasks error:', error)
       ),
       onSnapshot(
         query(collection(db, 'projects'), orderBy('createdAt', 'desc')),
         snapshot => setProjects(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))),
-        error => console.error('Error fetching projects:', error)
+        error => console.error('Projects error:', error)
       ),
       onSnapshot(
         query(collection(db, 'accounts'), orderBy('createdAt', 'desc')),
         snapshot => setAccounts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))),
-        error => console.error('Error fetching accounts:', error)
+        error => console.error('Accounts error:', error)
       ),
       onSnapshot(
         collection(db, 'categories'),
         snapshot => setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))),
-        error => console.error('Error fetching categories:', error)
+        error => console.error('Categories error:', error)
       )
     ];
 
@@ -197,12 +193,17 @@ function App() {
       approved: user.approved
     };
     
+    const loginTime = Date.now();
+    
     setCurrentUser(userData);
     setIsLoggedIn(true);
-    setSessionStart(Date.now());
+    setSessionStart(loginTime);
     
     localStorage.setItem('isLoggedIn', 'true');
     localStorage.setItem('currentUser', JSON.stringify(userData));
+    localStorage.setItem('sessionStart', loginTime.toString());
+    
+    console.log('Login successful:', userData);
   };
 
   const handleLogout = () => {
@@ -211,6 +212,7 @@ function App() {
     setSessionStart(null);
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('currentUser');
+    localStorage.removeItem('sessionStart');
   };
 
   const handleAddExpense = async (expense) => {
@@ -248,12 +250,12 @@ function App() {
         paidAt: new Date().toISOString()
       });
     } catch (error) {
-      console.error('Error marking expense as paid:', error);
+      console.error('Error marking paid:', error);
     }
   };
 
-  const handleRefreshExpenses = async () => {
-    console.log('Refreshing expenses...');
+  const handleRefreshExpenses = () => {
+    console.log('Refreshing...');
   };
 
   const handleAddTask = async (task) => {
@@ -291,7 +293,7 @@ function App() {
         status: task.status === 'مكتمل' ? 'قيد الانتظار' : 'مكتمل' 
       });
     } catch (error) {
-      console.error('Error toggling task status:', error);
+      console.error('Error toggling task:', error);
     }
   };
 
@@ -427,25 +429,6 @@ function App() {
     }
   };
 
-  const handleAddCategory = async (categoryName) => {
-    try {
-      await addDoc(collection(db, 'categories'), {
-        name: categoryName,
-        createdAt: new Date().toISOString()
-      });
-    } catch (error) {
-      console.error('Error adding category:', error);
-    }
-  };
-
-  const handleDeleteCategory = async (categoryId) => {
-    try {
-      await deleteDoc(doc(db, 'categories', categoryId));
-    } catch (error) {
-      console.error('Error deleting category:', error);
-    }
-  };
-
   const handleAddUser = async (user) => {
     try {
       await addDoc(collection(db, 'users'), {
@@ -470,7 +453,7 @@ function App() {
       const user = users.find(u => u.id === userId);
       await updateDoc(doc(db, 'users', userId), { active: !user.active });
     } catch (error) {
-      console.error('Error toggling user active status:', error);
+      console.error('Error toggling user:', error);
     }
   };
 
