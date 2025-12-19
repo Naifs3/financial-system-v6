@@ -4,7 +4,8 @@ import {
   query, orderBy
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, storage } from './config/firebase';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
+import { db, storage, auth } from './config/firebase';
 import {
   generateId, compressImage
 } from './utils/helpers';
@@ -23,11 +24,8 @@ import Settings from './components/Settings';
 import { LogOut, Sun, Moon, Monitor } from 'lucide-react';
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('isLoggedIn') === 'true');
-  const [currentUser, setCurrentUser] = useState(() => {
-    const saved = localStorage.getItem('currentUser');
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState('dashboard');
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -46,10 +44,27 @@ function App() {
   const [fontSize, setFontSize] = useState(16);
   const [fontIndex, setFontIndex] = useState(0);
 
-  const [sessionStart, setSessionStart] = useState(() => {
-    const saved = localStorage.getItem('sessionStart');
-    return saved ? parseInt(saved) : null;
-  });
+  const [sessionStart, setSessionStart] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const savedUser = localStorage.getItem('currentUser');
+        if (savedUser) {
+          setCurrentUser(JSON.parse(savedUser));
+          setIsLoggedIn(true);
+          const savedSessionStart = localStorage.getItem('sessionStart');
+          setSessionStart(savedSessionStart ? parseInt(savedSessionStart) : Date.now());
+        }
+      } else {
+        setIsLoggedIn(false);
+        setCurrentUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const savedThemeMode = localStorage.getItem('themeMode') || 'dark';
@@ -65,8 +80,6 @@ function App() {
     setHeaderColorIndex(savedHeaderColorIndex);
     setFontSize(savedFontSize);
     setFontIndex(savedFontIndex);
-    
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -132,7 +145,6 @@ function App() {
   const handleLogin = (user) => {
     const loginTime = Date.now();
     
-    localStorage.setItem('isLoggedIn', 'true');
     localStorage.setItem('currentUser', JSON.stringify(user));
     localStorage.setItem('sessionStart', loginTime.toString());
     
@@ -141,13 +153,17 @@ function App() {
     setIsLoggedIn(true);
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    setCurrentUser(null);
-    setSessionStart(null);
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('currentUser');
-    localStorage.removeItem('sessionStart');
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      setIsLoggedIn(false);
+      setCurrentUser(null);
+      setSessionStart(null);
+      localStorage.removeItem('currentUser');
+      localStorage.removeItem('sessionStart');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   const handleAddExpense = async (expense) => {
