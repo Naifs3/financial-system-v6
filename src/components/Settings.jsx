@@ -30,7 +30,6 @@ const Settings = ({
 
   return (
     <div className="p-4 space-y-6 pb-20 md:pb-6">
-      {/* العنوان */}
       <div>
         <h2 className={`text-2xl font-bold ${txt} flex items-center gap-2`}>
           <SettingsIcon className="w-6 h-6" />
@@ -39,14 +38,12 @@ const Settings = ({
         <p className={`text-sm ${txtSm} mt-1`}>تخصيص المظهر والخطوط</p>
       </div>
 
-      {/* معلومة */}
       <div className={`${card} p-4 rounded-xl border ${darkMode ? 'border-blue-500/30' : 'border-blue-200'} bg-blue-500/10`}>
-        <p className={`text-sm text-blue-400`}>
+        <p className="text-sm text-blue-400">
           💡 جميع الإعدادات يتم حفظها تلقائياً في المتصفح
         </p>
       </div>
 
-      {/* وضع العرض */}
       <div className={`${card} p-6 rounded-2xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
         <h3 className={`text-lg font-bold ${txt} mb-4 flex items-center gap-2`}>
           {themeMode === 'light' ? <Sun className="w-5 h-5" /> : 
@@ -93,7 +90,6 @@ const Settings = ({
         </div>
       </div>
 
-      {/* خلفية التطبيق */}
       <div className={`${card} p-6 rounded-2xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
         <h3 className={`text-lg font-bold ${txt} mb-4 flex items-center gap-2`}>
           <Palette className="w-5 h-5" />
@@ -117,7 +113,6 @@ const Settings = ({
         </div>
       </div>
 
-      {/* لون التمييز */}
       <div className={`${card} p-6 rounded-2xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
         <h3 className={`text-lg font-bold ${txt} mb-4`}>لون التمييز</h3>
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
@@ -138,7 +133,6 @@ const Settings = ({
         </div>
       </div>
 
-      {/* لون الهيدر */}
       <div className={`${card} p-6 rounded-2xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
         <h3 className={`text-lg font-bold ${txt} mb-4`}>لون الهيدر</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -159,7 +153,6 @@ const Settings = ({
         </div>
       </div>
 
-      {/* حجم الخط */}
       <div className={`${card} p-6 rounded-2xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
         <h3 className={`text-lg font-bold ${txt} mb-4 flex items-center gap-2`}>
           <Type className="w-5 h-5" />
@@ -187,7 +180,6 @@ const Settings = ({
         </div>
       </div>
 
-      {/* نوع الخط */}
       <div className={`${card} p-6 rounded-2xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
         <h3 className={`text-lg font-bold ${txt} mb-4`}>نوع الخط العربي</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -219,7 +211,6 @@ const Settings = ({
         </div>
       </div>
 
-      {/* زر الحفظ */}
       <div className="flex justify-center">
         <button
           onClick={handleSave}
@@ -232,7 +223,6 @@ const Settings = ({
         </button>
       </div>
 
-      {/* معلومات النظام */}
       <div className={`${card} p-6 rounded-2xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'} text-center`}>
         <p className={`text-sm ${txt} font-bold mb-2`}>نظام الإدارة المالية v6.0</p>
         <p className={`text-xs ${txtSm}`}>ركائز الأولى للتعمير</p>
@@ -243,6 +233,3 @@ const Settings = ({
 };
 
 export default Settings;
-```
-
----
