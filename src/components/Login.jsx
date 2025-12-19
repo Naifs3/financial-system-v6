@@ -157,8 +157,3 @@ const Login = ({ onLogin, users, darkMode, accentGradient }) => {
 export default Login;
 ```
 
----
-
-## ✅ احفظه:
-```
-Fix Login.jsx - add missing semicolon
