@@ -6,7 +6,7 @@ import {
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from './config/firebase';
 import {
-  encrypt, decrypt, generateId, compressImage, calculateSessionDuration
+  generateId, compressImage, calculateSessionDuration
 } from './utils/helpers';
 import {
   THEMES, FONTS, ACCENT_COLORS, HEADER_COLORS
@@ -24,8 +24,11 @@ import Users from './components/Users';
 import Settings from './components/Settings';
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => localStorage.getItem('isLoggedIn') === 'true');
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem('currentUser');
+    return saved ? JSON.parse(saved) : null;
+  });
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState('dashboard');
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -34,7 +37,6 @@ function App() {
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
   const [accounts, setAccounts] = useState([]);
-  const [users, setUsers] = useState([]);
   const [categories, setCategories] = useState([]);
 
   const [themeMode, setThemeMode] = useState('dark');
@@ -45,32 +47,18 @@ function App() {
   const [fontSize, setFontSize] = useState(16);
   const [fontIndex, setFontIndex] = useState(0);
 
-  const [sessionStart, setSessionStart] = useState(null);
+  const [sessionStart, setSessionStart] = useState(() => {
+    const saved = localStorage.getItem('sessionStart');
+    return saved ? parseInt(saved) : null;
+  });
 
   useEffect(() => {
-    const savedLogin = localStorage.getItem('isLoggedIn') === 'true';
-    const savedUser = localStorage.getItem('currentUser');
-    const savedSessionStart = localStorage.getItem('sessionStart');
     const savedThemeMode = localStorage.getItem('themeMode') || 'dark';
     const savedBgIndex = parseInt(localStorage.getItem('bgIndex')) || 0;
     const savedAccentIndex = parseInt(localStorage.getItem('accentIndex')) || 0;
     const savedHeaderColorIndex = parseInt(localStorage.getItem('headerColorIndex')) || 0;
     const savedFontSize = parseInt(localStorage.getItem('fontSize')) || 16;
     const savedFontIndex = parseInt(localStorage.getItem('fontIndex')) || 0;
-
-    if (savedLogin && savedUser) {
-      try {
-        const user = JSON.parse(savedUser);
-        setCurrentUser(user);
-        setIsLoggedIn(true);
-        setSessionStart(savedSessionStart ? parseInt(savedSessionStart) : Date.now());
-      } catch (error) {
-        console.error('Error loading saved session:', error);
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('sessionStart');
-      }
-    }
 
     setThemeMode(savedThemeMode);
     setBgIndex(savedBgIndex);
@@ -80,48 +68,6 @@ function App() {
     setFontIndex(savedFontIndex);
     
     setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    let defaultUserCreated = false;
-
-    const unsubscribe = onSnapshot(
-      collection(db, 'users'),
-      async (snapshot) => {
-        const usersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        if (usersData.length === 0 && !defaultUserCreated) {
-          defaultUserCreated = true;
-          try {
-            await addDoc(collection(db, 'users'), {
-              username: encrypt('نايف'), 
-              password: encrypt('@Lion12345'), 
-              role: 'owner', 
-              active: true,
-              approved: true,
-              createdAt: new Date().toISOString()
-            });
-          } catch (error) {
-            console.error('Error creating default user:', error);
-          }
-        }
-        
-        setUsers(usersData);
-      },
-      (error) => {
-        console.error('Error loading users:', error);
-        setUsers([{
-          id: 'local-default',
-          username: encrypt('نايف'),
-          password: encrypt('@Lion12345'),
-          role: 'owner',
-          active: true,
-          approved: true
-        }]);
-      }
-    );
-
-    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -185,25 +131,15 @@ function App() {
   }, []);
 
   const handleLogin = (user) => {
-    const userData = {
-      id: user.id,
-      username: typeof user.username === 'string' ? user.username : decrypt(user.username),
-      role: user.role,
-      active: user.active,
-      approved: user.approved
-    };
-    
     const loginTime = Date.now();
     
-    setCurrentUser(userData);
-    setIsLoggedIn(true);
-    setSessionStart(loginTime);
-    
     localStorage.setItem('isLoggedIn', 'true');
-    localStorage.setItem('currentUser', JSON.stringify(userData));
+    localStorage.setItem('currentUser', JSON.stringify(user));
     localStorage.setItem('sessionStart', loginTime.toString());
     
-    console.log('Login successful:', userData);
+    setCurrentUser(user);
+    setSessionStart(loginTime);
+    setIsLoggedIn(true);
   };
 
   const handleLogout = () => {
@@ -429,42 +365,6 @@ function App() {
     }
   };
 
-  const handleAddUser = async (user) => {
-    try {
-      await addDoc(collection(db, 'users'), {
-        ...user,
-        createdAt: new Date().toISOString()
-      });
-    } catch (error) {
-      console.error('Error adding user:', error);
-    }
-  };
-
-  const handleApproveUser = async (userId) => {
-    try {
-      await updateDoc(doc(db, 'users', userId), { approved: true });
-    } catch (error) {
-      console.error('Error approving user:', error);
-    }
-  };
-
-  const handleToggleUserActive = async (userId) => {
-    try {
-      const user = users.find(u => u.id === userId);
-      await updateDoc(doc(db, 'users', userId), { active: !user.active });
-    } catch (error) {
-      console.error('Error toggling user:', error);
-    }
-  };
-
-  const handleDeleteUser = async (userId) => {
-    try {
-      await deleteDoc(doc(db, 'users', userId));
-    } catch (error) {
-      console.error('Error deleting user:', error);
-    }
-  };
-
   const bg = darkMode 
     ? `bg-gradient-to-br ${THEMES[bgIndex].dark}` 
     : `bg-gradient-to-br ${THEMES[bgIndex].light}`;
@@ -489,12 +389,7 @@ function App() {
   }
 
   if (!isLoggedIn) {
-    return (
-      <Login 
-        onLogin={handleLogin}
-        users={users}
-      />
-    );
+    return <Login onLogin={handleLogin} />;
   }
 
   return (
@@ -607,12 +502,12 @@ function App() {
 
         {currentView === 'users' && (
           <Users
-            users={users}
+            users={[]}
             currentUser={currentUser}
-            onAdd={handleAddUser}
-            onApprove={handleApproveUser}
-            onToggleActive={handleToggleUserActive}
-            onDelete={handleDeleteUser}
+            onAdd={() => {}}
+            onApprove={() => {}}
+            onToggleActive={() => {}}
+            onDelete={() => {}}
             darkMode={darkMode}
             txt={txt}
             txtSm={txtSm}
