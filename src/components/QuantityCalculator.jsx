@@ -492,26 +492,6 @@ const QuantityCalculator = ({ darkMode = true }) => {
             </div>
           </div>
         )}
- : t.card, border: `1px solid ${isEnabled ? placeTypes[editingPlaceItems].color + '30' : t.border}`, cursor: 'pointer' }}>
-                            <div style={{ width: 14, height: 14, borderRadius: 3, border: `2px solid ${isEnabled ? placeTypes[editingPlaceItems].color : t.border}`, background: isEnabled ? placeTypes[editingPlaceItems].color : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 8 }}>{isEnabled && '✓'}</div>
-                            <span style={{ fontSize: 11, flex: 1, color: isEnabled ? t.text : t.muted }}>{item.name}</span>
-                            <span style={{ fontSize: 8, color: typeColor, background: `${typeColor}15`, padding: '2px 4px', borderRadius: 3 }}>{item.type === 'floor' ? 'أرضية' : item.type === 'wall' ? 'جدران' : 'أسقف'}</span>
-                            <span style={{ fontSize: 9, color: t.warning }}>{item.exec}</span>
-                            <span style={{ fontSize: 9, color: t.info }}>{item.cont}</span>
-                          </div>
-                        );
-                      })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-              <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${t.border}`, flexShrink: 0 }}>
-                <button onClick={() => setShowPlaceItemsModal(false)} style={{ width: '100%', padding: '12px', borderRadius: 10, border: 'none', background: placeTypes[editingPlaceItems].color, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>✓ حفظ وإغلاق</button>
-              </div>
-            </div>
-          </div>
-        )}
 
       </div>
     </div>
