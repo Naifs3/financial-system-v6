@@ -617,7 +617,7 @@ function App() {
         )}
 
         {currentView === 'calculator' && (
-          <QuantityCalculator />
+          <QuantityCalculator darkMode={darkMode} />
         )}
       </main>
 
