@@ -1,8 +1,29 @@
 // src/components/Projects.jsx
 import React, { useState } from 'react';
-import { FolderKanban, Plus, Search, Edit, Trash2, FolderPlus, Upload, FileText, Image, Video, X } from 'lucide-react';
+import { 
+  FolderKanban, 
+  Plus, 
+  Search, 
+  Edit, 
+  Trash2, 
+  FolderPlus, 
+  Upload, 
+  FileText, 
+  Image, 
+  Video, 
+  X,
+  Play,
+  Pause,
+  CheckCircle,
+  DollarSign,
+  Calendar,
+  Files
+} from 'lucide-react';
 
-const Projects = ({ projects, onAdd, onEdit, onDelete, onAddFolder, onUploadFile, onDeleteFile, darkMode, txt, txtSm, card, accentGradient }) => {
+const Projects = ({ projects, onAdd, onEdit, onDelete, onAddFolder, onUploadFile, onDeleteFile, darkMode, theme }) => {
+  const t = theme;
+  const colorKeys = t.colorKeys || Object.keys(t.colors);
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
@@ -17,23 +38,51 @@ const Projects = ({ projects, onAdd, onEdit, onDelete, onAddFolder, onUploadFile
   const completedCount = projects.filter(p => p.status === 'completed').length;
   const totalBudget = projects.reduce((sum, p) => sum + (parseFloat(p.budget) || 0), 0);
 
-  const getStatusColor = (status) => {
+  // ألوان الحالة
+  const getStatusStyle = (status) => {
     switch (status) {
-      case 'active': return { bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' };
-      case 'paused': return { bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30' };
-      case 'completed': return { bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/30' };
-      default: return { bg: 'bg-gray-500/20', text: 'text-gray-400', border: 'border-gray-500/30' };
+      case 'active': 
+        return { 
+          bg: t.status.info.bg, 
+          text: t.status.info.text, 
+          border: t.status.info.border,
+          name: 'نشط',
+          icon: Play
+        };
+      case 'paused': 
+        return { 
+          bg: t.status.warning.bg, 
+          text: t.status.warning.text, 
+          border: t.status.warning.border,
+          name: 'متوقف',
+          icon: Pause
+        };
+      case 'completed': 
+        return { 
+          bg: t.status.success.bg, 
+          text: t.status.success.text, 
+          border: t.status.success.border,
+          name: 'مكتمل',
+          icon: CheckCircle
+        };
+      default: 
+        return { 
+          bg: `${t.text.muted}15`, 
+          text: t.text.muted, 
+          border: `${t.text.muted}30`,
+          name: status,
+          icon: FolderKanban
+        };
     }
   };
 
-  const getStatusName = (status) => {
-    switch (status) {
-      case 'active': return 'نشط';
-      case 'paused': return 'متوقف';
-      case 'completed': return 'مكتمل';
-      default: return status;
-    }
-  };
+  // البطاقات الإحصائية
+  const statCards = [
+    { label: 'نشط', value: activeCount, colorKey: colorKeys[0], icon: Play },
+    { label: 'متوقف', value: pausedCount, colorKey: colorKeys[1], icon: Pause },
+    { label: 'مكتمل', value: completedCount, colorKey: colorKeys[2], icon: CheckCircle },
+    { label: 'الميزانية', value: totalBudget.toLocaleString('ar-SA'), colorKey: colorKeys[3], icon: DollarSign },
+  ];
 
   const handleFileUpload = async (projectId, folderId, files) => {
     for (const file of files) {
@@ -41,63 +90,179 @@ const Projects = ({ projects, onAdd, onEdit, onDelete, onAddFolder, onUploadFile
     }
   };
 
+  // أيقونة نوع الملف
+  const getFileIcon = (type) => {
+    if (type.startsWith('image/')) return { icon: Image, color: t.colors[colorKeys[0]]?.main };
+    if (type.startsWith('video/')) return { icon: Video, color: t.colors[colorKeys[2]]?.main };
+    return { icon: FileText, color: t.text.muted };
+  };
+
   return (
-    <div className="p-4 space-y-6 pb-20 md:pb-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+    <div style={{ padding: 16, paddingBottom: 80 }}>
+      
+      {/* ═══════════════ العنوان والأزرار ═══════════════ */}
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: 16,
+        marginBottom: 24,
+      }}>
         <div>
-          <h2 className={`text-2xl font-bold ${txt} flex items-center gap-2`}>
-            <FolderKanban className="w-6 h-6" />
+          <h2 style={{ 
+            fontSize: 24, 
+            fontWeight: 700, 
+            color: t.text.primary,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            margin: 0,
+          }}>
+            <div style={{
+              width: 40,
+              height: 40,
+              borderRadius: t.radius.lg,
+              background: t.colors[colorKeys[2]]?.gradient || t.button.gradient,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: darkMode ? t.colors[colorKeys[2]]?.glow : 'none',
+            }}>
+              <FolderKanban size={22} color="#fff" />
+            </div>
             المشاريع
           </h2>
-          <p className={`text-sm ${txtSm} mt-1`}>إدارة المشاريع والملفات</p>
+          <p style={{ fontSize: 14, color: t.text.muted, marginTop: 6, marginRight: 50 }}>
+            إدارة المشاريع والملفات
+          </p>
         </div>
+        
         <button
           onClick={() => {}}
-          className={`px-4 py-2 rounded-xl bg-gradient-to-r ${accentGradient} text-white transition-all hover:opacity-90 flex items-center gap-2`}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '10px 20px',
+            borderRadius: t.radius.lg,
+            border: 'none',
+            background: t.button.gradient,
+            color: '#fff',
+            cursor: 'pointer',
+            fontSize: 14,
+            fontWeight: 600,
+            fontFamily: 'inherit',
+            boxShadow: t.button.glow,
+            transition: 'all 0.2s',
+          }}
         >
-          <Plus className="w-4 h-4" />
+          <Plus size={18} />
           إضافة مشروع
         </button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className={`${card} p-4 rounded-xl border ${darkMode ? 'border-blue-500/30' : 'border-blue-200'} bg-blue-500/10`}>
-          <p className={`text-sm ${txtSm} mb-1`}>نشط</p>
-          <p className="text-2xl font-bold text-blue-400">{activeCount}</p>
-        </div>
-        <div className={`${card} p-4 rounded-xl border ${darkMode ? 'border-orange-500/30' : 'border-orange-200'} bg-orange-500/10`}>
-          <p className={`text-sm ${txtSm} mb-1`}>متوقف</p>
-          <p className="text-2xl font-bold text-orange-400">{pausedCount}</p>
-        </div>
-        <div className={`${card} p-4 rounded-xl border ${darkMode ? 'border-green-500/30' : 'border-green-200'} bg-green-500/10`}>
-          <p className={`text-sm ${txtSm} mb-1`}>مكتمل</p>
-          <p className="text-2xl font-bold text-green-400">{completedCount}</p>
-        </div>
-        <div className={`${card} p-4 rounded-xl border ${darkMode ? 'border-purple-500/30' : 'border-purple-200'} bg-purple-500/10`}>
-          <p className={`text-sm ${txtSm} mb-1`}>الميزانية</p>
-          <p className="text-lg font-bold text-purple-400">{totalBudget.toLocaleString('ar-SA')}</p>
-        </div>
+      {/* ═══════════════ البطاقات الإحصائية ═══════════════ */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+        gap: 12,
+        marginBottom: 24,
+      }}>
+        {statCards.map((card, index) => {
+          const color = t.colors[card.colorKey] || t.colors[colorKeys[0]];
+          const Icon = card.icon;
+          return (
+            <div
+              key={index}
+              style={{
+                background: t.bg.secondary,
+                borderRadius: t.radius.xl,
+                border: `1px solid ${color.main}30`,
+                padding: 16,
+                position: 'relative',
+                overflow: 'hidden',
+              }}
+            >
+              <div style={{
+                position: 'absolute',
+                top: -15,
+                left: -15,
+                width: 60,
+                height: 60,
+                background: `radial-gradient(circle, ${color.main}20 0%, transparent 70%)`,
+                borderRadius: '50%',
+              }} />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <p style={{ fontSize: 12, color: t.text.muted, margin: 0 }}>{card.label}</p>
+                <Icon size={16} color={color.main} />
+              </div>
+              <p style={{ 
+                fontSize: 22, 
+                fontWeight: 700, 
+                color: color.main,
+                margin: 0,
+                textShadow: darkMode ? `0 0 15px ${color.main}40` : 'none',
+              }}>
+                {card.value}
+              </p>
+            </div>
+          );
+        })}
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <div className="flex-1 relative">
-          <Search className={`absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 ${txtSm}`} />
+      {/* ═══════════════ البحث والفلترة ═══════════════ */}
+      <div style={{ 
+        display: 'flex', 
+        flexWrap: 'wrap',
+        gap: 12,
+        marginBottom: 24,
+      }}>
+        <div style={{ flex: '1 1 250px', position: 'relative' }}>
+          <Search 
+            size={18} 
+            style={{ 
+              position: 'absolute', 
+              right: 14, 
+              top: '50%', 
+              transform: 'translateY(-50%)',
+              color: t.text.muted,
+            }} 
+          />
           <input
             type="text"
             placeholder="بحث في المشاريع..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className={`w-full pr-10 pl-4 py-2 rounded-xl border ${
-              darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'
-            } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+            style={{
+              width: '100%',
+              padding: '12px 44px 12px 16px',
+              borderRadius: t.radius.lg,
+              border: `1px solid ${t.border.primary}`,
+              background: t.bg.tertiary,
+              color: t.text.primary,
+              fontSize: 14,
+              fontFamily: 'inherit',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
           />
         </div>
+        
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
-          className={`px-4 py-2 rounded-xl border ${
-            darkMode ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'
-          }`}
+          style={{
+            padding: '12px 16px',
+            borderRadius: t.radius.lg,
+            border: `1px solid ${t.border.primary}`,
+            background: t.bg.tertiary,
+            color: t.text.primary,
+            fontSize: 14,
+            fontFamily: 'inherit',
+            cursor: 'pointer',
+            minWidth: 130,
+          }}
         >
           <option value="all">كل الحالات</option>
           <option value="active">نشط</option>
@@ -106,144 +271,361 @@ const Projects = ({ projects, onAdd, onEdit, onDelete, onAddFolder, onUploadFile
         </select>
       </div>
 
+      {/* ═══════════════ قائمة المشاريع ═══════════════ */}
       {filteredProjects.length === 0 ? (
-        <div className={`${card} p-12 rounded-2xl text-center border ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-          <FolderKanban className={`w-16 h-16 mx-auto mb-4 ${txtSm}`} />
-          <p className={`${txt} font-bold mb-2`}>لا توجد مشاريع</p>
-          <p className={`${txtSm} text-sm`}>ابدأ بإضافة أول مشروع</p>
+        <div style={{
+          background: t.bg.secondary,
+          borderRadius: t.radius['2xl'],
+          border: `1px solid ${t.border.primary}`,
+          padding: 60,
+          textAlign: 'center',
+        }}>
+          <div style={{
+            width: 80,
+            height: 80,
+            borderRadius: t.radius.xl,
+            background: `${t.button.primary}15`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 20px',
+          }}>
+            <FolderKanban size={40} color={t.text.muted} />
+          </div>
+          <p style={{ fontSize: 18, fontWeight: 700, color: t.text.primary, marginBottom: 8 }}>
+            لا توجد مشاريع
+          </p>
+          <p style={{ fontSize: 14, color: t.text.muted }}>
+            ابدأ بإضافة أول مشروع
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {filteredProjects.map((project) => {
-            const statusColor = getStatusColor(project.status);
+            const statusStyle = getStatusStyle(project.status);
+            const StatusIcon = statusStyle.icon;
             const filesCount = project.folders?.reduce((sum, f) => sum + (f.files?.length || 0), 0) || 0;
             
             return (
               <div
                 key={project.id}
-                className={`${card} p-5 rounded-2xl border ${darkMode ? 'border-gray-700' : 'border-gray-200'} hover:shadow-lg transition-all`}
+                style={{
+                  background: t.bg.secondary,
+                  borderRadius: t.radius.xl,
+                  border: `1px solid ${t.border.primary}`,
+                  padding: 24,
+                  transition: 'all 0.3s ease',
+                }}
               >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className={`font-bold ${txt} text-xl mb-2`}>{project.name}</h3>
-                    <div className="flex items-center gap-2 flex-wrap mb-2">
-                      <span className={`text-xs px-2 py-1 rounded ${statusColor.bg} ${statusColor.text}`}>
-                        {getStatusName(project.status)}
+                {/* الهيدر */}
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'flex-start', 
+                  justifyContent: 'space-between',
+                  marginBottom: 20,
+                }}>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ 
+                      fontSize: 20, 
+                      fontWeight: 700, 
+                      color: t.text.primary,
+                      margin: '0 0 12px 0',
+                    }}>
+                      {project.name}
+                    </h3>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 8 }}>
+                      {/* شارة الحالة */}
+                      <span style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        padding: '5px 12px',
+                        borderRadius: t.radius.md,
+                        background: statusStyle.bg,
+                        color: statusStyle.text,
+                        border: `1px solid ${statusStyle.border}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}>
+                        <StatusIcon size={12} />
+                        {statusStyle.name}
                       </span>
+                      {/* الرقم المرجعي */}
                       {project.refNumber && (
-                        <span className={`text-xs ${txtSm}`}>#{project.refNumber}</span>
+                        <span style={{ fontSize: 12, color: t.text.muted }}>
+                          #{project.refNumber}
+                        </span>
                       )}
+                      {/* العميل */}
                       {project.client && (
-                        <span className={`text-xs ${txtSm}`}>العميل: {project.client}</span>
+                        <span style={{ fontSize: 12, color: t.text.muted }}>
+                          العميل: {project.client}
+                        </span>
                       )}
                     </div>
                     {project.description && (
-                      <p className={`text-sm ${txtSm}`}>{project.description}</p>
+                      <p style={{ fontSize: 13, color: t.text.muted, margin: 0, lineHeight: 1.6 }}>
+                        {project.description}
+                      </p>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  
+                  {/* أزرار التحكم */}
+                  <div style={{ display: 'flex', gap: 6 }}>
                     <button
                       onClick={() => {}}
-                      className="p-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors"
                       title="إضافة مجلد"
+                      style={{
+                        padding: 8,
+                        borderRadius: t.radius.md,
+                        border: 'none',
+                        background: t.status.info.bg,
+                        color: t.status.info.text,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s',
+                      }}
                     >
-                      <FolderPlus className="w-4 h-4" />
+                      <FolderPlus size={16} />
                     </button>
                     <button
                       onClick={() => onEdit(project)}
-                      className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'} ${txt} transition-colors`}
                       title="تعديل"
+                      style={{
+                        padding: 8,
+                        borderRadius: t.radius.md,
+                        border: 'none',
+                        background: t.bg.tertiary,
+                        color: t.text.primary,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s',
+                      }}
                     >
-                      <Edit className="w-4 h-4" />
+                      <Edit size={16} />
                     </button>
                     <button
                       onClick={() => onDelete(project.id)}
-                      className="p-2 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors"
                       title="حذف"
+                      style={{
+                        padding: 8,
+                        borderRadius: t.radius.md,
+                        border: 'none',
+                        background: t.status.danger.bg,
+                        color: t.status.danger.text,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s',
+                      }}
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 size={16} />
                     </button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                {/* معلومات المشروع */}
+                <div style={{ 
+                  display: 'grid', 
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+                  gap: 12,
+                  marginBottom: 20,
+                }}>
                   {project.budget && (
-                    <div className={`${darkMode ? 'bg-gray-700/50' : 'bg-gray-100'} p-3 rounded-xl`}>
-                      <p className={`text-xs ${txtSm} mb-1`}>الميزانية</p>
-                      <p className={`text-sm font-bold ${txt}`}>{parseFloat(project.budget).toLocaleString('ar-SA')}</p>
+                    <div style={{
+                      padding: 14,
+                      background: t.bg.tertiary,
+                      borderRadius: t.radius.lg,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        <DollarSign size={14} color={t.text.muted} />
+                        <span style={{ fontSize: 11, color: t.text.muted }}>الميزانية</span>
+                      </div>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: t.text.primary, margin: 0 }}>
+                        {parseFloat(project.budget).toLocaleString('ar-SA')}
+                      </p>
                     </div>
                   )}
                   {project.startDate && (
-                    <div className={`${darkMode ? 'bg-gray-700/50' : 'bg-gray-100'} p-3 rounded-xl`}>
-                      <p className={`text-xs ${txtSm} mb-1`}>تاريخ البداية</p>
-                      <p className={`text-sm font-bold ${txt}`}>{project.startDate}</p>
+                    <div style={{
+                      padding: 14,
+                      background: t.bg.tertiary,
+                      borderRadius: t.radius.lg,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        <Calendar size={14} color={t.text.muted} />
+                        <span style={{ fontSize: 11, color: t.text.muted }}>تاريخ البداية</span>
+                      </div>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: t.text.primary, margin: 0 }}>
+                        {project.startDate}
+                      </p>
                     </div>
                   )}
                   {project.endDate && (
-                    <div className={`${darkMode ? 'bg-gray-700/50' : 'bg-gray-100'} p-3 rounded-xl`}>
-                      <p className={`text-xs ${txtSm} mb-1`}>تاريخ النهاية</p>
-                      <p className={`text-sm font-bold ${txt}`}>{project.endDate}</p>
+                    <div style={{
+                      padding: 14,
+                      background: t.bg.tertiary,
+                      borderRadius: t.radius.lg,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        <Calendar size={14} color={t.text.muted} />
+                        <span style={{ fontSize: 11, color: t.text.muted }}>تاريخ النهاية</span>
+                      </div>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: t.text.primary, margin: 0 }}>
+                        {project.endDate}
+                      </p>
                     </div>
                   )}
-                  <div className={`${darkMode ? 'bg-gray-700/50' : 'bg-gray-100'} p-3 rounded-xl`}>
-                    <p className={`text-xs ${txtSm} mb-1`}>الملفات</p>
-                    <p className={`text-sm font-bold ${txt}`}>{filesCount}</p>
+                  <div style={{
+                    padding: 14,
+                    background: t.bg.tertiary,
+                    borderRadius: t.radius.lg,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                      <Files size={14} color={t.text.muted} />
+                      <span style={{ fontSize: 11, color: t.text.muted }}>الملفات</span>
+                    </div>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: t.text.primary, margin: 0 }}>
+                      {filesCount}
+                    </p>
                   </div>
                 </div>
 
+                {/* المجلدات */}
                 {project.folders && project.folders.length > 0 && (
-                  <div className="space-y-3">
-                    <h4 className={`text-sm font-bold ${txt} flex items-center gap-2`}>
-                      <FolderKanban className="w-4 h-4" />
+                  <div>
+                    <h4 style={{ 
+                      fontSize: 14, 
+                      fontWeight: 700, 
+                      color: t.text.primary,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      marginBottom: 12,
+                    }}>
+                      <FolderKanban size={16} color={t.button.primary} />
                       المجلدات ({project.folders.length})
                     </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                      gap: 12,
+                    }}>
                       {project.folders.map((folder) => (
                         <div
                           key={folder.id}
-                          className={`${darkMode ? 'bg-gray-700/50' : 'bg-gray-100'} p-4 rounded-xl`}
+                          style={{
+                            padding: 16,
+                            background: t.bg.tertiary,
+                            borderRadius: t.radius.lg,
+                            border: `1px solid ${t.border.primary}`,
+                          }}
                         >
-                          <div className="flex items-center justify-between mb-2">
-                            <h5 className={`font-bold ${txt} text-sm`}>{folder.name}</h5>
-                            <label className="cursor-pointer">
+                          <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'space-between',
+                            marginBottom: 8,
+                          }}>
+                            <h5 style={{ 
+                              fontSize: 14, 
+                              fontWeight: 600, 
+                              color: t.text.primary,
+                              margin: 0,
+                            }}>
+                              {folder.name}
+                            </h5>
+                            <label style={{ cursor: 'pointer' }}>
                               <input
                                 type="file"
                                 multiple
-                                className="hidden"
+                                style={{ display: 'none' }}
                                 onChange={(e) => handleFileUpload(project.id, folder.id, Array.from(e.target.files))}
                               />
-                              <Upload className={`w-4 h-4 ${txtSm} hover:text-blue-400 transition-colors`} />
+                              <div style={{
+                                padding: 6,
+                                borderRadius: t.radius.sm,
+                                background: `${t.button.primary}15`,
+                                color: t.button.primary,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}>
+                                <Upload size={14} />
+                              </div>
                             </label>
                           </div>
-                          <p className={`text-xs ${txtSm}`}>
+                          <p style={{ fontSize: 12, color: t.text.muted, margin: '0 0 10px 0' }}>
                             {folder.files?.length || 0} ملف
                           </p>
                           
+                          {/* قائمة الملفات */}
                           {folder.files && folder.files.length > 0 && (
-                            <div className="mt-3 space-y-2 max-h-40 overflow-y-auto">
-                              {folder.files.map((file) => (
-                                <div
-                                  key={file.id}
-                                  className={`flex items-center justify-between p-2 rounded ${darkMode ? 'bg-gray-800/50' : 'bg-white'}`}
-                                >
-                                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                                    {file.type.startsWith('image/') ? (
-                                      <Image className="w-4 h-4 text-blue-400 flex-shrink-0" />
-                                    ) : file.type.startsWith('video/') ? (
-                                      <Video className="w-4 h-4 text-purple-400 flex-shrink-0" />
-                                    ) : (
-                                      <FileText className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                    )}
-                                    <span className={`text-xs ${txt} truncate`}>{file.name}</span>
-                                  </div>
-                                  <button
-                                    onClick={() => onDeleteFile(project.id, folder.id, file.id)}
-                                    className="p-1 rounded hover:bg-red-500/20 text-red-400 transition-colors flex-shrink-0"
+                            <div style={{ 
+                              display: 'flex', 
+                              flexDirection: 'column', 
+                              gap: 6,
+                              maxHeight: 150,
+                              overflowY: 'auto',
+                            }}>
+                              {folder.files.map((file) => {
+                                const fileIcon = getFileIcon(file.type);
+                                const FileIcon = fileIcon.icon;
+                                return (
+                                  <div
+                                    key={file.id}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'space-between',
+                                      padding: 8,
+                                      background: t.bg.secondary,
+                                      borderRadius: t.radius.sm,
+                                    }}
                                   >
-                                    <X className="w-3 h-3" />
-                                  </button>
-                                </div>
-                              ))}
+                                    <div style={{ 
+                                      display: 'flex', 
+                                      alignItems: 'center', 
+                                      gap: 8,
+                                      flex: 1,
+                                      minWidth: 0,
+                                    }}>
+                                      <FileIcon size={14} color={fileIcon.color} style={{ flexShrink: 0 }} />
+                                      <span style={{ 
+                                        fontSize: 11, 
+                                        color: t.text.primary,
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                      }}>
+                                        {file.name}
+                                      </span>
+                                    </div>
+                                    <button
+                                      onClick={() => onDeleteFile(project.id, folder.id, file.id)}
+                                      style={{
+                                        padding: 4,
+                                        borderRadius: t.radius.sm,
+                                        border: 'none',
+                                        background: 'transparent',
+                                        color: t.status.danger.text,
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexShrink: 0,
+                                      }}
+                                    >
+                                      <X size={12} />
+                                    </button>
+                                  </div>
+                                );
+                              })}
                             </div>
                           )}
                         </div>
