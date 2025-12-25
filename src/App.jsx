@@ -6,12 +6,10 @@ import {
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { db, storage, auth } from './config/firebase';
-import {
-  generateId, compressImage
-} from './utils/helpers';
-import {
-  THEMES, FONTS, ACCENT_COLORS, HEADER_COLORS
-} from './config/constants';
+import { generateId, compressImage } from './utils/helpers';
+
+// ✅ استيراد نظام القوالب الجديد
+import { getTheme, getStyles, THEME_LIST, SHARED } from './config/theme';
 
 import Login from './components/Login';
 import SignUp from './components/SignUp';
@@ -40,15 +38,17 @@ function App() {
   const [accounts, setAccounts] = useState([]);
   const [categories, setCategories] = useState([]);
 
+  // ✅ إعدادات القالب الجديدة
   const [themeMode, setThemeMode] = useState('dark');
   const [darkMode, setDarkMode] = useState(true);
-  const [bgIndex, setBgIndex] = useState(0);
-  const [accentIndex, setAccentIndex] = useState(0);
-  const [headerColorIndex, setHeaderColorIndex] = useState(0);
+  const [currentThemeId, setCurrentThemeId] = useState('tokyo-lights'); // القالب الافتراضي
   const [fontSize, setFontSize] = useState(16);
-  const [fontIndex, setFontIndex] = useState(0);
 
   const [sessionStart, setSessionStart] = useState(null);
+
+  // ✅ الحصول على القالب والستايلات
+  const theme = getTheme(currentThemeId, darkMode);
+  const styles = getStyles(currentThemeId, darkMode);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -70,22 +70,23 @@ function App() {
     return () => unsubscribe();
   }, []);
 
+  // ✅ تحميل الإعدادات المحفوظة
   useEffect(() => {
     const savedThemeMode = localStorage.getItem('themeMode') || 'dark';
-    const savedBgIndex = parseInt(localStorage.getItem('bgIndex')) || 0;
-    const savedAccentIndex = parseInt(localStorage.getItem('accentIndex')) || 0;
-    const savedHeaderColorIndex = parseInt(localStorage.getItem('headerColorIndex')) || 0;
+    const savedThemeId = localStorage.getItem('currentThemeId') || 'tokyo-lights';
     const savedFontSize = parseInt(localStorage.getItem('fontSize')) || 16;
-    const savedFontIndex = parseInt(localStorage.getItem('fontIndex')) || 0;
 
     setThemeMode(savedThemeMode);
-    setBgIndex(savedBgIndex);
-    setAccentIndex(savedAccentIndex);
-    setHeaderColorIndex(savedHeaderColorIndex);
+    setCurrentThemeId(savedThemeId);
     setFontSize(savedFontSize);
-    setFontIndex(savedFontIndex);
   }, []);
 
+  // ✅ حفظ الإعدادات
+  useEffect(() => { localStorage.setItem('themeMode', themeMode); }, [themeMode]);
+  useEffect(() => { localStorage.setItem('currentThemeId', currentThemeId); }, [currentThemeId]);
+  useEffect(() => { localStorage.setItem('fontSize', fontSize); }, [fontSize]);
+
+  // ✅ وضع السمة (ليلي/نهاري/تلقائي)
   useEffect(() => {
     const getSystemTheme = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
     
@@ -100,13 +101,7 @@ function App() {
     }
   }, [themeMode]);
 
-  useEffect(() => { localStorage.setItem('themeMode', themeMode); }, [themeMode]);
-  useEffect(() => { localStorage.setItem('bgIndex', bgIndex); }, [bgIndex]);
-  useEffect(() => { localStorage.setItem('accentIndex', accentIndex); }, [accentIndex]);
-  useEffect(() => { localStorage.setItem('headerColorIndex', headerColorIndex); }, [headerColorIndex]);
-  useEffect(() => { localStorage.setItem('fontSize', fontSize); }, [fontSize]);
-  useEffect(() => { localStorage.setItem('fontIndex', fontIndex); }, [fontIndex]);
-
+  // Firebase listeners
   useEffect(() => {
     if (!isLoggedIn) return;
 
@@ -148,10 +143,8 @@ function App() {
 
   const handleLogin = (user) => {
     const loginTime = Date.now();
-    
     localStorage.setItem('currentUser', JSON.stringify(user));
     localStorage.setItem('sessionStart', loginTime.toString());
-    
     setCurrentUser(user);
     setSessionStart(loginTime);
     setIsLoggedIn(true);
@@ -175,6 +168,7 @@ function App() {
     }
   };
 
+  // Expense handlers
   const handleAddExpense = async (expense) => {
     try {
       await addDoc(collection(db, 'expenses'), {
@@ -214,10 +208,9 @@ function App() {
     }
   };
 
-  const handleRefreshExpenses = () => {
-    console.log('Refreshing...');
-  };
+  const handleRefreshExpenses = () => console.log('Refreshing...');
 
+  // Task handlers
   const handleAddTask = async (task) => {
     try {
       await addDoc(collection(db, 'tasks'), {
@@ -257,6 +250,7 @@ function App() {
     }
   };
 
+  // Project handlers
   const handleAddProject = async (project) => {
     try {
       await addDoc(collection(db, 'projects'), {
@@ -361,6 +355,7 @@ function App() {
     }
   };
 
+  // Account handlers
   const handleAddAccount = async (account) => {
     try {
       await addDoc(collection(db, 'accounts'), {
@@ -389,34 +384,46 @@ function App() {
     }
   };
 
-  const bg = darkMode 
-    ? `bg-gradient-to-br ${THEMES[bgIndex].dark}` 
-    : `bg-gradient-to-br ${THEMES[bgIndex].light}`;
-  
-  const card = darkMode ? 'bg-gray-800/80 backdrop-blur-sm' : 'bg-white/90 backdrop-blur-sm';
+  // ✅ متغيرات الستايل من القالب
+  const t = theme;
+  const card = `${darkMode ? 'bg-gray-800/80' : 'bg-white/90'} backdrop-blur-sm`;
   const txt = darkMode ? 'text-white' : 'text-gray-900';
   const txtSm = darkMode ? 'text-gray-400' : 'text-gray-600';
-  const accentGradient = ACCENT_COLORS[accentIndex].gradient;
-  const headerClass = darkMode 
-    ? HEADER_COLORS[headerColorIndex].dark 
-    : HEADER_COLORS[headerColorIndex].light;
 
-  const calculateSessionDuration = (start) => {
-    if (!start) return 0;
-    return Math.floor((Date.now() - start) / 60000);
-  };
-
+  // Loading screen
   if (loading) {
     return (
-      <div className={`min-h-screen ${bg} flex items-center justify-center`}>
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className={txt}>جاري التحميل...</p>
+      <div 
+        style={{ 
+          minHeight: '100vh', 
+          background: t.bg.primary,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontFamily: t.font.family,
+        }}
+      >
+        <link href={SHARED.font.url} rel="stylesheet" />
+        <div style={{ textAlign: 'center' }}>
+          <div 
+            style={{
+              width: 64,
+              height: 64,
+              border: `4px solid ${t.button.primary}`,
+              borderTopColor: 'transparent',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto 16px',
+            }}
+          />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          <p style={{ color: t.text.primary }}>جاري التحميل...</p>
         </div>
       </div>
     );
   }
 
+  // Auth screens
   if (!isLoggedIn) {
     if (showSignup) {
       return (
@@ -434,79 +441,140 @@ function App() {
     );
   }
 
+  // Main App
   return (
     <div 
-      className={`min-h-screen ${bg} transition-all duration-300`}
+      dir="rtl"
       style={{ 
+        minHeight: '100vh',
+        background: t.bg.primary,
+        color: t.text.primary,
+        fontFamily: t.font.family,
         fontSize: `${fontSize}px`,
-        fontFamily: FONTS[fontIndex].value 
+        transition: 'all 0.3s ease',
       }}
     >
-      <link href={FONTS[fontIndex].url} rel="stylesheet" />
+      <link href={SHARED.font.url} rel="stylesheet" />
 
-      <header className={`${headerClass} sticky top-0 z-50 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 bg-gradient-to-br ${accentGradient} rounded-xl flex items-center justify-center`}>
-                <span className="text-xl font-bold text-white">RKZ</span>
+      {/* ═══════════════ Header ═══════════════ */}
+      <header 
+        style={{
+          background: `${t.bg.secondary}ee`,
+          backdropFilter: 'blur(10px)',
+          borderBottom: `1px solid ${t.border.primary}`,
+          position: 'sticky',
+          top: 0,
+          zIndex: 50,
+        }}
+      >
+        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '16px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            
+            {/* Logo */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div 
+                style={{
+                  width: 48,
+                  height: 48,
+                  background: t.button.gradient,
+                  borderRadius: t.radius.lg,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: t.button.glow,
+                }}
+              >
+                <span style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>RKZ</span>
               </div>
               <div>
-                <h1 className={`text-xl font-bold ${txt}`}>نظام الإدارة المالية</h1>
-                <p className={`text-sm ${txtSm}`}>ركائز الأولى للتعمير</p>
+                <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: t.text.primary }}>
+                  نظام الإدارة المالية
+                </h1>
+                <p style={{ fontSize: 12, color: t.text.muted, margin: 0 }}>
+                  ركائز الأولى للتعمير
+                </p>
               </div>
             </div>
             
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className={`text-sm font-semibold ${txt}`}>{currentUser.username}</p>
-                <p className={`text-xs ${txtSm}`}>{currentTime.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}</p>
+            {/* Right side */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              
+              {/* User info */}
+              <div style={{ textAlign: 'left' }}>
+                <p style={{ fontSize: 14, fontWeight: 600, margin: 0, color: t.text.primary }}>
+                  {currentUser.username}
+                </p>
+                <p style={{ fontSize: 12, color: t.text.muted, margin: 0 }}>
+                  {currentTime.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' })}
+                </p>
               </div>
               
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setThemeMode('light')}
-                  className={`p-2 rounded-lg transition-colors ${themeMode === 'light' ? 'bg-yellow-500 text-white' : `${txtSm} hover:bg-gray-700`}`}
-                  title="وضع نهاري"
-                >
-                  <Sun className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => setThemeMode('dark')}
-                  className={`p-2 rounded-lg transition-colors ${themeMode === 'dark' ? 'bg-blue-500 text-white' : `${txtSm} hover:bg-gray-700`}`}
-                  title="وضع ليلي"
-                >
-                  <Moon className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => setThemeMode('auto')}
-                  className={`p-2 rounded-lg transition-colors ${themeMode === 'auto' ? 'bg-gray-500 text-white' : `${txtSm} hover:bg-gray-700`}`}
-                  title="تلقائي"
-                >
-                  <Monitor className="w-5 h-5" />
-                </button>
+              {/* Theme mode buttons */}
+              <div style={{ display: 'flex', gap: 4 }}>
+                {[
+                  { mode: 'light', icon: <Sun size={18} />, title: 'نهاري' },
+                  { mode: 'dark', icon: <Moon size={18} />, title: 'ليلي' },
+                  { mode: 'auto', icon: <Monitor size={18} />, title: 'تلقائي' },
+                ].map(({ mode, icon, title }) => (
+                  <button
+                    key={mode}
+                    onClick={() => setThemeMode(mode)}
+                    title={title}
+                    style={{
+                      padding: 8,
+                      borderRadius: t.radius.md,
+                      border: 'none',
+                      background: themeMode === mode ? t.button.gradient : 'transparent',
+                      color: themeMode === mode ? '#fff' : t.text.muted,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    {icon}
+                  </button>
+                ))}
               </div>
 
+              {/* Logout button */}
               <button
                 onClick={handleLogout}
-                className={`flex items-center gap-2 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl transition-colors`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '8px 16px',
+                  borderRadius: t.radius.lg,
+                  border: 'none',
+                  background: `${t.dangerColor.main}20`,
+                  color: t.dangerColor.main,
+                  cursor: 'pointer',
+                  fontSize: 14,
+                  fontFamily: 'inherit',
+                  transition: 'all 0.2s',
+                }}
               >
-                <LogOut className="w-4 h-4" />
-                <span className="text-sm">خروج</span>
+                <LogOut size={16} />
+                <span>خروج</span>
               </button>
             </div>
           </div>
         </div>
       </header>
 
+      {/* ═══════════════ Navigation ═══════════════ */}
       <Navigation
         currentView={currentView}
         setCurrentView={setCurrentView}
         darkMode={darkMode}
-        accentColor={accentGradient}
+        accentColor={t.button.gradient}
+        theme={theme}
       />
 
-      <main className="container mx-auto max-w-7xl">
+      {/* ═══════════════ Main Content ═══════════════ */}
+      <main style={{ maxWidth: 1400, margin: '0 auto', padding: '0 24px' }}>
         {currentView === 'dashboard' && (
           <Dashboard
             expenses={expenses}
@@ -517,6 +585,7 @@ function App() {
             txt={txt}
             txtSm={txtSm}
             card={card}
+            theme={theme}
           />
         )}
 
@@ -532,7 +601,8 @@ function App() {
             txt={txt}
             txtSm={txtSm}
             card={card}
-            accentGradient={accentGradient}
+            accentGradient={t.button.gradient}
+            theme={theme}
           />
         )}
 
@@ -548,7 +618,8 @@ function App() {
             txt={txt}
             txtSm={txtSm}
             card={card}
-            accentGradient={accentGradient}
+            accentGradient={t.button.gradient}
+            theme={theme}
           />
         )}
 
@@ -565,7 +636,8 @@ function App() {
             txt={txt}
             txtSm={txtSm}
             card={card}
-            accentGradient={accentGradient}
+            accentGradient={t.button.gradient}
+            theme={theme}
           />
         )}
 
@@ -580,7 +652,8 @@ function App() {
             txt={txt}
             txtSm={txtSm}
             card={card}
-            accentGradient={accentGradient}
+            accentGradient={t.button.gradient}
+            theme={theme}
           />
         )}
 
@@ -591,7 +664,8 @@ function App() {
             txt={txt}
             txtSm={txtSm}
             card={card}
-            accentGradient={accentGradient}
+            accentGradient={t.button.gradient}
+            theme={theme}
           />
         )}
 
@@ -600,29 +674,29 @@ function App() {
             darkMode={darkMode}
             themeMode={themeMode}
             setThemeMode={setThemeMode}
-            bgIndex={bgIndex}
-            setBgIndex={setBgIndex}
-            accentIndex={accentIndex}
-            setAccentIndex={setAccentIndex}
-            headerColorIndex={headerColorIndex}
-            setHeaderColorIndex={setHeaderColorIndex}
+            currentThemeId={currentThemeId}
+            setCurrentThemeId={setCurrentThemeId}
             fontSize={fontSize}
             setFontSize={setFontSize}
-            fontIndex={fontIndex}
-            setFontIndex={setFontIndex}
             txt={txt}
             txtSm={txtSm}
             card={card}
+            theme={theme}
+            themeList={THEME_LIST}
           />
         )}
 
         {currentView === 'calculator' && (
-          <QuantityCalculator darkMode={darkMode} />
+          <QuantityCalculator 
+            darkMode={darkMode} 
+            theme={theme}
+          />
         )}
       </main>
 
-      <footer className={`text-center py-4 ${txtSm} text-xs`}>
-        <p>نظام الإدارة المالية v6.0 - جميع الحقوق محفوظة © 2024</p>
+      {/* ═══════════════ Footer ═══════════════ */}
+      <footer style={{ textAlign: 'center', padding: 16, color: t.text.muted, fontSize: 12 }}>
+        <p style={{ margin: 0 }}>نظام الإدارة المالية v7.0 - جميع الحقوق محفوظة © 2024</p>
       </footer>
     </div>
   );
