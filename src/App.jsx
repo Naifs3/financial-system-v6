@@ -592,16 +592,13 @@ function App() {
         {currentView === 'expenses' && (
           <Expenses
             expenses={expenses}
+            accounts={accounts}
             onAdd={handleAddExpense}
             onEdit={handleEditExpense}
             onDelete={handleDeleteExpense}
             onMarkPaid={handleMarkPaid}
             onRefresh={handleRefreshExpenses}
             darkMode={darkMode}
-            txt={txt}
-            txtSm={txtSm}
-            card={card}
-            accentGradient={t.button.gradient}
             theme={theme}
           />
         )}
