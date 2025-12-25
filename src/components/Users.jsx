@@ -1,9 +1,24 @@
+// src/components/Users.jsx
 import React, { useState, useEffect } from 'react';
-import { Users as UsersIcon, CheckCircle, XCircle, Shield, User as UserIcon, Clock } from 'lucide-react';
+import { 
+  Users as UsersIcon, 
+  CheckCircle, 
+  XCircle, 
+  Shield, 
+  User as UserIcon, 
+  Clock,
+  Mail,
+  AlertTriangle,
+  UserCheck,
+  UserX
+} from 'lucide-react';
 import { collection, onSnapshot, doc, updateDoc, query, orderBy } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
-const Users = ({ currentUser, darkMode, txt, txtSm, card, accentGradient }) => {
+const Users = ({ currentUser, darkMode, theme }) => {
+  const t = theme;
+  const colorKeys = t.colorKeys || Object.keys(t.colors);
+  
   const [users, setUsers] = useState([]);
   const [filter, setFilter] = useState('all');
 
@@ -62,186 +77,408 @@ const Users = ({ currentUser, darkMode, txt, txtSm, card, accentGradient }) => {
   });
 
   const pendingCount = users.filter(u => !u.approved).length;
+  const approvedCount = users.filter(u => u.approved && u.active).length;
+  const inactiveCount = users.filter(u => !u.active).length;
 
+  // الأزرار الفلترية
+  const filterButtons = [
+    { id: 'all', label: 'الكل', count: users.length },
+    { id: 'pending', label: 'في الانتظار', count: pendingCount, alert: pendingCount > 0 },
+    { id: 'approved', label: 'معتمد', count: approvedCount },
+    { id: 'inactive', label: 'غير نشط', count: inactiveCount },
+  ];
+
+  // صفحة عدم الصلاحية
   if (currentUser.role !== 'owner') {
     return (
-      <div className="p-6">
-        <div className={`${card} rounded-2xl p-8 text-center`}>
-          <Shield className={`w-16 h-16 ${txtSm} mx-auto mb-4`} />
-          <p className={txt}>ليس لديك صلاحية لعرض هذه الصفحة</p>
+      <div style={{ padding: 24 }}>
+        <div style={{
+          background: t.bg.secondary,
+          borderRadius: t.radius['2xl'],
+          border: `1px solid ${t.border.primary}`,
+          padding: 60,
+          textAlign: 'center',
+        }}>
+          <div style={{
+            width: 80,
+            height: 80,
+            borderRadius: t.radius.xl,
+            background: `${t.status.danger.text}15`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 20px',
+          }}>
+            <Shield size={40} color={t.status.danger.text} />
+          </div>
+          <p style={{ fontSize: 18, fontWeight: 700, color: t.text.primary, marginBottom: 8 }}>
+            ليس لديك صلاحية لعرض هذه الصفحة
+          </p>
+          <p style={{ fontSize: 14, color: t.text.muted }}>
+            هذه الصفحة متاحة فقط لمالك النظام
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <div className={`${card} rounded-2xl p-6 mb-6`}>
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div className={`w-12 h-12 bg-gradient-to-br ${accentGradient} rounded-xl flex items-center justify-center`}>
-              <UsersIcon className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h2 className={`text-2xl font-bold ${txt}`}>إدارة المستخدمين</h2>
-              <p className={txtSm}>الموافقة على الطلبات الجديدة وإدارة الحسابات</p>
-            </div>
+    <div style={{ padding: 16, paddingBottom: 80 }}>
+      
+      {/* ═══════════════ العنوان ═══════════════ */}
+      <div style={{ marginBottom: 24 }}>
+        <h2 style={{ 
+          fontSize: 24, 
+          fontWeight: 700, 
+          color: t.text.primary,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          margin: 0,
+        }}>
+          <div style={{
+            width: 40,
+            height: 40,
+            borderRadius: t.radius.lg,
+            background: t.colors[colorKeys[4]]?.gradient || t.button.gradient,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: darkMode ? t.colors[colorKeys[4]]?.glow : 'none',
+          }}>
+            <UsersIcon size={22} color="#fff" />
           </div>
-        </div>
+          إدارة المستخدمين
+        </h2>
+        <p style={{ fontSize: 14, color: t.text.muted, marginTop: 6, marginRight: 50 }}>
+          الموافقة على الطلبات الجديدة وإدارة الحسابات
+        </p>
+      </div>
 
-        <div className="flex gap-2 mb-6">
+      {/* ═══════════════ أزرار الفلترة ═══════════════ */}
+      <div style={{ 
+        display: 'flex', 
+        flexWrap: 'wrap',
+        gap: 10,
+        marginBottom: 24,
+      }}>
+        {filterButtons.map((btn) => (
           <button
-            onClick={() => setFilter('all')}
-            className={`px-4 py-2 rounded-xl font-bold transition-all ${
-              filter === 'all'
-                ? `bg-gradient-to-r ${accentGradient} text-white`
-                : `${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'} hover:opacity-80`
-            }`}
+            key={btn.id}
+            onClick={() => setFilter(btn.id)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '10px 18px',
+              borderRadius: t.radius.lg,
+              border: 'none',
+              background: filter === btn.id ? t.button.gradient : t.bg.tertiary,
+              color: filter === btn.id ? '#fff' : t.text.secondary,
+              cursor: 'pointer',
+              fontSize: 14,
+              fontWeight: 600,
+              fontFamily: 'inherit',
+              boxShadow: filter === btn.id ? t.button.glow : 'none',
+              transition: 'all 0.2s',
+              position: 'relative',
+            }}
           >
-            الكل ({users.length})
-          </button>
-          <button
-            onClick={() => setFilter('pending')}
-            className={`px-4 py-2 rounded-xl font-bold transition-all ${
-              filter === 'pending'
-                ? `bg-gradient-to-r ${accentGradient} text-white`
-                : `${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'} hover:opacity-80`
-            }`}
-          >
-            في الانتظار ({pendingCount})
-            {pendingCount > 0 && (
-              <span className="inline-block w-2 h-2 bg-red-500 rounded-full ml-2 animate-pulse" />
+            {btn.label} ({btn.count})
+            {btn.alert && (
+              <span style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: t.status.danger.text,
+                animation: 'pulse 1.5s infinite',
+              }} />
             )}
           </button>
-          <button
-            onClick={() => setFilter('approved')}
-            className={`px-4 py-2 rounded-xl font-bold transition-all ${
-              filter === 'approved'
-                ? `bg-gradient-to-r ${accentGradient} text-white`
-                : `${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'} hover:opacity-80`
-            }`}
-          >
-            معتمد
-          </button>
-          <button
-            onClick={() => setFilter('inactive')}
-            className={`px-4 py-2 rounded-xl font-bold transition-all ${
-              filter === 'inactive'
-                ? `bg-gradient-to-r ${accentGradient} text-white`
-                : `${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'} hover:opacity-80`
-            }`}
-          >
-            غير نشط
-          </button>
+        ))}
+      </div>
+
+      {/* ═══════════════ تنبيه الطلبات المعلقة ═══════════════ */}
+      {pendingCount > 0 && filter !== 'pending' && (
+        <div style={{
+          background: t.status.warning.bg,
+          border: `1px solid ${t.status.warning.border}`,
+          borderRadius: t.radius.xl,
+          padding: 16,
+          marginBottom: 24,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 10,
+        }}>
+          <AlertTriangle size={20} color={t.status.warning.text} />
+          <p style={{ fontSize: 14, color: t.status.warning.text, margin: 0 }}>
+            لديك <strong>{pendingCount}</strong> طلب جديد في انتظار الموافقة
+          </p>
         </div>
+      )}
 
-        {pendingCount > 0 && filter !== 'pending' && (
-          <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-xl">
-            <p className="text-yellow-400 text-sm text-center">
-              ⚠️ لديك {pendingCount} طلب جديد في انتظار الموافقة
-            </p>
+      {/* ═══════════════ قائمة المستخدمين ═══════════════ */}
+      {filteredUsers.length === 0 ? (
+        <div style={{
+          background: t.bg.secondary,
+          borderRadius: t.radius['2xl'],
+          border: `1px solid ${t.border.primary}`,
+          padding: 60,
+          textAlign: 'center',
+        }}>
+          <div style={{
+            width: 80,
+            height: 80,
+            borderRadius: t.radius.xl,
+            background: `${t.button.primary}15`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 20px',
+          }}>
+            <UsersIcon size={40} color={t.text.muted} />
           </div>
-        )}
-
-        <div className="space-y-4">
-          {filteredUsers.length === 0 ? (
-            <div className="text-center py-12">
-              <UsersIcon className={`w-16 h-16 ${txtSm} mx-auto mb-4`} />
-              <p className={txtSm}>لا يوجد مستخدمين</p>
-            </div>
-          ) : (
-            filteredUsers.map((user) => (
+          <p style={{ fontSize: 18, fontWeight: 700, color: t.text.primary, marginBottom: 8 }}>
+            لا يوجد مستخدمين
+          </p>
+          <p style={{ fontSize: 14, color: t.text.muted }}>
+            لا توجد نتائج مطابقة للفلتر المحدد
+          </p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {filteredUsers.map((user) => {
+            const isOwner = user.role === 'owner';
+            const isPending = !user.approved;
+            const isActive = user.active;
+            const isCurrentUser = user.id === currentUser.id;
+            
+            // تحديد لون الحدود
+            let borderColor = t.border.primary;
+            if (isPending) borderColor = t.status.warning.border;
+            else if (isActive) borderColor = t.status.success.border;
+            else borderColor = t.status.danger.border;
+            
+            return (
               <div
                 key={user.id}
-                className={`${darkMode ? 'bg-gray-700/50' : 'bg-gray-100'} rounded-xl p-4 border ${
-                  !user.approved 
-                    ? 'border-yellow-500/50' 
-                    : user.active 
-                    ? 'border-green-500/30' 
-                    : 'border-red-500/30'
-                }`}
+                style={{
+                  background: t.bg.secondary,
+                  borderRadius: t.radius.xl,
+                  border: `1px solid ${borderColor}`,
+                  padding: 20,
+                  transition: 'all 0.3s ease',
+                }}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                      user.role === 'owner' 
-                        ? 'bg-gradient-to-br from-purple-600 to-pink-600' 
-                        : 'bg-gradient-to-br from-blue-600 to-cyan-600'
-                    }`}>
-                      {user.role === 'owner' ? (
-                        <Shield className="w-6 h-6 text-white" />
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 16,
+                }}>
+                  {/* معلومات المستخدم */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    {/* أيقونة المستخدم */}
+                    <div style={{
+                      width: 52,
+                      height: 52,
+                      borderRadius: t.radius.lg,
+                      background: isOwner 
+                        ? t.colors[colorKeys[2]]?.gradient 
+                        : t.colors[colorKeys[0]]?.gradient,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: darkMode 
+                        ? (isOwner ? t.colors[colorKeys[2]]?.glow : t.colors[colorKeys[0]]?.glow)
+                        : 'none',
+                    }}>
+                      {isOwner ? (
+                        <Shield size={26} color="#fff" />
                       ) : (
-                        <UserIcon className="w-6 h-6 text-white" />
+                        <UserIcon size={26} color="#fff" />
                       )}
                     </div>
                     
+                    {/* البيانات */}
                     <div>
-                      <div className="flex items-center gap-2">
-                        <p className={`font-bold ${txt}`}>{user.username}</p>
-                        {!user.approved && (
-                          <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs rounded-full flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                        <p style={{ 
+                          fontSize: 16, 
+                          fontWeight: 700, 
+                          color: t.text.primary,
+                          margin: 0,
+                        }}>
+                          {user.username}
+                        </p>
+                        
+                        {/* شارة الحالة */}
+                        {isPending && (
+                          <span style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            padding: '4px 10px',
+                            borderRadius: t.radius.full,
+                            background: t.status.warning.bg,
+                            color: t.status.warning.text,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}>
+                            <Clock size={12} />
                             في الانتظار
                           </span>
                         )}
-                        {user.approved && user.active && (
-                          <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full">
+                        {!isPending && isActive && (
+                          <span style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            padding: '4px 10px',
+                            borderRadius: t.radius.full,
+                            background: t.status.success.bg,
+                            color: t.status.success.text,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}>
+                            <UserCheck size={12} />
                             معتمد
                           </span>
                         )}
-                        {!user.active && user.approved && (
-                          <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-full">
+                        {!isPending && !isActive && (
+                          <span style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            padding: '4px 10px',
+                            borderRadius: t.radius.full,
+                            background: t.status.danger.bg,
+                            color: t.status.danger.text,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 4,
+                          }}>
+                            <UserX size={12} />
                             غير نشط
                           </span>
                         )}
                       </div>
-                      <p className={`text-sm ${txtSm}`}>{user.email}</p>
-                      <p className={`text-xs ${txtSm}`}>
-                        {user.role === 'owner' ? 'مالك النظام' : 'مستخدم'}
+                      
+                      {/* البريد */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                        <Mail size={14} color={t.text.muted} />
+                        <p style={{ fontSize: 13, color: t.text.muted, margin: 0 }}>
+                          {user.email}
+                        </p>
+                      </div>
+                      
+                      {/* الدور */}
+                      <p style={{ fontSize: 12, color: t.text.muted, margin: 0 }}>
+                        {isOwner ? '👑 مالك النظام' : '👤 مستخدم'}
                       </p>
                     </div>
                   </div>
 
-                  {user.id !== currentUser.id && (
-                    <div className="flex items-center gap-2">
-                      {!user.approved && (
+                  {/* أزرار التحكم */}
+                  {!isCurrentUser && (
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {isPending && (
                         <>
                           <button
                             onClick={() => handleApprove(user.id)}
-                            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-all flex items-center gap-2"
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              padding: '10px 18px',
+                              borderRadius: t.radius.lg,
+                              border: 'none',
+                              background: 'linear-gradient(135deg, #059669, #10b981)',
+                              color: '#fff',
+                              cursor: 'pointer',
+                              fontSize: 13,
+                              fontWeight: 600,
+                              fontFamily: 'inherit',
+                              transition: 'all 0.2s',
+                            }}
                           >
-                            <CheckCircle className="w-4 h-4" />
+                            <CheckCircle size={16} />
                             موافقة
                           </button>
                           <button
                             onClick={() => handleReject(user.id)}
-                            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-all flex items-center gap-2"
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              padding: '10px 18px',
+                              borderRadius: t.radius.lg,
+                              border: 'none',
+                              background: 'linear-gradient(135deg, #dc2626, #ef4444)',
+                              color: '#fff',
+                              cursor: 'pointer',
+                              fontSize: 13,
+                              fontWeight: 600,
+                              fontFamily: 'inherit',
+                              transition: 'all 0.2s',
+                            }}
                           >
-                            <XCircle className="w-4 h-4" />
+                            <XCircle size={16} />
                             رفض
                           </button>
                         </>
                       )}
-                      {user.approved && (
+                      {!isPending && (
                         <button
-                          onClick={() => handleToggleActive(user.id, user.active)}
-                          className={`px-4 py-2 rounded-xl transition-all ${
-                            user.active
-                              ? 'bg-red-600 hover:bg-red-700'
-                              : 'bg-green-600 hover:bg-green-700'
-                          } text-white`}
+                          onClick={() => handleToggleActive(user.id, isActive)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '10px 18px',
+                            borderRadius: t.radius.lg,
+                            border: 'none',
+                            background: isActive 
+                              ? 'linear-gradient(135deg, #dc2626, #ef4444)'
+                              : 'linear-gradient(135deg, #059669, #10b981)',
+                            color: '#fff',
+                            cursor: 'pointer',
+                            fontSize: 13,
+                            fontWeight: 600,
+                            fontFamily: 'inherit',
+                            transition: 'all 0.2s',
+                          }}
                         >
-                          {user.active ? 'تعطيل' : 'تفعيل'}
+                          {isActive ? (
+                            <>
+                              <UserX size={16} />
+                              تعطيل
+                            </>
+                          ) : (
+                            <>
+                              <UserCheck size={16} />
+                              تفعيل
+                            </>
+                          )}
                         </button>
                       )}
                     </div>
                   )}
                 </div>
               </div>
-            ))
-          )}
+            );
+          })}
         </div>
-      </div>
+      )}
+
+      {/* CSS للأنيميشن */}
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+      `}</style>
     </div>
   );
 };
