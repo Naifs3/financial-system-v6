@@ -148,7 +148,6 @@ const Users = ({ currentUser, darkMode, theme }) => {
         <div style={{ textAlign: 'center', padding: 60, background: t.bg.secondary, borderRadius: t.radius.xl, border: `1px solid ${t.border.primary}` }}>
           <UsersIcon size={48} style={{ color: t.text.muted, marginBottom: 16, opacity: 0.5 }} />
           <p style={{ color: t.text.muted, fontSize: 16 }}>لا يوجد مستخدمين</p>
-          {isOwner && <button onClick={openAddModal} style={{ marginTop: 16, padding: '10px 24px', borderRadius: t.radius.lg, border: 'none', background: t.button.gradient, color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit' }}><Plus size={18} style={{ marginLeft: 8, verticalAlign: 'middle' }} />إضافة مستخدم جديد</button>}
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
@@ -156,7 +155,7 @@ const Users = ({ currentUser, darkMode, theme }) => {
             const roleInfo = getRoleInfo(user.role);
             const RoleIcon = roleInfo.icon;
             const color = t.colors[colorKeys[index % colorKeys.length]] || t.colors[colorKeys[0]];
-            const isCurrentUser = currentUser?.email === user.email;
+            const isCurrentUser = user.id === currentUser?.id;
 
             return (
               <div key={user.id} style={{ background: t.bg.secondary, borderRadius: 16, border: `1px solid ${isCurrentUser ? color.main : t.border.primary}`, overflow: 'hidden' }}>
@@ -169,7 +168,7 @@ const Users = ({ currentUser, darkMode, theme }) => {
                       <button onClick={() => openDeleteModal(user)} style={{ width: 28, height: 28, borderRadius: 6, border: 'none', background: t.status.danger.bg, color: t.status.danger.text, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={14} /></button>
                     </div>
                   )}
-                  {isCurrentUser && <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 10, background: t.status.success.bg, color: t.status.success.text }}>أنت</span>}
+                  {isCurrentUser && <span style={{ fontSize: 10, color: color.main, fontWeight: 600 }}>أنت</span>}
                 </div>
 
                 {/* Body */}
@@ -180,9 +179,9 @@ const Users = ({ currentUser, darkMode, theme }) => {
                   <h3 style={{ fontSize: 16, fontWeight: 700, color: t.text.primary, margin: '0 0 6px 0' }}>{user.username}</h3>
                   <p style={{ fontSize: 12, color: t.text.muted, margin: '0 0 12px 0' }}>{user.email}</p>
                   
-                  <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 8 }}>
-                    <span style={{ fontSize: 11, padding: '5px 12px', borderRadius: 20, background: `${roleInfo.color}15`, color: roleInfo.color, display: 'flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
-                      <RoleIcon size={14} />{roleInfo.label}
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                    <span style={{ fontSize: 11, padding: '5px 12px', borderRadius: 20, background: `${roleInfo.color}15`, color: roleInfo.color, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <RoleIcon size={12} />{roleInfo.label}
                     </span>
                     <span style={{ fontSize: 11, padding: '5px 12px', borderRadius: 20, background: user.status === 'نشط' ? t.status.success.bg : t.status.danger.bg, color: user.status === 'نشط' ? t.status.success.text : t.status.danger.text }}>{user.status || 'نشط'}</span>
                   </div>
@@ -199,11 +198,11 @@ const Users = ({ currentUser, darkMode, theme }) => {
             <span style={{ fontSize: 12, color: t.text.muted }}>رقم المستخدم</span>
             <p style={{ fontSize: 18, fontWeight: 700, color: t.button.primary, margin: '4px 0 0 0', fontFamily: 'monospace' }}>{formData.code}</p>
           </div>
-          <div><label style={labelStyle}>اسم المستخدم *</label><input type="text" value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})} style={{...inputStyle, borderColor: errors.username ? t.status.danger.text : t.border.primary}} placeholder="اسم المستخدم" />{errors.username && <span style={{ fontSize: 12, color: t.status.danger.text }}>{errors.username}</span>}</div>
+          <div><label style={labelStyle}>اسم المستخدم *</label><input type="text" value={formData.username} onChange={(e) => setFormData({...formData, username: e.target.value})} style={{...inputStyle, borderColor: errors.username ? t.status.danger.text : t.border.primary}} placeholder="مثال: أحمد محمد" />{errors.username && <span style={{ fontSize: 12, color: t.status.danger.text }}>{errors.username}</span>}</div>
           <div><label style={labelStyle}>البريد الإلكتروني *</label><input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} style={{...inputStyle, borderColor: errors.email ? t.status.danger.text : t.border.primary}} placeholder="example@email.com" />{errors.email && <span style={{ fontSize: 12, color: t.status.danger.text }}>{errors.email}</span>}</div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div><label style={labelStyle}>الدور</label><select value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})} style={inputStyle}>{roles.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}</select></div>
-            <div><label style={labelStyle}>الحالة</label><select value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})} style={inputStyle}><option value="نشط">نشط</option><option value="معطل">معطل</option></select></div>
+            <div><label style={labelStyle}>الحالة</label><select value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})} style={inputStyle}><option value="نشط">نشط</option><option value="غير نشط">غير نشط</option></select></div>
           </div>
         </div>
       </Modal>
@@ -218,7 +217,7 @@ const Users = ({ currentUser, darkMode, theme }) => {
           <div><label style={labelStyle}>البريد الإلكتروني *</label><input type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} style={{...inputStyle, borderColor: errors.email ? t.status.danger.text : t.border.primary}} /></div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div><label style={labelStyle}>الدور</label><select value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})} style={inputStyle}>{roles.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}</select></div>
-            <div><label style={labelStyle}>الحالة</label><select value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})} style={inputStyle}><option value="نشط">نشط</option><option value="معطل">معطل</option></select></div>
+            <div><label style={labelStyle}>الحالة</label><select value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})} style={inputStyle}><option value="نشط">نشط</option><option value="غير نشط">غير نشط</option></select></div>
           </div>
         </div>
       </Modal>
