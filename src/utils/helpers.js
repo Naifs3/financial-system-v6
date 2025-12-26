@@ -1,3 +1,6 @@
+إليك الكود الكامل لملف `helpers.js`:
+
+```javascript
 // src/utils/helpers.js
 
 /**
@@ -197,30 +200,29 @@ const CODE_PREFIXES = {
   users: 'U'
 };
 
-// مخزن الأرقام في localStorage
 const getCounterKey = (type) => `rkz_counter_${type}`;
 
 export const generateCode = (type) => {
   const prefix = CODE_PREFIXES[type] || 'X';
   const counterKey = getCounterKey(type);
   
-  // جلب آخر رقم من localStorage
   let counter = parseInt(localStorage.getItem(counterKey) || '0', 10);
   counter += 1;
   
-  // حفظ الرقم الجديد
   localStorage.setItem(counterKey, counter.toString());
   
-  // تنسيق الرقم بـ 4 خانات
   const formattedNumber = String(counter).padStart(4, '0');
   
   return `${prefix}-${formattedNumber}`;
 };
 
 /**
- * استرجاع الرقم الحالي لقسم معين (للعرض فقط)
+ * استرجاع الرقم الحالي لقسم معين
  */
 export const getCurrentCounter = (type) => {
   const counterKey = getCounterKey(type);
   return parseInt(localStorage.getItem(counterKey) || '0', 10);
 };
+```
+
+انسخ هذا الكود واستبدله في ملف `src/utils/helpers.js` في مشروعك.
