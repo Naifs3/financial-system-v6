@@ -1,6 +1,3 @@
-إليك الكود الكامل لملف `helpers.js`:
-
-```javascript
 // src/utils/helpers.js
 
 /**
@@ -223,6 +220,3 @@ export const getCurrentCounter = (type) => {
   const counterKey = getCounterKey(type);
   return parseInt(localStorage.getItem(counterKey) || '0', 10);
 };
-```
-
-انسخ هذا الكود واستبدله في ملف `src/utils/helpers.js` في مشروعك.
