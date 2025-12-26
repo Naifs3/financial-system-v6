@@ -1,14 +1,14 @@
 // src/components/Accounts.jsx
 import React, { useState } from 'react';
-import { Wallet, Plus, Search, Edit, Trash2, AlertTriangle, X, CreditCard, Building2, ChevronDown } from 'lucide-react';
+import { Wallet, Plus, Search, Edit, Trash2, AlertTriangle, X, CreditCard, Building2, Smartphone, Globe } from 'lucide-react';
 import { formatNumber, generateCode } from '../utils/helpers';
 
 const Accounts = ({ accounts, onAdd, onEdit, onDelete, darkMode, theme }) => {
   const t = theme;
   const colorKeys = t.colorKeys || Object.keys(t.colors);
   
+  const [activeTab, setActiveTab] = useState('bank'); // 'bank' or 'electronic'
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('all');
   
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -16,27 +16,46 @@ const Accounts = ({ accounts, onAdd, onEdit, onDelete, darkMode, theme }) => {
   const [selectedAccount, setSelectedAccount] = useState(null);
   const [loading, setLoading] = useState(false);
   
-  const emptyForm = { name: '', type: 'bank', bankName: '', accountNumber: '', balance: '', notes: '', code: '' };
+  const emptyForm = { name: '', category: 'bank', type: 'bank', bankName: '', accountNumber: '', balance: '', notes: '', code: '' };
   const [formData, setFormData] = useState(emptyForm);
   const [errors, setErrors] = useState({});
 
-  const accountTypes = [
+  // أنواع الحسابات البنكية
+  const bankTypes = [
     { value: 'bank', label: 'حساب بنكي', icon: Building2 },
     { value: 'cash', label: 'صندوق نقدي', icon: Wallet },
     { value: 'card', label: 'بطاقة ائتمان', icon: CreditCard },
   ];
 
-  const filteredAccounts = accounts.filter(account => {
+  // أنواع الحسابات الإلكترونية
+  const electronicTypes = [
+    { value: 'stcpay', label: 'STC Pay', icon: Smartphone },
+    { value: 'applepay', label: 'Apple Pay', icon: Smartphone },
+    { value: 'paypal', label: 'PayPal', icon: Globe },
+    { value: 'other_ewallet', label: 'محفظة أخرى', icon: Wallet },
+  ];
+
+  // تصنيف الحسابات
+  const bankAccounts = accounts.filter(acc => ['bank', 'cash', 'card'].includes(acc.type));
+  const electronicAccounts = accounts.filter(acc => ['stcpay', 'applepay', 'paypal', 'other_ewallet'].includes(acc.type));
+
+  // الحسابات المعروضة حسب التبويب
+  const currentAccounts = activeTab === 'bank' ? bankAccounts : electronicAccounts;
+  
+  const filteredAccounts = currentAccounts.filter(account => {
     const matchSearch = account.name?.toLowerCase().includes(searchTerm.toLowerCase()) || account.code?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchType = filterType === 'all' || account.type === filterType;
-    return matchSearch && matchType;
+    return matchSearch;
   });
 
-  const totalBalance = accounts.reduce((sum, acc) => sum + parseFloat(acc.balance || 0), 0);
-  const bankBalance = accounts.filter(a => a.type === 'bank').reduce((sum, a) => sum + parseFloat(a.balance || 0), 0);
-  const cashBalance = accounts.filter(a => a.type === 'cash').reduce((sum, a) => sum + parseFloat(a.balance || 0), 0);
+  // الإحصائيات
+  const bankBalance = bankAccounts.reduce((sum, a) => sum + parseFloat(a.balance || 0), 0);
+  const electronicBalance = electronicAccounts.reduce((sum, a) => sum + parseFloat(a.balance || 0), 0);
+  const totalBalance = bankBalance + electronicBalance;
 
-  const getTypeInfo = (type) => accountTypes.find(at => at.value === type) || accountTypes[0];
+  const getTypeInfo = (type) => {
+    const allTypes = [...bankTypes, ...electronicTypes];
+    return allTypes.find(at => at.value === type) || bankTypes[0];
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -45,12 +64,30 @@ const Accounts = ({ accounts, onAdd, onEdit, onDelete, darkMode, theme }) => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const openAddModal = () => { setFormData({ ...emptyForm, code: generateCode('accounts') }); setErrors({}); setShowAddModal(true); };
+  const openAddModal = () => { 
+    const defaultType = activeTab === 'bank' ? 'bank' : 'stcpay';
+    setFormData({ ...emptyForm, category: activeTab, type: defaultType, code: generateCode('accounts') }); 
+    setErrors({}); 
+    setShowAddModal(true); 
+  };
+  
   const openEditModal = (account) => {
     setSelectedAccount(account);
-    setFormData({ name: account.name || '', type: account.type || 'bank', bankName: account.bankName || '', accountNumber: account.accountNumber || '', balance: account.balance || '', notes: account.notes || '', code: account.code || '' });
-    setErrors({}); setShowEditModal(true);
+    const category = ['bank', 'cash', 'card'].includes(account.type) ? 'bank' : 'electronic';
+    setFormData({ 
+      name: account.name || '', 
+      category: category,
+      type: account.type || 'bank', 
+      bankName: account.bankName || '', 
+      accountNumber: account.accountNumber || '', 
+      balance: account.balance || '', 
+      notes: account.notes || '', 
+      code: account.code || '' 
+    });
+    setErrors({}); 
+    setShowEditModal(true);
   };
+  
   const openDeleteModal = (account) => { setSelectedAccount(account); setShowDeleteModal(true); };
 
   const handleAdd = async () => {
@@ -74,7 +111,6 @@ const Accounts = ({ accounts, onAdd, onEdit, onDelete, darkMode, theme }) => {
   };
 
   const inputStyle = { width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${t.border.primary}`, background: t.bg.tertiary, color: t.text.primary, fontSize: 14, fontFamily: 'inherit', outline: 'none' };
-  const filterSelectStyle = { padding: '10px 14px', paddingLeft: 32, borderRadius: 10, border: `1px solid ${t.border.primary}`, background: t.bg.tertiary, color: t.text.primary, fontSize: 13, fontFamily: 'inherit', cursor: 'pointer', appearance: 'none', outline: 'none', minWidth: 120 };
   const labelStyle = { display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: t.text.secondary };
 
   // ═══════════════ زر الإضافة الموحد ═══════════════
@@ -104,20 +140,27 @@ const Accounts = ({ accounts, onAdd, onEdit, onDelete, darkMode, theme }) => {
     );
   };
 
+  // الأنواع المتاحة حسب التصنيف في الفورم
+  const availableTypes = formData.category === 'bank' ? bankTypes : electronicTypes;
+
   return (
     <div style={{ padding: '24px 0', paddingBottom: 100 }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
         <div>
           <h2 style={{ fontSize: 24, fontWeight: 700, color: t.text.primary, margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}><Wallet size={28} />الحسابات</h2>
-          <p style={{ fontSize: 14, color: t.text.muted, marginTop: 4 }}>إدارة الحسابات البنكية والصناديق</p>
+          <p style={{ fontSize: 14, color: t.text.muted, marginTop: 4 }}>إدارة الحسابات البنكية والإلكترونية</p>
         </div>
         <button onClick={openAddModal} style={addButtonStyle}><Plus size={18} />إضافة حساب</button>
       </div>
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
-        {[{ label: 'إجمالي الرصيد', value: `${formatNumber(totalBalance)} ريال`, color: t.colors[colorKeys[0]]?.main }, { label: 'الحسابات البنكية', value: `${formatNumber(bankBalance)} ريال`, color: t.status.info.text }, { label: 'الصناديق النقدية', value: `${formatNumber(cashBalance)} ريال`, color: t.status.success.text }].map((stat, i) => (
+        {[
+          { label: 'إجمالي الرصيد', value: `${formatNumber(totalBalance)} ﷼`, color: t.colors[colorKeys[0]]?.main },
+          { label: 'الحسابات البنكية', value: `${formatNumber(bankBalance)} ﷼`, color: t.status.info.text },
+          { label: 'الحسابات الإلكترونية', value: `${formatNumber(electronicBalance)} ﷼`, color: t.status.success.text },
+        ].map((stat, i) => (
           <div key={i} style={{ background: t.bg.secondary, borderRadius: 14, padding: 20, border: `1px solid ${t.border.primary}` }}>
             <p style={{ fontSize: 13, color: t.text.muted, margin: '0 0 8px 0' }}>{stat.label}</p>
             <p style={{ fontSize: 22, fontWeight: 700, color: stat.color, margin: 0 }}>{stat.value}</p>
@@ -125,26 +168,61 @@ const Accounts = ({ accounts, onAdd, onEdit, onDelete, darkMode, theme }) => {
         ))}
       </div>
 
-      {/* Search & Filters */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center', background: t.bg.secondary, padding: 12, borderRadius: 12, border: `1px solid ${t.border.primary}` }}>
-        <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20, background: t.bg.secondary, padding: 6, borderRadius: 12, border: `1px solid ${t.border.primary}` }}>
+        <button
+          onClick={() => setActiveTab('bank')}
+          style={{
+            flex: 1, padding: '12px 20px', borderRadius: 10, border: 'none',
+            background: activeTab === 'bank' ? t.button.gradient : 'transparent',
+            color: activeTab === 'bank' ? '#fff' : t.text.muted,
+            cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            transition: 'all 0.2s',
+          }}
+        >
+          <Building2 size={18} />
+          الحسابات البنكية
+          <span style={{
+            background: activeTab === 'bank' ? 'rgba(255,255,255,0.2)' : t.bg.tertiary,
+            padding: '2px 8px', borderRadius: 10, fontSize: 12,
+          }}>{bankAccounts.length}</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('electronic')}
+          style={{
+            flex: 1, padding: '12px 20px', borderRadius: 10, border: 'none',
+            background: activeTab === 'electronic' ? t.button.gradient : 'transparent',
+            color: activeTab === 'electronic' ? '#fff' : t.text.muted,
+            cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            transition: 'all 0.2s',
+          }}
+        >
+          <Smartphone size={18} />
+          الحسابات الإلكترونية
+          <span style={{
+            background: activeTab === 'electronic' ? 'rgba(255,255,255,0.2)' : t.bg.tertiary,
+            padding: '2px 8px', borderRadius: 10, fontSize: 12,
+          }}>{electronicAccounts.length}</span>
+        </button>
+      </div>
+
+      {/* Search */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 24, background: t.bg.secondary, padding: 12, borderRadius: 12, border: `1px solid ${t.border.primary}` }}>
+        <div style={{ flex: 1, position: 'relative' }}>
           <Search size={18} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: t.text.muted }} />
           <input type="text" placeholder="بحث بالاسم أو الرمز..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ ...inputStyle, paddingRight: 40 }} />
-        </div>
-        <div style={{ position: 'relative' }}>
-          <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={filterSelectStyle}>
-            <option value="all">كل الأنواع</option>
-            {accountTypes.map(at => <option key={at.value} value={at.value}>{at.label}</option>)}
-          </select>
-          <ChevronDown size={16} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.text.muted, pointerEvents: 'none' }} />
         </div>
       </div>
 
       {/* Accounts Grid */}
       {filteredAccounts.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 60, background: t.bg.secondary, borderRadius: 14, border: `1px solid ${t.border.primary}` }}>
-          <Wallet size={48} style={{ color: t.text.muted, marginBottom: 16, opacity: 0.5 }} />
-          <p style={{ color: t.text.muted, fontSize: 16 }}>لا توجد حسابات</p>
+          {activeTab === 'bank' ? <Building2 size={48} style={{ color: t.text.muted, marginBottom: 16, opacity: 0.5 }} /> : <Smartphone size={48} style={{ color: t.text.muted, marginBottom: 16, opacity: 0.5 }} />}
+          <p style={{ color: t.text.muted, fontSize: 16 }}>
+            {activeTab === 'bank' ? 'لا توجد حسابات بنكية' : 'لا توجد حسابات إلكترونية'}
+          </p>
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
@@ -172,7 +250,7 @@ const Accounts = ({ accounts, onAdd, onEdit, onDelete, darkMode, theme }) => {
                   </div>
                   <div style={{ padding: '12px 16px', background: t.bg.tertiary, borderRadius: 10, marginTop: 8 }}>
                     <p style={{ fontSize: 11, color: t.text.muted, margin: '0 0 4px 0' }}>الرصيد</p>
-                    <p style={{ fontSize: 22, fontWeight: 700, color: color.main, margin: 0 }}>{formatNumber(account.balance)} <span style={{ fontSize: 12 }}>ريال</span></p>
+                    <p style={{ fontSize: 22, fontWeight: 700, color: color.main, margin: 0 }}>{formatNumber(account.balance)} <span style={{ fontSize: 14 }}>﷼</span></p>
                   </div>
                 </div>
               </div>
@@ -181,45 +259,133 @@ const Accounts = ({ accounts, onAdd, onEdit, onDelete, darkMode, theme }) => {
         </div>
       )}
 
-      {/* Modals */}
+      {/* Add Modal */}
       <Modal show={showAddModal} onClose={() => setShowAddModal(false)} title="إضافة حساب جديد" onSubmit={handleAdd} submitText="إضافة">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ background: `${t.button.primary}15`, padding: 12, borderRadius: 12, textAlign: 'center' }}>
             <span style={{ fontSize: 12, color: t.text.muted }}>رقم الحساب</span>
             <p style={{ fontSize: 18, fontWeight: 700, color: t.button.primary, margin: '4px 0 0 0', fontFamily: 'monospace' }}>{formData.code}</p>
           </div>
-          <div><label style={labelStyle}>اسم الحساب *</label><input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} style={{...inputStyle, borderColor: errors.name ? t.status.danger.text : t.border.primary}} placeholder="مثال: الحساب الرئيسي" />{errors.name && <span style={{ fontSize: 12, color: t.status.danger.text }}>{errors.name}</span>}</div>
-          <div><label style={labelStyle}>نوع الحساب</label><select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})} style={inputStyle}>{accountTypes.map(at => <option key={at.value} value={at.value}>{at.label}</option>)}</select></div>
-          {formData.type === 'bank' && (
+          
+          {/* اختيار التصنيف */}
+          <div>
+            <label style={labelStyle}>تصنيف الحساب</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => setFormData({...formData, category: 'bank', type: 'bank'})}
+                style={{
+                  padding: '12px', borderRadius: 10, border: `2px solid ${formData.category === 'bank' ? t.button.primary : t.border.primary}`,
+                  background: formData.category === 'bank' ? `${t.button.primary}15` : t.bg.tertiary,
+                  color: formData.category === 'bank' ? t.button.primary : t.text.muted,
+                  cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}
+              >
+                <Building2 size={18} />
+                حساب بنكي
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({...formData, category: 'electronic', type: 'stcpay'})}
+                style={{
+                  padding: '12px', borderRadius: 10, border: `2px solid ${formData.category === 'electronic' ? t.button.primary : t.border.primary}`,
+                  background: formData.category === 'electronic' ? `${t.button.primary}15` : t.bg.tertiary,
+                  color: formData.category === 'electronic' ? t.button.primary : t.text.muted,
+                  cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}
+              >
+                <Smartphone size={18} />
+                حساب إلكتروني
+              </button>
+            </div>
+          </div>
+
+          <div><label style={labelStyle}>اسم الحساب *</label><input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} style={{...inputStyle, borderColor: errors.name ? t.status.danger.text : t.border.primary}} placeholder={formData.category === 'bank' ? 'مثال: الحساب الرئيسي' : 'مثال: محفظة STC'} />{errors.name && <span style={{ fontSize: 12, color: t.status.danger.text }}>{errors.name}</span>}</div>
+          
+          <div><label style={labelStyle}>نوع الحساب</label><select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})} style={inputStyle}>{availableTypes.map(at => <option key={at.value} value={at.value}>{at.label}</option>)}</select></div>
+          
+          {formData.category === 'bank' && formData.type === 'bank' && (
             <>
               <div><label style={labelStyle}>اسم البنك</label><input type="text" value={formData.bankName} onChange={(e) => setFormData({...formData, bankName: e.target.value})} style={inputStyle} placeholder="مثال: بنك الراجحي" /></div>
               <div><label style={labelStyle}>رقم الحساب البنكي</label><input type="text" value={formData.accountNumber} onChange={(e) => setFormData({...formData, accountNumber: e.target.value})} style={inputStyle} placeholder="رقم الآيبان أو الحساب" /></div>
             </>
           )}
+          
+          {formData.category === 'electronic' && (
+            <div><label style={labelStyle}>رقم الجوال / الحساب</label><input type="text" value={formData.accountNumber} onChange={(e) => setFormData({...formData, accountNumber: e.target.value})} style={inputStyle} placeholder="05xxxxxxxx" /></div>
+          )}
+          
           <div><label style={labelStyle}>الرصيد الحالي</label><input type="number" value={formData.balance} onChange={(e) => setFormData({...formData, balance: e.target.value})} style={inputStyle} placeholder="0" /></div>
           <div><label style={labelStyle}>ملاحظات</label><textarea value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} style={{...inputStyle, minHeight: 80, resize: 'vertical'}} placeholder="ملاحظات إضافية..." /></div>
         </div>
       </Modal>
 
+      {/* Edit Modal */}
       <Modal show={showEditModal} onClose={() => setShowEditModal(false)} title="تعديل الحساب" onSubmit={handleEdit} submitText="حفظ التعديلات">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ background: `${t.button.primary}15`, padding: 12, borderRadius: 12, textAlign: 'center' }}>
             <span style={{ fontSize: 12, color: t.text.muted }}>رقم الحساب</span>
             <p style={{ fontSize: 18, fontWeight: 700, color: t.button.primary, margin: '4px 0 0 0', fontFamily: 'monospace' }}>{formData.code || 'A-0000'}</p>
           </div>
+          
+          {/* اختيار التصنيف */}
+          <div>
+            <label style={labelStyle}>تصنيف الحساب</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <button
+                type="button"
+                onClick={() => setFormData({...formData, category: 'bank', type: 'bank'})}
+                style={{
+                  padding: '12px', borderRadius: 10, border: `2px solid ${formData.category === 'bank' ? t.button.primary : t.border.primary}`,
+                  background: formData.category === 'bank' ? `${t.button.primary}15` : t.bg.tertiary,
+                  color: formData.category === 'bank' ? t.button.primary : t.text.muted,
+                  cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}
+              >
+                <Building2 size={18} />
+                حساب بنكي
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormData({...formData, category: 'electronic', type: 'stcpay'})}
+                style={{
+                  padding: '12px', borderRadius: 10, border: `2px solid ${formData.category === 'electronic' ? t.button.primary : t.border.primary}`,
+                  background: formData.category === 'electronic' ? `${t.button.primary}15` : t.bg.tertiary,
+                  color: formData.category === 'electronic' ? t.button.primary : t.text.muted,
+                  cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                }}
+              >
+                <Smartphone size={18} />
+                حساب إلكتروني
+              </button>
+            </div>
+          </div>
+
           <div><label style={labelStyle}>اسم الحساب *</label><input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} style={{...inputStyle, borderColor: errors.name ? t.status.danger.text : t.border.primary}} /></div>
-          <div><label style={labelStyle}>نوع الحساب</label><select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})} style={inputStyle}>{accountTypes.map(at => <option key={at.value} value={at.value}>{at.label}</option>)}</select></div>
-          {formData.type === 'bank' && (
+          
+          <div><label style={labelStyle}>نوع الحساب</label><select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})} style={inputStyle}>{availableTypes.map(at => <option key={at.value} value={at.value}>{at.label}</option>)}</select></div>
+          
+          {formData.category === 'bank' && formData.type === 'bank' && (
             <>
               <div><label style={labelStyle}>اسم البنك</label><input type="text" value={formData.bankName} onChange={(e) => setFormData({...formData, bankName: e.target.value})} style={inputStyle} /></div>
               <div><label style={labelStyle}>رقم الحساب البنكي</label><input type="text" value={formData.accountNumber} onChange={(e) => setFormData({...formData, accountNumber: e.target.value})} style={inputStyle} /></div>
             </>
           )}
+          
+          {formData.category === 'electronic' && (
+            <div><label style={labelStyle}>رقم الجوال / الحساب</label><input type="text" value={formData.accountNumber} onChange={(e) => setFormData({...formData, accountNumber: e.target.value})} style={inputStyle} /></div>
+          )}
+          
           <div><label style={labelStyle}>الرصيد الحالي</label><input type="number" value={formData.balance} onChange={(e) => setFormData({...formData, balance: e.target.value})} style={inputStyle} /></div>
           <div><label style={labelStyle}>ملاحظات</label><textarea value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} style={{...inputStyle, minHeight: 80, resize: 'vertical'}} /></div>
         </div>
       </Modal>
 
+      {/* Delete Modal */}
       <Modal show={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="حذف الحساب" onSubmit={handleDelete} submitText="حذف" danger>
         <div style={{ textAlign: 'center', padding: 20 }}>
           <div style={{ width: 64, height: 64, borderRadius: '50%', background: t.status.danger.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}><AlertTriangle size={32} color={t.status.danger.text} /></div>
