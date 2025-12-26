@@ -1,6 +1,6 @@
 // src/components/Accounts.jsx
 import React, { useState } from 'react';
-import { Wallet, Plus, Search, Edit, Trash2, AlertTriangle, X, CreditCard, Building2 } from 'lucide-react';
+import { Wallet, Plus, Search, Edit, Trash2, AlertTriangle, X, CreditCard, Building2, ChevronDown } from 'lucide-react';
 import { formatNumber, generateCode } from '../utils/helpers';
 
 const Accounts = ({ accounts, onAdd, onEdit, onDelete, darkMode, theme }) => {
@@ -36,10 +36,7 @@ const Accounts = ({ accounts, onAdd, onEdit, onDelete, darkMode, theme }) => {
   const bankBalance = accounts.filter(a => a.type === 'bank').reduce((sum, a) => sum + parseFloat(a.balance || 0), 0);
   const cashBalance = accounts.filter(a => a.type === 'cash').reduce((sum, a) => sum + parseFloat(a.balance || 0), 0);
 
-  const getTypeInfo = (type) => {
-    const found = accountTypes.find(t => t.value === type);
-    return found || accountTypes[0];
-  };
+  const getTypeInfo = (type) => accountTypes.find(at => at.value === type) || accountTypes[0];
 
   const validateForm = () => {
     const newErrors = {};
@@ -76,22 +73,31 @@ const Accounts = ({ accounts, onAdd, onEdit, onDelete, darkMode, theme }) => {
     setLoading(false);
   };
 
-  const inputStyle = { width: '100%', padding: '12px 16px', borderRadius: t.radius.lg, border: `1px solid ${t.border.primary}`, background: t.bg.tertiary, color: t.text.primary, fontSize: 14, fontFamily: 'inherit' };
+  const inputStyle = { width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${t.border.primary}`, background: t.bg.tertiary, color: t.text.primary, fontSize: 14, fontFamily: 'inherit', outline: 'none' };
+  const filterSelectStyle = { padding: '10px 14px', paddingLeft: 32, borderRadius: 10, border: `1px solid ${t.border.primary}`, background: t.bg.tertiary, color: t.text.primary, fontSize: 13, fontFamily: 'inherit', cursor: 'pointer', appearance: 'none', outline: 'none', minWidth: 120 };
   const labelStyle = { display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: t.text.secondary };
+
+  // ═══════════════ زر الإضافة الموحد ═══════════════
+  const addButtonStyle = {
+    padding: '10px 20px', borderRadius: 10, border: 'none',
+    background: t.button.gradient, color: '#fff', cursor: 'pointer',
+    fontSize: 14, fontWeight: 600, fontFamily: 'inherit',
+    display: 'flex', alignItems: 'center', gap: 8,
+  };
 
   const Modal = ({ show, onClose, title, children, onSubmit, submitText, danger }) => {
     if (!show) return null;
     return (
       <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }} onClick={onClose}>
-        <div style={{ background: t.bg.secondary, borderRadius: t.radius.xl, width: '100%', maxWidth: 500, border: `1px solid ${t.border.primary}`, maxHeight: '90vh', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
-          <div style={{ padding: '20px 24px', borderBottom: `1px solid ${t.border.primary}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: t.text.primary, margin: 0 }}>{title}</h3>
-            <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: t.radius.md, border: 'none', background: t.bg.tertiary, color: t.text.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={20} /></button>
+        <div style={{ background: t.bg.secondary, borderRadius: 16, width: '100%', maxWidth: 500, border: `1px solid ${t.border.primary}`, maxHeight: '90vh', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }} onClick={e => e.stopPropagation()}>
+          <div style={{ padding: '16px 20px', borderBottom: `1px solid ${t.border.primary}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: t.bg.tertiary }}>
+            <h3 style={{ fontSize: 17, fontWeight: 700, color: t.text.primary, margin: 0 }}>{title}</h3>
+            <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: t.bg.secondary, color: t.text.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={18} /></button>
           </div>
-          <div style={{ padding: 24, overflowY: 'auto', maxHeight: 'calc(90vh - 140px)' }}>{children}</div>
-          <div style={{ padding: '16px 24px', borderTop: `1px solid ${t.border.primary}`, display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-            <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: t.radius.lg, border: `1px solid ${t.border.primary}`, background: 'transparent', color: t.text.secondary, cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit' }}>إلغاء</button>
-            <button onClick={onSubmit} disabled={loading} style={{ padding: '10px 24px', borderRadius: t.radius.lg, border: 'none', background: danger ? t.status.danger.text : t.button.gradient, color: '#fff', cursor: loading ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit', opacity: loading ? 0.7 : 1 }}>{loading ? 'جاري...' : submitText}</button>
+          <div style={{ padding: 20, overflowY: 'auto', maxHeight: 'calc(90vh - 130px)' }}>{children}</div>
+          <div style={{ padding: '14px 20px', borderTop: `1px solid ${t.border.primary}`, display: 'flex', gap: 10, justifyContent: 'flex-end', background: t.bg.tertiary }}>
+            <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, border: `1px solid ${t.border.primary}`, background: 'transparent', color: t.text.secondary, cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit' }}>إلغاء</button>
+            <button onClick={onSubmit} disabled={loading} style={{ padding: '10px 24px', borderRadius: 10, border: 'none', background: danger ? t.status.danger.text : t.button.gradient, color: '#fff', cursor: loading ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit', opacity: loading ? 0.7 : 1 }}>{loading ? 'جاري...' : submitText}</button>
           </div>
         </div>
       </div>
@@ -100,39 +106,45 @@ const Accounts = ({ accounts, onAdd, onEdit, onDelete, darkMode, theme }) => {
 
   return (
     <div style={{ padding: '24px 0', paddingBottom: 100 }}>
+      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
         <div>
           <h2 style={{ fontSize: 24, fontWeight: 700, color: t.text.primary, margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}><Wallet size={28} />الحسابات</h2>
           <p style={{ fontSize: 14, color: t.text.muted, marginTop: 4 }}>إدارة الحسابات البنكية والصناديق</p>
         </div>
-        <button onClick={openAddModal} style={{ padding: '12px 24px', borderRadius: t.radius.lg, border: 'none', background: t.button.gradient, color: '#fff', cursor: 'pointer', fontSize: 15, fontWeight: 600, fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 8 }}><Plus size={20} />إضافة حساب</button>
+        <button onClick={openAddModal} style={addButtonStyle}><Plus size={18} />إضافة حساب</button>
       </div>
 
+      {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
         {[{ label: 'إجمالي الرصيد', value: `${formatNumber(totalBalance)} ريال`, color: t.colors[colorKeys[0]]?.main }, { label: 'الحسابات البنكية', value: `${formatNumber(bankBalance)} ريال`, color: t.status.info.text }, { label: 'الصناديق النقدية', value: `${formatNumber(cashBalance)} ريال`, color: t.status.success.text }].map((stat, i) => (
-          <div key={i} style={{ background: t.bg.secondary, borderRadius: t.radius.xl, padding: 20, border: `1px solid ${t.border.primary}` }}>
+          <div key={i} style={{ background: t.bg.secondary, borderRadius: 14, padding: 20, border: `1px solid ${t.border.primary}` }}>
             <p style={{ fontSize: 13, color: t.text.muted, margin: '0 0 8px 0' }}>{stat.label}</p>
             <p style={{ fontSize: 22, fontWeight: 700, color: stat.color, margin: 0 }}>{stat.value}</p>
           </div>
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap', background: t.bg.secondary, padding: 16, borderRadius: t.radius.xl, border: `1px solid ${t.border.primary}` }}>
+      {/* Search & Filters */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center', background: t.bg.secondary, padding: 12, borderRadius: 12, border: `1px solid ${t.border.primary}` }}>
         <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
           <Search size={18} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: t.text.muted }} />
           <input type="text" placeholder="بحث بالاسم أو الرمز..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ ...inputStyle, paddingRight: 40 }} />
         </div>
-        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 140, cursor: 'pointer' }}>
-          <option value="all">كل الأنواع</option>
-          {accountTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-        </select>
+        <div style={{ position: 'relative' }}>
+          <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={filterSelectStyle}>
+            <option value="all">كل الأنواع</option>
+            {accountTypes.map(at => <option key={at.value} value={at.value}>{at.label}</option>)}
+          </select>
+          <ChevronDown size={16} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.text.muted, pointerEvents: 'none' }} />
+        </div>
       </div>
 
+      {/* Accounts Grid */}
       {filteredAccounts.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 60, background: t.bg.secondary, borderRadius: t.radius.xl, border: `1px solid ${t.border.primary}` }}>
+        <div style={{ textAlign: 'center', padding: 60, background: t.bg.secondary, borderRadius: 14, border: `1px solid ${t.border.primary}` }}>
           <Wallet size={48} style={{ color: t.text.muted, marginBottom: 16, opacity: 0.5 }} />
           <p style={{ color: t.text.muted, fontSize: 16 }}>لا توجد حسابات</p>
-          <button onClick={openAddModal} style={{ marginTop: 16, padding: '10px 24px', borderRadius: t.radius.lg, border: 'none', background: t.button.gradient, color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit' }}><Plus size={18} style={{ marginLeft: 8, verticalAlign: 'middle' }} />إضافة حساب جديد</button>
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
@@ -143,7 +155,6 @@ const Accounts = ({ accounts, onAdd, onEdit, onDelete, darkMode, theme }) => {
 
             return (
               <div key={account.id} style={{ background: t.bg.secondary, borderRadius: 16, border: `1px solid ${t.border.primary}`, overflow: 'hidden' }}>
-                {/* Header with Code */}
                 <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${t.border.primary}`, background: `${color.main}08` }}>
                   <span style={{ fontSize: 11, fontWeight: 700, color: color.main, fontFamily: 'monospace', background: `${color.main}15`, padding: '2px 6px', borderRadius: 4 }}>{account.code || 'A-0000'}</span>
                   <div style={{ display: 'flex', gap: 4 }}>
@@ -151,21 +162,15 @@ const Accounts = ({ accounts, onAdd, onEdit, onDelete, darkMode, theme }) => {
                     <button onClick={() => openDeleteModal(account)} style={{ width: 28, height: 28, borderRadius: 6, border: 'none', background: t.status.danger.bg, color: t.status.danger.text, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Trash2 size={14} /></button>
                   </div>
                 </div>
-
-                {/* Body */}
                 <div style={{ padding: 20, textAlign: 'center' }}>
-                  <div style={{ width: 56, height: 56, margin: '0 auto 16px', borderRadius: 14, background: color.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <TypeIcon size={28} color="#fff" />
-                  </div>
+                  <div style={{ width: 56, height: 56, margin: '0 auto 16px', borderRadius: 14, background: color.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><TypeIcon size={28} color="#fff" /></div>
                   <h3 style={{ fontSize: 16, fontWeight: 700, color: t.text.primary, margin: '0 0 6px 0' }}>{account.name}</h3>
                   {account.bankName && <p style={{ fontSize: 12, color: t.text.muted, margin: '0 0 6px 0' }}>{account.bankName}</p>}
                   {account.accountNumber && <p style={{ fontSize: 11, color: t.text.muted, margin: '0 0 12px 0', fontFamily: 'monospace' }}>****{account.accountNumber.slice(-4)}</p>}
-                  
                   <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 8 }}>
                     <span style={{ fontSize: 11, padding: '5px 12px', borderRadius: 20, background: t.status.info.bg, color: t.status.info.text }}>{typeInfo.label}</span>
                   </div>
-                  
-                  <div style={{ padding: '12px 16px', background: t.bg.tertiary, borderRadius: t.radius.lg, marginTop: 8 }}>
+                  <div style={{ padding: '12px 16px', background: t.bg.tertiary, borderRadius: 10, marginTop: 8 }}>
                     <p style={{ fontSize: 11, color: t.text.muted, margin: '0 0 4px 0' }}>الرصيد</p>
                     <p style={{ fontSize: 22, fontWeight: 700, color: color.main, margin: 0 }}>{formatNumber(account.balance)} <span style={{ fontSize: 12 }}>ريال</span></p>
                   </div>
@@ -176,14 +181,15 @@ const Accounts = ({ accounts, onAdd, onEdit, onDelete, darkMode, theme }) => {
         </div>
       )}
 
+      {/* Modals */}
       <Modal show={showAddModal} onClose={() => setShowAddModal(false)} title="إضافة حساب جديد" onSubmit={handleAdd} submitText="إضافة">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ background: `${t.button.primary}15`, padding: 12, borderRadius: t.radius.lg, textAlign: 'center' }}>
+          <div style={{ background: `${t.button.primary}15`, padding: 12, borderRadius: 12, textAlign: 'center' }}>
             <span style={{ fontSize: 12, color: t.text.muted }}>رقم الحساب</span>
             <p style={{ fontSize: 18, fontWeight: 700, color: t.button.primary, margin: '4px 0 0 0', fontFamily: 'monospace' }}>{formData.code}</p>
           </div>
           <div><label style={labelStyle}>اسم الحساب *</label><input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} style={{...inputStyle, borderColor: errors.name ? t.status.danger.text : t.border.primary}} placeholder="مثال: الحساب الرئيسي" />{errors.name && <span style={{ fontSize: 12, color: t.status.danger.text }}>{errors.name}</span>}</div>
-          <div><label style={labelStyle}>نوع الحساب</label><select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})} style={inputStyle}>{accountTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
+          <div><label style={labelStyle}>نوع الحساب</label><select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})} style={inputStyle}>{accountTypes.map(at => <option key={at.value} value={at.value}>{at.label}</option>)}</select></div>
           {formData.type === 'bank' && (
             <>
               <div><label style={labelStyle}>اسم البنك</label><input type="text" value={formData.bankName} onChange={(e) => setFormData({...formData, bankName: e.target.value})} style={inputStyle} placeholder="مثال: بنك الراجحي" /></div>
@@ -197,12 +203,12 @@ const Accounts = ({ accounts, onAdd, onEdit, onDelete, darkMode, theme }) => {
 
       <Modal show={showEditModal} onClose={() => setShowEditModal(false)} title="تعديل الحساب" onSubmit={handleEdit} submitText="حفظ التعديلات">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ background: `${t.button.primary}15`, padding: 12, borderRadius: t.radius.lg, textAlign: 'center' }}>
+          <div style={{ background: `${t.button.primary}15`, padding: 12, borderRadius: 12, textAlign: 'center' }}>
             <span style={{ fontSize: 12, color: t.text.muted }}>رقم الحساب</span>
             <p style={{ fontSize: 18, fontWeight: 700, color: t.button.primary, margin: '4px 0 0 0', fontFamily: 'monospace' }}>{formData.code || 'A-0000'}</p>
           </div>
           <div><label style={labelStyle}>اسم الحساب *</label><input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} style={{...inputStyle, borderColor: errors.name ? t.status.danger.text : t.border.primary}} /></div>
-          <div><label style={labelStyle}>نوع الحساب</label><select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})} style={inputStyle}>{accountTypes.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
+          <div><label style={labelStyle}>نوع الحساب</label><select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})} style={inputStyle}>{accountTypes.map(at => <option key={at.value} value={at.value}>{at.label}</option>)}</select></div>
           {formData.type === 'bank' && (
             <>
               <div><label style={labelStyle}>اسم البنك</label><input type="text" value={formData.bankName} onChange={(e) => setFormData({...formData, bankName: e.target.value})} style={inputStyle} /></div>
