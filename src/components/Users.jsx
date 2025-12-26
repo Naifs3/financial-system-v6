@@ -1,6 +1,6 @@
 // src/components/Users.jsx
 import React, { useState, useEffect } from 'react';
-import { Users as UsersIcon, Plus, Search, Edit, Trash2, AlertTriangle, X, Shield, User, Eye, Crown } from 'lucide-react';
+import { Users as UsersIcon, Plus, Search, Edit, Trash2, AlertTriangle, X, Shield, User, Eye, Crown, ChevronDown } from 'lucide-react';
 import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { generateCode } from '../utils/helpers';
@@ -84,22 +84,31 @@ const Users = ({ currentUser, darkMode, theme }) => {
     setLoading(false);
   };
 
-  const inputStyle = { width: '100%', padding: '12px 16px', borderRadius: t.radius.lg, border: `1px solid ${t.border.primary}`, background: t.bg.tertiary, color: t.text.primary, fontSize: 14, fontFamily: 'inherit' };
+  const inputStyle = { width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${t.border.primary}`, background: t.bg.tertiary, color: t.text.primary, fontSize: 14, fontFamily: 'inherit', outline: 'none' };
+  const filterSelectStyle = { padding: '10px 14px', paddingLeft: 32, borderRadius: 10, border: `1px solid ${t.border.primary}`, background: t.bg.tertiary, color: t.text.primary, fontSize: 13, fontFamily: 'inherit', cursor: 'pointer', appearance: 'none', outline: 'none', minWidth: 110 };
   const labelStyle = { display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: t.text.secondary };
+
+  // ═══════════════ زر الإضافة الموحد ═══════════════
+  const addButtonStyle = {
+    padding: '10px 20px', borderRadius: 10, border: 'none',
+    background: t.button.gradient, color: '#fff', cursor: 'pointer',
+    fontSize: 14, fontWeight: 600, fontFamily: 'inherit',
+    display: 'flex', alignItems: 'center', gap: 8,
+  };
 
   const Modal = ({ show, onClose, title, children, onSubmit, submitText, danger }) => {
     if (!show) return null;
     return (
       <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }} onClick={onClose}>
-        <div style={{ background: t.bg.secondary, borderRadius: t.radius.xl, width: '100%', maxWidth: 500, border: `1px solid ${t.border.primary}`, maxHeight: '90vh', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
-          <div style={{ padding: '20px 24px', borderBottom: `1px solid ${t.border.primary}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: t.text.primary, margin: 0 }}>{title}</h3>
-            <button onClick={onClose} style={{ width: 36, height: 36, borderRadius: t.radius.md, border: 'none', background: t.bg.tertiary, color: t.text.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={20} /></button>
+        <div style={{ background: t.bg.secondary, borderRadius: 16, width: '100%', maxWidth: 500, border: `1px solid ${t.border.primary}`, maxHeight: '90vh', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }} onClick={e => e.stopPropagation()}>
+          <div style={{ padding: '16px 20px', borderBottom: `1px solid ${t.border.primary}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: t.bg.tertiary }}>
+            <h3 style={{ fontSize: 17, fontWeight: 700, color: t.text.primary, margin: 0 }}>{title}</h3>
+            <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: t.bg.secondary, color: t.text.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={18} /></button>
           </div>
-          <div style={{ padding: 24, overflowY: 'auto', maxHeight: 'calc(90vh - 140px)' }}>{children}</div>
-          <div style={{ padding: '16px 24px', borderTop: `1px solid ${t.border.primary}`, display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-            <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: t.radius.lg, border: `1px solid ${t.border.primary}`, background: 'transparent', color: t.text.secondary, cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit' }}>إلغاء</button>
-            <button onClick={onSubmit} disabled={loading} style={{ padding: '10px 24px', borderRadius: t.radius.lg, border: 'none', background: danger ? t.status.danger.text : t.button.gradient, color: '#fff', cursor: loading ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit', opacity: loading ? 0.7 : 1 }}>{loading ? 'جاري...' : submitText}</button>
+          <div style={{ padding: 20, overflowY: 'auto', maxHeight: 'calc(90vh - 130px)' }}>{children}</div>
+          <div style={{ padding: '14px 20px', borderTop: `1px solid ${t.border.primary}`, display: 'flex', gap: 10, justifyContent: 'flex-end', background: t.bg.tertiary }}>
+            <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, border: `1px solid ${t.border.primary}`, background: 'transparent', color: t.text.secondary, cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit' }}>إلغاء</button>
+            <button onClick={onSubmit} disabled={loading} style={{ padding: '10px 24px', borderRadius: 10, border: 'none', background: danger ? t.status.danger.text : t.button.gradient, color: '#fff', cursor: loading ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit', opacity: loading ? 0.7 : 1 }}>{loading ? 'جاري...' : submitText}</button>
           </div>
         </div>
       </div>
@@ -110,21 +119,21 @@ const Users = ({ currentUser, darkMode, theme }) => {
 
   return (
     <div style={{ padding: '24px 0', paddingBottom: 100 }}>
+      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
         <div>
           <h2 style={{ fontSize: 24, fontWeight: 700, color: t.text.primary, margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}><UsersIcon size={28} />المستخدمين</h2>
           <p style={{ fontSize: 14, color: t.text.muted, marginTop: 4 }}>إدارة المستخدمين والصلاحيات</p>
         </div>
-        {isOwner && (
-          <button onClick={openAddModal} style={{ padding: '12px 24px', borderRadius: t.radius.lg, border: 'none', background: t.button.gradient, color: '#fff', cursor: 'pointer', fontSize: 15, fontWeight: 600, fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 8 }}><Plus size={20} />إضافة مستخدم</button>
-        )}
+        {isOwner && <button onClick={openAddModal} style={addButtonStyle}><Plus size={18} />إضافة مستخدم</button>}
       </div>
 
+      {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 16, marginBottom: 24 }}>
         {roles.map((role, i) => {
           const count = users.filter(u => u.role === role.value).length;
           return (
-            <div key={i} style={{ background: t.bg.secondary, borderRadius: t.radius.xl, padding: 16, border: `1px solid ${t.border.primary}`, textAlign: 'center' }}>
+            <div key={i} style={{ background: t.bg.secondary, borderRadius: 14, padding: 16, border: `1px solid ${t.border.primary}`, textAlign: 'center' }}>
               <role.icon size={24} color={role.color} style={{ marginBottom: 8 }} />
               <p style={{ fontSize: 12, color: t.text.muted, margin: '0 0 4px 0' }}>{role.label}</p>
               <p style={{ fontSize: 24, fontWeight: 700, color: role.color, margin: 0 }}>{count}</p>
@@ -133,19 +142,24 @@ const Users = ({ currentUser, darkMode, theme }) => {
         })}
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap', background: t.bg.secondary, padding: 16, borderRadius: t.radius.xl, border: `1px solid ${t.border.primary}` }}>
+      {/* Search & Filters */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center', background: t.bg.secondary, padding: 12, borderRadius: 12, border: `1px solid ${t.border.primary}` }}>
         <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
           <Search size={18} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: t.text.muted }} />
           <input type="text" placeholder="بحث بالاسم أو البريد أو الرمز..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ ...inputStyle, paddingRight: 40 }} />
         </div>
-        <select value={filterRole} onChange={(e) => setFilterRole(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 130, cursor: 'pointer' }}>
-          <option value="all">كل الأدوار</option>
-          {roles.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-        </select>
+        <div style={{ position: 'relative' }}>
+          <select value={filterRole} onChange={(e) => setFilterRole(e.target.value)} style={filterSelectStyle}>
+            <option value="all">كل الأدوار</option>
+            {roles.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+          </select>
+          <ChevronDown size={16} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.text.muted, pointerEvents: 'none' }} />
+        </div>
       </div>
 
+      {/* Users Grid */}
       {filteredUsers.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: 60, background: t.bg.secondary, borderRadius: t.radius.xl, border: `1px solid ${t.border.primary}` }}>
+        <div style={{ textAlign: 'center', padding: 60, background: t.bg.secondary, borderRadius: 14, border: `1px solid ${t.border.primary}` }}>
           <UsersIcon size={48} style={{ color: t.text.muted, marginBottom: 16, opacity: 0.5 }} />
           <p style={{ color: t.text.muted, fontSize: 16 }}>لا يوجد مستخدمين</p>
         </div>
@@ -159,7 +173,6 @@ const Users = ({ currentUser, darkMode, theme }) => {
 
             return (
               <div key={user.id} style={{ background: t.bg.secondary, borderRadius: 16, border: `1px solid ${isCurrentUser ? color.main : t.border.primary}`, overflow: 'hidden' }}>
-                {/* Header with Code */}
                 <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: `1px solid ${t.border.primary}`, background: `${color.main}08` }}>
                   <span style={{ fontSize: 11, fontWeight: 700, color: color.main, fontFamily: 'monospace', background: `${color.main}15`, padding: '2px 6px', borderRadius: 4 }}>{user.code || 'U-0000'}</span>
                   {isOwner && !isCurrentUser && (
@@ -170,19 +183,12 @@ const Users = ({ currentUser, darkMode, theme }) => {
                   )}
                   {isCurrentUser && <span style={{ fontSize: 10, color: color.main, fontWeight: 600 }}>أنت</span>}
                 </div>
-
-                {/* Body */}
                 <div style={{ padding: 20, textAlign: 'center' }}>
-                  <div style={{ width: 56, height: 56, margin: '0 auto 16px', borderRadius: 14, background: color.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <User size={28} color="#fff" />
-                  </div>
+                  <div style={{ width: 56, height: 56, margin: '0 auto 16px', borderRadius: 14, background: color.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><User size={28} color="#fff" /></div>
                   <h3 style={{ fontSize: 16, fontWeight: 700, color: t.text.primary, margin: '0 0 6px 0' }}>{user.username}</h3>
                   <p style={{ fontSize: 12, color: t.text.muted, margin: '0 0 12px 0' }}>{user.email}</p>
-                  
                   <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-                    <span style={{ fontSize: 11, padding: '5px 12px', borderRadius: 20, background: `${roleInfo.color}15`, color: roleInfo.color, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <RoleIcon size={12} />{roleInfo.label}
-                    </span>
+                    <span style={{ fontSize: 11, padding: '5px 12px', borderRadius: 20, background: `${roleInfo.color}15`, color: roleInfo.color, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}><RoleIcon size={12} />{roleInfo.label}</span>
                     <span style={{ fontSize: 11, padding: '5px 12px', borderRadius: 20, background: user.status === 'نشط' ? t.status.success.bg : t.status.danger.bg, color: user.status === 'نشط' ? t.status.success.text : t.status.danger.text }}>{user.status || 'نشط'}</span>
                   </div>
                 </div>
@@ -192,9 +198,10 @@ const Users = ({ currentUser, darkMode, theme }) => {
         </div>
       )}
 
+      {/* Modals */}
       <Modal show={showAddModal} onClose={() => setShowAddModal(false)} title="إضافة مستخدم جديد" onSubmit={handleAdd} submitText="إضافة">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ background: `${t.button.primary}15`, padding: 12, borderRadius: t.radius.lg, textAlign: 'center' }}>
+          <div style={{ background: `${t.button.primary}15`, padding: 12, borderRadius: 12, textAlign: 'center' }}>
             <span style={{ fontSize: 12, color: t.text.muted }}>رقم المستخدم</span>
             <p style={{ fontSize: 18, fontWeight: 700, color: t.button.primary, margin: '4px 0 0 0', fontFamily: 'monospace' }}>{formData.code}</p>
           </div>
@@ -209,7 +216,7 @@ const Users = ({ currentUser, darkMode, theme }) => {
 
       <Modal show={showEditModal} onClose={() => setShowEditModal(false)} title="تعديل المستخدم" onSubmit={handleEdit} submitText="حفظ التعديلات">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ background: `${t.button.primary}15`, padding: 12, borderRadius: t.radius.lg, textAlign: 'center' }}>
+          <div style={{ background: `${t.button.primary}15`, padding: 12, borderRadius: 12, textAlign: 'center' }}>
             <span style={{ fontSize: 12, color: t.text.muted }}>رقم المستخدم</span>
             <p style={{ fontSize: 18, fontWeight: 700, color: t.button.primary, margin: '4px 0 0 0', fontFamily: 'monospace' }}>{formData.code || 'U-0000'}</p>
           </div>
