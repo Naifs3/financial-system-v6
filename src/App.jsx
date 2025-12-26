@@ -22,7 +22,182 @@ import Settings from './components/Settings';
 import QuantityCalculator from './components/QuantityCalculator';
 import { LogOut, Settings as SettingsIcon, Bell, Clock } from 'lucide-react';
 
+// ═══════════════════════════════════════════════════════════════
+// 🎨 ثوابت الإعدادات المخصصة
+// ═══════════════════════════════════════════════════════════════
+
+const HEADER_COLORS = {
+  default: null,
+  navy: '#0f172a',
+  slate: '#1e293b',
+  zinc: '#18181b',
+  blue: '#1e3a5f',
+  indigo: '#312e81',
+  purple: '#3b0764',
+  pink: '#500724',
+  red: '#450a0a',
+  orange: '#431407',
+  green: '#052e16',
+  teal: '#042f2e',
+};
+
+const BUTTON_COLORS = {
+  default: null,
+  blue: { color: '#3b82f6', gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)' },
+  indigo: { color: '#6366f1', gradient: 'linear-gradient(135deg, #6366f1, #4f46e5)' },
+  purple: { color: '#8b5cf6', gradient: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' },
+  pink: { color: '#ec4899', gradient: 'linear-gradient(135deg, #ec4899, #db2777)' },
+  red: { color: '#ef4444', gradient: 'linear-gradient(135deg, #ef4444, #dc2626)' },
+  orange: { color: '#f97316', gradient: 'linear-gradient(135deg, #f97316, #ea580c)' },
+  amber: { color: '#f59e0b', gradient: 'linear-gradient(135deg, #f59e0b, #d97706)' },
+  green: { color: '#22c55e', gradient: 'linear-gradient(135deg, #22c55e, #16a34a)' },
+  teal: { color: '#14b8a6', gradient: 'linear-gradient(135deg, #14b8a6, #0d9488)' },
+  cyan: { color: '#06b6d4', gradient: 'linear-gradient(135deg, #06b6d4, #0891b2)' },
+  rose: { color: '#f43f5e', gradient: 'linear-gradient(135deg, #f43f5e, #e11d48)' },
+};
+
+const FONTS = {
+  tajawal: "'Tajawal', sans-serif",
+  cairo: "'Cairo', sans-serif",
+  almarai: "'Almarai', sans-serif",
+  ibm: "'IBM Plex Sans Arabic', sans-serif",
+};
+
+// ═══════════════════════════════════════════════════════════════
+// ✨ مكونات الخلفية
+// ═══════════════════════════════════════════════════════════════
+
+const StarsBackground = () => {
+  const starsRef = useRef(null);
+  
+  useEffect(() => {
+    if (!starsRef.current) return;
+    const canvas = starsRef.current;
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    const stars = Array.from({ length: 80 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      size: Math.random() * 2 + 0.5,
+      speed: Math.random() * 0.5 + 0.1,
+      opacity: Math.random() * 0.5 + 0.3,
+    }));
+    
+    let animationId;
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      stars.forEach(star => {
+        star.opacity += (Math.random() - 0.5) * 0.02;
+        star.opacity = Math.max(0.2, Math.min(0.8, star.opacity));
+        
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${star.opacity})`;
+        ctx.fill();
+      });
+      
+      animationId = requestAnimationFrame(animate);
+    };
+    
+    animate();
+    
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      cancelAnimationFrame(animationId);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+  
+  return (
+    <canvas
+      ref={starsRef}
+      style={{
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        pointerEvents: 'none', zIndex: 0,
+      }}
+    />
+  );
+};
+
+const ParticlesBackground = () => {
+  const canvasRef = useRef(null);
+  
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    
+    const particles = Array.from({ length: 40 }, () => ({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      size: Math.random() * 3 + 1,
+      speedX: (Math.random() - 0.5) * 0.5,
+      speedY: (Math.random() - 0.5) * 0.5,
+      opacity: Math.random() * 0.3 + 0.1,
+    }));
+    
+    let animationId;
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      particles.forEach(p => {
+        p.x += p.speedX;
+        p.y += p.speedY;
+        
+        if (p.x < 0) p.x = canvas.width;
+        if (p.x > canvas.width) p.x = 0;
+        if (p.y < 0) p.y = canvas.height;
+        if (p.y > canvas.height) p.y = 0;
+        
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(100, 150, 255, ${p.opacity})`;
+        ctx.fill();
+      });
+      
+      animationId = requestAnimationFrame(animate);
+    };
+    
+    animate();
+    
+    return () => cancelAnimationFrame(animationId);
+  }, []);
+  
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        pointerEvents: 'none', zIndex: 0,
+      }}
+    />
+  );
+};
+
+const GradientBackground = () => (
+  <div style={{
+    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+    background: 'radial-gradient(ellipse at 20% 20%, rgba(59, 130, 246, 0.1) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%)',
+    pointerEvents: 'none', zIndex: 0,
+  }} />
+);
+
+// ═══════════════════════════════════════════════════════════════
+// 🚀 المكون الرئيسي
+// ═══════════════════════════════════════════════════════════════
+
 function App() {
+  // الحالات الأساسية
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [showSignup, setShowSignup] = useState(false);
@@ -30,74 +205,72 @@ function App() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [currentTime, setCurrentTime] = useState(new Date());
   
+  // البيانات
   const [expenses, setExpenses] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
   const [accounts, setAccounts] = useState([]);
-  const [categories, setCategories] = useState([]);
 
-  const [themeMode, setThemeMode] = useState('dark');
+  // إعدادات المظهر الأساسية
+  const [themeMode, setThemeMode] = useState(() => localStorage.getItem('themeMode') || 'dark');
   const [darkMode, setDarkMode] = useState(true);
-  const [currentThemeId, setCurrentThemeId] = useState('tokyo-lights');
-  const [fontSize, setFontSize] = useState(16);
-  const [city, setCity] = useState('Riyadh');
+  const [currentThemeId, setCurrentThemeId] = useState(() => localStorage.getItem('currentThemeId') || 'tokyo-lights');
+  const [fontSize, setFontSize] = useState(() => parseInt(localStorage.getItem('fontSize')) || 16);
+  const [city, setCity] = useState(() => localStorage.getItem('city') || 'Riyadh');
   const [weather, setWeather] = useState(null);
   
-  // ═══════════════ عداد الوقت النشط ═══════════════
+  // الإعدادات المخصصة
+  const [headerColor, setHeaderColor] = useState(() => localStorage.getItem('rkz_headerColor') || 'default');
+  const [buttonColor, setButtonColor] = useState(() => localStorage.getItem('rkz_buttonColor') || 'default');
+  const [fontFamily, setFontFamily] = useState(() => localStorage.getItem('rkz_fontFamily') || 'tajawal');
+  const [bgEffect, setBgEffect] = useState(() => localStorage.getItem('rkz_bgEffect') || 'none');
+  
+  // عداد الوقت
   const [activeSeconds, setActiveSeconds] = useState(0);
   const [isPageVisible, setIsPageVisible] = useState(true);
   const activeSecondsRef = useRef(0);
 
-  const theme = getTheme(currentThemeId, darkMode);
-  const styles = getStyles(currentThemeId, darkMode);
-  const t = theme;
+  // ═══════════════════════════════════════════════════════════════
+  // حساب الثيم والألوان
+  // ═══════════════════════════════════════════════════════════════
 
-  // ═══════════════ 40 عبارة تشجيعية ═══════════════
+  const theme = getTheme(currentThemeId, darkMode);
+  const t = theme;
+  
+  const appliedHeaderColor = HEADER_COLORS[headerColor] || t.bg.secondary;
+  const appliedButtonColor = BUTTON_COLORS[buttonColor]?.color || t.button.primary;
+  const appliedButtonGradient = BUTTON_COLORS[buttonColor]?.gradient || t.button.gradient;
+  const appliedFont = FONTS[fontFamily] || "'Tajawal', sans-serif";
+  
+  // الثيم المعدل
+  const customTheme = {
+    ...theme,
+    button: {
+      ...theme.button,
+      primary: appliedButtonColor,
+      gradient: appliedButtonGradient,
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  // العبارات
+  // ═══════════════════════════════════════════════════════════════
+
   const motivationalQuotes = [
     "النجاح يبدأ بخطوة واحدة 🚀", "كل يوم هو فرصة جديدة للإنجاز ✨", "العمل الجاد يصنع المستحيل 💪",
     "معاً نبني المستقبل 🏗️", "الإتقان هو سر التميز ⭐", "خطوة بخطوة نحو القمة 📈",
     "الجودة هي عنواننا 🎯", "نحن نبني أحلامكم 🏠", "التميز ليس خياراً بل أسلوب حياة 🌟",
-    "معاً لبناء مستقبل أفضل 🤝", "الطموح لا حدود له 🌈", "نصنع الفرق في كل مشروع 💎",
-    "الإبداع هو وقودنا 🔥", "نحول الأفكار إلى واقع ✅", "التفاني في العمل سر نجاحنا 🏆",
-    "نبني بثقة ونسلم بفخر 🎖️", "كل تفصيلة تهمنا 🔍", "الجودة قبل الكمية دائماً 💯",
-    "نلتزم بما نعد به 🤞", "رضا العميل هدفنا الأول 😊", "الاحترافية في كل خطوة 👔",
-    "نتعلم ونتطور كل يوم 📚", "الفريق الواحد يصنع المعجزات 👥", "لا نقبل إلا الأفضل 🥇",
-    "الوقت من ذهب ونحترمه ⏰", "السلامة أولاً دائماً 🛡️", "نفخر بكل مشروع أنجزناه 🎉",
-    "الثقة تُبنى بالعمل لا بالكلام 💬", "نحن شركاء نجاحكم 🤝", "كل مشروع قصة نجاح جديدة 📖",
-    "الدقة في التنفيذ شعارنا 📐", "نسعى للكمال في كل عمل ✨", "العميل هو محور اهتمامنا 🎯",
-    "نبني للأجيال القادمة 🌱", "الابتكار يميزنا عن غيرنا 💡", "نحقق ما يتخيله الآخرون 🌠",
-    "معايير عالمية بلمسة محلية 🌍", "كل يوم فرصة لنكون أفضل 📆", "نؤمن بأن التفاصيل تصنع الفرق 🔎",
-    "شغفنا هو سر تميزنا ❤️"
   ];
 
-  // ═══════════════ 20 عبارة ترحيبية مع إيموجي منفصل ═══════════════
   const greetingPhrases = [
-    { text: "أهلاً وسهلاً", emoji: "👋" },
-    { text: "مرحباً بك", emoji: "🌟" },
-    { text: "سعداء بوجودك", emoji: "😊" },
-    { text: "تشرفنا بك", emoji: "🎉" },
-    { text: "حياك الله", emoji: "💫" },
+    { text: "أهلاً وسهلاً", emoji: "👋" }, { text: "مرحباً بك", emoji: "🌟" },
+    { text: "سعداء بوجودك", emoji: "😊" }, { text: "حياك الله", emoji: "💫" },
     { text: "نورت", emoji: "✨" },
-    { text: "أهلاً بالغالي", emoji: "💎" },
-    { text: "يسعدنا حضورك", emoji: "🌺" },
-    { text: "منور المكان", emoji: "☀️" },
-    { text: "أسعد الله يومك", emoji: "🌈" },
-    { text: "طابت أوقاتك", emoji: "🕊️" },
-    { text: "يا هلا والله", emoji: "🤗" },
-    { text: "نتمنى لك يوماً موفقاً", emoji: "🍀" },
-    { text: "بداية موفقة", emoji: "🚀" },
-    { text: "أهلاً بمن نفتخر به", emoji: "🏆" },
-    { text: "سعيدون بعودتك", emoji: "💝" },
-    { text: "وجودك يسعدنا", emoji: "🌸" },
-    { text: "يومك مليء بالإنجاز", emoji: "📈" },
-    { text: "هلا بالعزيز", emoji: "💪" },
-    { text: "نورتنا يا بطل", emoji: "🦸" }
   ];
 
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [greetingIndex, setGreetingIndex] = useState(0);
 
-  // ═══════════════ إحداثيات المدن ═══════════════
   const cityCoordinates = {
     'Riyadh': { lat: 24.7136, lon: 46.6753, name: 'الرياض' },
     'Jeddah': { lat: 21.4858, lon: 39.1925, name: 'جدة' },
@@ -105,42 +278,70 @@ function App() {
     'Medina': { lat: 24.5247, lon: 39.5692, name: 'المدينة' },
     'Dammam': { lat: 26.4207, lon: 50.0888, name: 'الدمام' },
     'Khobar': { lat: 26.2172, lon: 50.1971, name: 'الخبر' },
-    'Dhahran': { lat: 26.2361, lon: 50.0393, name: 'الظهران' },
-    'Al Ahsa': { lat: 25.3648, lon: 49.5855, name: 'الأحساء' },
     'Tabuk': { lat: 28.3838, lon: 36.5550, name: 'تبوك' },
     'Abha': { lat: 18.2164, lon: 42.5053, name: 'أبها' },
     'Taif': { lat: 21.2703, lon: 40.4158, name: 'الطائف' },
-    'Buraidah': { lat: 26.3260, lon: 43.9750, name: 'بريدة' },
-    'Khamis Mushait': { lat: 18.3093, lon: 42.7453, name: 'خميس مشيط' },
     'Hail': { lat: 27.5114, lon: 41.7208, name: 'حائل' },
-    'Najran': { lat: 17.4933, lon: 44.1277, name: 'نجران' },
-    'Yanbu': { lat: 24.0895, lon: 38.0618, name: 'ينبع' },
-    'Al Jubail': { lat: 27.0046, lon: 49.6225, name: 'الجبيل' }
   };
 
-  // ═══════════════ تغيير العبارات ═══════════════
+  // ═══════════════════════════════════════════════════════════════
+  // التأثيرات
+  // ═══════════════════════════════════════════════════════════════
+
+  // حفظ الإعدادات
+  useEffect(() => { localStorage.setItem('themeMode', themeMode); }, [themeMode]);
+  useEffect(() => { localStorage.setItem('currentThemeId', currentThemeId); }, [currentThemeId]);
+  useEffect(() => { localStorage.setItem('fontSize', fontSize); }, [fontSize]);
+  useEffect(() => { localStorage.setItem('city', city); }, [city]);
+  useEffect(() => { localStorage.setItem('rkz_headerColor', headerColor); }, [headerColor]);
+  useEffect(() => { localStorage.setItem('rkz_buttonColor', buttonColor); }, [buttonColor]);
+  useEffect(() => { localStorage.setItem('rkz_fontFamily', fontFamily); }, [fontFamily]);
+  useEffect(() => { localStorage.setItem('rkz_bgEffect', bgEffect); }, [bgEffect]);
+
+  // وضع العرض
+  useEffect(() => {
+    if (themeMode === 'auto') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      setDarkMode(mediaQuery.matches);
+      const handleChange = () => setDarkMode(mediaQuery.matches);
+      mediaQuery.addEventListener('change', handleChange);
+      return () => mediaQuery.removeEventListener('change', handleChange);
+    } else {
+      setDarkMode(themeMode === 'dark');
+    }
+  }, [themeMode]);
+
+  // الوقت
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // تغيير العبارات
   const changeQuotes = () => {
     setQuoteIndex(prev => (prev + 1) % motivationalQuotes.length);
     setGreetingIndex(prev => (prev + 1) % greetingPhrases.length);
   };
+
+  useEffect(() => {
+    const quoteTimer = setInterval(changeQuotes, 30000);
+    return () => clearInterval(quoteTimer);
+  }, []);
 
   const handleViewChange = (view) => {
     setCurrentView(view);
     changeQuotes();
   };
 
-  // ═══════════════ مراقبة نشاط الصفحة ═══════════════
+  // مراقبة نشاط الصفحة
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      setIsPageVisible(!document.hidden);
-    };
+    const handleVisibilityChange = () => setIsPageVisible(!document.hidden);
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
-  // ═══════════════ عداد الوقت النشط ═══════════════
+  // عداد الوقت
   useEffect(() => {
-    // تحميل الوقت المحفوظ
     const savedTime = localStorage.getItem('activeSessionTime');
     if (savedTime) {
       const parsed = parseInt(savedTime);
@@ -155,7 +356,6 @@ function App() {
       interval = setInterval(() => {
         activeSecondsRef.current += 1;
         setActiveSeconds(activeSecondsRef.current);
-        // حفظ كل 10 ثواني
         if (activeSecondsRef.current % 10 === 0) {
           localStorage.setItem('activeSessionTime', activeSecondsRef.current.toString());
         }
@@ -164,26 +364,13 @@ function App() {
     return () => clearInterval(interval);
   }, [isPageVisible, isLoggedIn]);
 
-  // ═══════════════ تنسيق عداد الوقت ═══════════════
   const formatActiveTime = () => {
     const mins = Math.floor(activeSeconds / 60);
     const secs = activeSeconds % 60;
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
-  // ═══════════════ تحديث الوقت ═══════════════
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  // ═══════════════ تغيير العبارات كل 30 ثانية ═══════════════
-  useEffect(() => {
-    const quoteTimer = setInterval(changeQuotes, 30000);
-    return () => clearInterval(quoteTimer);
-  }, []);
-
-  // ═══════════════ جلب حالة الطقس ═══════════════
+  // الطقس
   useEffect(() => {
     const fetchWeather = async () => {
       try {
@@ -199,8 +386,6 @@ function App() {
           else if (weatherCode <= 3) icon = '⛅';
           else if (weatherCode <= 49) icon = '🌫️';
           else if (weatherCode <= 69) icon = '🌧️';
-          else if (weatherCode <= 79) icon = '❄️';
-          else if (weatherCode <= 99) icon = '⛈️';
           setWeather({ temp: Math.round(data.current.temperature_2m), icon });
         }
       } catch (error) {
@@ -212,69 +397,29 @@ function App() {
     return () => clearInterval(weatherTimer);
   }, [city]);
 
-  // ═══════════════ تنسيق التاريخ ═══════════════
   const formatDate = () => {
     const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-    return {
-      dayName: days[currentTime.getDay()],
-      day: currentTime.getDate(),
-      month: currentTime.getMonth() + 1,
-      year: currentTime.getFullYear()
-    };
+    return { dayName: days[currentTime.getDay()], day: currentTime.getDate(), month: currentTime.getMonth() + 1, year: currentTime.getFullYear() };
   };
 
-  // ═══════════════ ترجمة الصفة ═══════════════
   const translateRole = (role) => {
     const roles = { 'owner': 'المالك', 'admin': 'مدير', 'user': 'مستخدم', 'viewer': 'مشاهد' };
     return roles[role?.toLowerCase()] || role || 'مستخدم';
   };
 
+  // المصادقة
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         const savedUser = localStorage.getItem('currentUser');
-        if (savedUser) {
-          setCurrentUser(JSON.parse(savedUser));
-          setIsLoggedIn(true);
-        }
-      } else {
-        setIsLoggedIn(false);
-        setCurrentUser(null);
-      }
+        if (savedUser) { setCurrentUser(JSON.parse(savedUser)); setIsLoggedIn(true); }
+      } else { setIsLoggedIn(false); setCurrentUser(null); }
       setLoading(false);
     });
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    const savedThemeMode = localStorage.getItem('themeMode') || 'dark';
-    const savedThemeId = localStorage.getItem('currentThemeId') || 'tokyo-lights';
-    const savedFontSize = parseInt(localStorage.getItem('fontSize')) || 16;
-    const savedCity = localStorage.getItem('city') || 'Riyadh';
-    setThemeMode(savedThemeMode);
-    setCurrentThemeId(savedThemeId);
-    setFontSize(savedFontSize);
-    setCity(savedCity);
-  }, []);
-
-  useEffect(() => { localStorage.setItem('themeMode', themeMode); }, [themeMode]);
-  useEffect(() => { localStorage.setItem('currentThemeId', currentThemeId); }, [currentThemeId]);
-  useEffect(() => { localStorage.setItem('fontSize', fontSize); }, [fontSize]);
-  useEffect(() => { localStorage.setItem('city', city); }, [city]);
-
-  useEffect(() => {
-    if (themeMode === 'auto') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      setDarkMode(mediaQuery.matches);
-      const handleChange = () => setDarkMode(mediaQuery.matches);
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
-    } else {
-      setDarkMode(themeMode === 'dark');
-    }
-  }, [themeMode]);
-
-  // ═══════════════ Firebase listeners ═══════════════
+  // Firebase listeners
   useEffect(() => {
     if (!isLoggedIn) return;
     const unsubExpenses = onSnapshot(query(collection(db, 'expenses'), orderBy('createdAt', 'desc')), (s) => setExpenses(s.docs.map(d => ({ id: d.id, ...d.data() }))));
@@ -284,26 +429,24 @@ function App() {
     return () => { unsubExpenses(); unsubTasks(); unsubProjects(); unsubAccounts(); };
   }, [isLoggedIn]);
 
-  // ═══════════════ Handlers ═══════════════
+  // ═══════════════════════════════════════════════════════════════
+  // Handlers
+  // ═══════════════════════════════════════════════════════════════
+
   const handleLogin = async (userData) => {
-    setCurrentUser(userData);
-    setIsLoggedIn(true);
+    setCurrentUser(userData); setIsLoggedIn(true);
     localStorage.setItem('currentUser', JSON.stringify(userData));
-    // إعادة تعيين عداد الوقت عند تسجيل الدخول
-    setActiveSeconds(0);
-    activeSecondsRef.current = 0;
+    setActiveSeconds(0); activeSecondsRef.current = 0;
     localStorage.setItem('activeSessionTime', '0');
   };
+  
   const handleSignupSuccess = (userData) => { setShowSignup(false); handleLogin(userData); };
+  
   const handleLogout = async () => {
     try {
-      await signOut(auth);
-      setIsLoggedIn(false);
-      setCurrentUser(null);
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('activeSessionTime');
-      setActiveSeconds(0);
-      activeSecondsRef.current = 0;
+      await signOut(auth); setIsLoggedIn(false); setCurrentUser(null);
+      localStorage.removeItem('currentUser'); localStorage.removeItem('activeSessionTime');
+      setActiveSeconds(0); activeSecondsRef.current = 0;
     } catch (e) { console.error(e); }
   };
 
@@ -350,13 +493,18 @@ function App() {
   const handleEditAccount = async (a) => { const { id, ...d } = a; await updateDoc(doc(db, 'accounts', id), d); };
   const handleDeleteAccount = async (id) => { await deleteDoc(doc(db, 'accounts', id)); };
 
+  // ═══════════════════════════════════════════════════════════════
+  // الواجهة
+  // ═══════════════════════════════════════════════════════════════
+
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: t.bg.primary }}>
         <div style={{ textAlign: 'center' }}>
-          <div style={{ width: 48, height: 48, border: `3px solid ${t.border.primary}`, borderTopColor: t.button.primary, borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
-          <p style={{ color: t.text.primary }}>جاري التحميل...</p>
+          <div style={{ width: 48, height: 48, border: `3px solid ${t.border.primary}`, borderTopColor: appliedButtonColor, borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
+          <p style={{ color: t.text.primary, fontFamily: appliedFont }}>جاري التحميل...</p>
         </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
@@ -371,32 +519,47 @@ function App() {
   const currentGreeting = greetingPhrases[greetingIndex];
 
   return (
-    <div dir="rtl" style={{ minHeight: '100vh', background: t.bg.primary, color: t.text.primary, fontFamily: t.font.family, fontSize: `${fontSize}px` }}>
+    <div dir="rtl" style={{ 
+      minHeight: '100vh', 
+      background: t.bg.primary, 
+      color: t.text.primary, 
+      fontFamily: appliedFont, 
+      fontSize: `${fontSize}px`,
+      position: 'relative',
+    }}>
       <link href={SHARED.font.url} rel="stylesheet" />
+      <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;600;700&family=Cairo:wght@400;600;700&family=Almarai:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&display=swap" rel="stylesheet" />
+      
+      {/* تأثيرات الخلفية */}
+      {bgEffect === 'stars' && darkMode && <StarsBackground />}
+      {bgEffect === 'particles' && darkMode && <ParticlesBackground />}
+      {bgEffect === 'gradient' && darkMode && <GradientBackground />}
       
       <style>{`
-        * { font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; }
-        input, select, textarea { font-family: inherit; }
-        input[type="number"], input[type="date"], input[type="time"], input[type="tel"] { direction: ltr; text-align: right; }
-        input[type="number"]::-webkit-outer-spin-button,
-        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+        * { font-feature-settings: "tnum"; }
+        input, select, textarea { font-family: ${appliedFont}; }
+        input[type="number"] { direction: ltr; text-align: right; -moz-appearance: textfield; }
+        input[type="number"]::-webkit-outer-spin-button, input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: ${darkMode ? '#0a0a0a' : '#f1f1f1'}; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: ${darkMode ? '#1a1a1a' : '#c1c1c1'}; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: ${darkMode ? '#2a2a2a' : '#a1a1a1'}; }
-        * { scrollbar-width: thin; scrollbar-color: ${darkMode ? '#1a1a1a #0a0a0a' : '#c1c1c1 #f1f1f1'}; }
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
-      {/* ═══════════════ Header ═══════════════ */}
-      <header style={{ background: `${t.bg.secondary}ee`, backdropFilter: 'blur(10px)', borderBottom: `1px solid ${t.border.primary}`, position: 'sticky', top: 0, zIndex: 50 }}>
+      {/* Header */}
+      <header style={{ 
+        background: `${appliedHeaderColor}f5`, 
+        backdropFilter: 'blur(12px)', 
+        borderBottom: `1px solid ${t.border.primary}`, 
+        position: 'sticky', 
+        top: 0, 
+        zIndex: 50,
+      }}>
         <div style={{ maxWidth: 1400, margin: '0 auto', padding: '10px 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
             
-            {/* ═══════════════ الشعار والمعلومات ═══════════════ */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ width: 46, height: 46, background: 'linear-gradient(135deg, #d4c5a9 0%, #9ca3af 100%)', borderRadius: t.radius.lg, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #b8a88a', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
+              <div style={{ width: 46, height: 46, background: 'linear-gradient(135deg, #d4c5a9 0%, #9ca3af 100%)', borderRadius: t.radius.lg, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #b8a88a' }}>
                 <span style={{ fontSize: 17, fontWeight: 800, color: '#3d3d3d' }}>RKZ</span>
               </div>
               <div>
@@ -412,61 +575,44 @@ function App() {
               </div>
             </div>
 
-            {/* ═══════════════ المستخدم والأزرار ═══════════════ */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              
-              {/* العبارة الترحيبية مع إيموجي أكبر */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <span style={{ fontSize: 11, color: t.text.muted, fontWeight: 700 }}>{currentGreeting.text}</span>
                 <span style={{ fontSize: 15 }}>{currentGreeting.emoji}</span>
               </div>
               
-              {/* فقاعة المستخدم - الاسم: الصفة */}
-              <button 
-                onClick={() => handleViewChange('users')}
-                style={{ 
-                  display: 'flex', alignItems: 'center', gap: 8,
-                  background: t.bg.tertiary, padding: '0 12px', height: 36,
-                  borderRadius: t.radius.lg, border: `1px solid ${t.border.primary}`,
-                  cursor: 'pointer', transition: 'all 0.2s'
-                }}
-              >
+              <button onClick={() => handleViewChange('users')} style={{ 
+                display: 'flex', alignItems: 'center', gap: 8, background: t.bg.tertiary, 
+                padding: '0 12px', height: 36, borderRadius: t.radius.lg, 
+                border: `1px solid ${t.border.primary}`, cursor: 'pointer', fontFamily: appliedFont 
+              }}>
                 <span style={{ fontSize: 12, fontWeight: 600, color: t.text.primary }}>
                   {currentUser?.username || 'مستخدم'}: <span style={{ color: t.text.muted, fontWeight: 500 }}>{translateRole(currentUser?.role)}</span>
                 </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: t.button.primary, borderRight: `1px solid ${t.border.primary}`, paddingRight: 8, marginRight: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: appliedButtonColor, borderRight: `1px solid ${t.border.primary}`, paddingRight: 8, marginRight: 4 }}>
                   <Clock size={12} />
                   <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{formatActiveTime()}</span>
                 </div>
               </button>
 
-              {/* زر الإشعارات */}
-              <button style={{
-                width: 36, height: 36, borderRadius: t.radius.lg, border: 'none',
-                background: t.bg.tertiary, color: t.text.muted,
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                position: 'relative'
-              }}>
+              <button style={{ width: 36, height: 36, borderRadius: t.radius.lg, border: 'none', background: t.bg.tertiary, color: t.text.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
                 <Bell size={18} />
                 <span style={{ position: 'absolute', top: 6, right: 6, width: 8, height: 8, background: t.status.danger.text, borderRadius: '50%' }} />
               </button>
 
-              {/* زر الإعدادات */}
               <button onClick={() => handleViewChange('settings')} style={{
                 width: 36, height: 36, borderRadius: t.radius.lg, border: 'none',
-                background: currentView === 'settings' ? t.button.gradient : t.bg.tertiary,
+                background: currentView === 'settings' ? appliedButtonGradient : t.bg.tertiary,
                 color: currentView === 'settings' ? '#fff' : t.text.muted,
                 cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 <SettingsIcon size={18} />
               </button>
 
-              {/* زر الخروج */}
               <button onClick={handleLogout} style={{
                 display: 'flex', alignItems: 'center', gap: 5, padding: '0 12px', height: 36,
-                borderRadius: t.radius.lg, border: 'none',
-                background: `${t.status.danger.text}15`, color: t.status.danger.text,
-                cursor: 'pointer', fontSize: 12, fontFamily: 'inherit',
+                borderRadius: t.radius.lg, border: 'none', background: `${t.status.danger.text}15`,
+                color: t.status.danger.text, cursor: 'pointer', fontSize: 12, fontFamily: appliedFont,
               }}>
                 <LogOut size={15} />
                 <span>خروج</span>
@@ -476,22 +622,33 @@ function App() {
         </div>
       </header>
 
-      {/* ═══════════════ Navigation ═══════════════ */}
-      <Navigation currentView={currentView} setCurrentView={handleViewChange} darkMode={darkMode} theme={theme} />
+      <Navigation currentView={currentView} setCurrentView={handleViewChange} darkMode={darkMode} theme={customTheme} />
 
-      {/* ═══════════════ Main Content ═══════════════ */}
-      <main style={{ maxWidth: 1400, margin: '0 auto', padding: '0 24px' }}>
-        {currentView === 'dashboard' && <Dashboard expenses={expenses} tasks={tasks} projects={projects} accounts={accounts} darkMode={darkMode} theme={theme} />}
-        {currentView === 'expenses' && <Expenses expenses={expenses} accounts={accounts} onAdd={handleAddExpense} onEdit={handleEditExpense} onDelete={handleDeleteExpense} onMarkPaid={handleMarkPaid} onRefresh={handleRefreshExpenses} darkMode={darkMode} theme={theme} />}
-        {currentView === 'tasks' && <Tasks tasks={tasks} projects={projects} onAdd={handleAddTask} onEdit={handleEditTask} onDelete={handleDeleteTask} onToggleStatus={handleToggleTaskStatus} darkMode={darkMode} theme={theme} />}
-        {currentView === 'projects' && <Projects projects={projects} onAdd={handleAddProject} onEdit={handleEditProject} onDelete={handleDeleteProject} onAddFolder={handleAddFolder} onUploadFile={handleUploadFile} onDeleteFile={handleDeleteFile} darkMode={darkMode} theme={theme} />}
-        {currentView === 'accounts' && <Accounts accounts={accounts} onAdd={handleAddAccount} onEdit={handleEditAccount} onDelete={handleDeleteAccount} darkMode={darkMode} theme={theme} />}
-        {currentView === 'users' && <Users currentUser={currentUser} darkMode={darkMode} theme={theme} />}
-        {currentView === 'settings' && <Settings darkMode={darkMode} themeMode={themeMode} setThemeMode={setThemeMode} currentThemeId={currentThemeId} setCurrentThemeId={setCurrentThemeId} fontSize={fontSize} setFontSize={setFontSize} city={city} setCity={setCity} theme={theme} themeList={THEME_LIST} />}
-        {currentView === 'calculator' && <QuantityCalculator darkMode={darkMode} theme={theme} />}
+      <main style={{ maxWidth: 1400, margin: '0 auto', padding: '0 24px', position: 'relative', zIndex: 1 }}>
+        {currentView === 'dashboard' && <Dashboard expenses={expenses} tasks={tasks} projects={projects} accounts={accounts} darkMode={darkMode} theme={customTheme} />}
+        {currentView === 'expenses' && <Expenses expenses={expenses} accounts={accounts} onAdd={handleAddExpense} onEdit={handleEditExpense} onDelete={handleDeleteExpense} onMarkPaid={handleMarkPaid} onRefresh={handleRefreshExpenses} darkMode={darkMode} theme={customTheme} />}
+        {currentView === 'tasks' && <Tasks tasks={tasks} projects={projects} onAdd={handleAddTask} onEdit={handleEditTask} onDelete={handleDeleteTask} onToggleStatus={handleToggleTaskStatus} darkMode={darkMode} theme={customTheme} />}
+        {currentView === 'projects' && <Projects projects={projects} onAdd={handleAddProject} onEdit={handleEditProject} onDelete={handleDeleteProject} onAddFolder={handleAddFolder} onUploadFile={handleUploadFile} onDeleteFile={handleDeleteFile} darkMode={darkMode} theme={customTheme} />}
+        {currentView === 'accounts' && <Accounts accounts={accounts} onAdd={handleAddAccount} onEdit={handleEditAccount} onDelete={handleDeleteAccount} darkMode={darkMode} theme={customTheme} />}
+        {currentView === 'users' && <Users currentUser={currentUser} darkMode={darkMode} theme={customTheme} />}
+        {currentView === 'settings' && (
+          <Settings 
+            darkMode={darkMode} 
+            themeMode={themeMode} setThemeMode={setThemeMode} 
+            currentThemeId={currentThemeId} setCurrentThemeId={setCurrentThemeId} 
+            fontSize={fontSize} setFontSize={setFontSize} 
+            city={city} setCity={setCity} 
+            theme={customTheme} themeList={THEME_LIST}
+            headerColor={headerColor} setHeaderColor={setHeaderColor}
+            buttonColor={buttonColor} setButtonColor={setButtonColor}
+            fontFamily={fontFamily} setFontFamily={setFontFamily}
+            bgEffect={bgEffect} setBgEffect={setBgEffect}
+          />
+        )}
+        {currentView === 'calculator' && <QuantityCalculator darkMode={darkMode} theme={customTheme} />}
       </main>
 
-      <footer style={{ textAlign: 'center', padding: 16, color: t.text.muted, fontSize: 10 }}>
+      <footer style={{ textAlign: 'center', padding: 16, color: t.text.muted, fontSize: 10, position: 'relative', zIndex: 1 }}>
         <p style={{ margin: 0 }}>نظام ركائز الأولى للتعمير v7.0 © 2024</p>
       </footer>
     </div>
