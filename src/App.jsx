@@ -20,7 +20,7 @@ import Accounts from './components/Accounts';
 import Users from './components/Users';
 import Settings from './components/Settings';
 import QuantityCalculator from './components/QuantityCalculator';
-import { LogOut, Settings as SettingsIcon, Sun, Moon, Monitor, CloudSun, CloudRain, Cloud, Thermometer } from 'lucide-react';
+import { LogOut, Settings as SettingsIcon, Sun, Moon, Monitor } from 'lucide-react';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -49,7 +49,7 @@ function App() {
   const styles = getStyles(currentThemeId, darkMode);
   const t = theme;
 
-  // ═══════════════ العبارات التشجيعية ═══════════════
+  // ═══════════════ 40 عبارة تشجيعية ═══════════════
   const motivationalQuotes = [
     "النجاح يبدأ بخطوة واحدة 🚀",
     "كل يوم هو فرصة جديدة للإنجاز ✨",
@@ -60,33 +60,65 @@ function App() {
     "الجودة هي عنواننا 🎯",
     "نحن نبني أحلامكم 🏠",
     "التميز ليس خياراً بل أسلوب حياة 🌟",
-    "معاً لبناء مستقبل أفضل 🤝"
+    "معاً لبناء مستقبل أفضل 🤝",
+    "الطموح لا حدود له 🌈",
+    "نصنع الفرق في كل مشروع 💎",
+    "الإبداع هو وقودنا 🔥",
+    "نحول الأفكار إلى واقع ✅",
+    "التفاني في العمل سر نجاحنا 🏆",
+    "نبني بثقة ونسلم بفخر 🎖️",
+    "كل تفصيلة تهمنا 🔍",
+    "الجودة قبل الكمية دائماً 💯",
+    "نلتزم بما نعد به 🤞",
+    "رضا العميل هدفنا الأول 😊",
+    "الاحترافية في كل خطوة 👔",
+    "نتعلم ونتطور كل يوم 📚",
+    "الفريق الواحد يصنع المعجزات 👥",
+    "لا نقبل إلا الأفضل 🥇",
+    "الوقت من ذهب ونحترمه ⏰",
+    "السلامة أولاً دائماً 🛡️",
+    "نفخر بكل مشروع أنجزناه 🎉",
+    "الثقة تُبنى بالعمل لا بالكلام 💬",
+    "نحن شركاء نجاحكم 🤝",
+    "كل مشروع قصة نجاح جديدة 📖",
+    "الدقة في التنفيذ شعارنا 📐",
+    "نسعى للكمال في كل عمل ✨",
+    "العميل هو محور اهتمامنا 🎯",
+    "نبني للأجيال القادمة 🌱",
+    "الابتكار يميزنا عن غيرنا 💡",
+    "نحقق ما يتخيله الآخرون 🌠",
+    "معايير عالمية بلمسة محلية 🌍",
+    "كل يوم فرصة لنكون أفضل 📆",
+    "نؤمن بأن التفاصيل تصنع الفرق 🔎",
+    "شغفنا هو سر تميزنا ❤️"
   ];
 
-  // ═══════════════ العبارات الترحيبية ═══════════════
-  const getGreeting = () => {
-    const hour = currentTime.getHours();
-    if (hour >= 5 && hour < 12) return 'صباح الخير';
-    if (hour >= 12 && hour < 17) return 'مساء الخير';
-    if (hour >= 17 && hour < 21) return 'مساء النور';
-    return 'مساء الخير';
-  };
+  // ═══════════════ 20 عبارة ترحيبية ═══════════════
+  const greetingPhrases = [
+    "أهلاً وسهلاً",
+    "مرحباً بك",
+    "سعداء بوجودك",
+    "تشرفنا بك",
+    "حياك الله",
+    "نورت",
+    "أهلاً بالغالي",
+    "يسعدنا حضورك",
+    "منور المكان",
+    "أسعد الله يومك",
+    "طابت أوقاتك",
+    "يا هلا والله",
+    "نتمنى لك يوماً موفقاً",
+    "بداية موفقة",
+    "أهلاً بمن نفتخر به",
+    "سعيدون بعودتك",
+    "وجودك يسعدنا",
+    "يومك مليء بالإنجاز",
+    "هلا بالعزيز",
+    "نورتنا يا بطل"
+  ];
 
   const [currentQuote, setCurrentQuote] = useState(motivationalQuotes[0]);
-
-  // ═══════════════ تحديث الوقت والعبارات ═══════════════
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    const quoteTimer = setInterval(() => {
-      const randomIndex = Math.floor(Math.random() * motivationalQuotes.length);
-      setCurrentQuote(motivationalQuotes[randomIndex]);
-    }, 30000);
-    return () => clearInterval(quoteTimer);
-  }, []);
+  const [currentGreeting, setCurrentGreeting] = useState(greetingPhrases[0]);
 
   // ═══════════════ إحداثيات المدن ═══════════════
   const cityCoordinates = {
@@ -109,7 +141,21 @@ function App() {
     'Al Jubail': { lat: 27.0046, lon: 49.6225, name: 'الجبيل' }
   };
 
-  // ═══════════════ جلب حالة الطقس (Open-Meteo - مجاني بدون مفتاح) ═══════════════
+  // ═══════════════ تحديث الوقت والعبارات ═══════════════
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const quoteTimer = setInterval(() => {
+      setCurrentQuote(motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)]);
+      setCurrentGreeting(greetingPhrases[Math.floor(Math.random() * greetingPhrases.length)]);
+    }, 30000);
+    return () => clearInterval(quoteTimer);
+  }, []);
+
+  // ═══════════════ جلب حالة الطقس ═══════════════
   useEffect(() => {
     const fetchWeather = async () => {
       try {
@@ -120,15 +166,15 @@ function App() {
         if (response.ok) {
           const data = await response.json();
           const weatherCode = data.current.weather_code;
-          let icon = 'Clear';
+          let icon = '☀️';
           let description = 'صافي';
           
-          if (weatherCode === 0) { icon = 'Clear'; description = 'صافي'; }
-          else if (weatherCode <= 3) { icon = 'Clouds'; description = 'غائم جزئياً'; }
-          else if (weatherCode <= 49) { icon = 'Fog'; description = 'ضباب'; }
-          else if (weatherCode <= 69) { icon = 'Rain'; description = 'ممطر'; }
-          else if (weatherCode <= 79) { icon = 'Snow'; description = 'ثلوج'; }
-          else if (weatherCode <= 99) { icon = 'Storm'; description = 'عاصفة'; }
+          if (weatherCode === 0) { icon = '☀️'; description = 'صافي'; }
+          else if (weatherCode <= 3) { icon = '⛅'; description = 'غائم جزئياً'; }
+          else if (weatherCode <= 49) { icon = '🌫️'; description = 'ضباب'; }
+          else if (weatherCode <= 69) { icon = '🌧️'; description = 'ممطر'; }
+          else if (weatherCode <= 79) { icon = '❄️'; description = 'ثلوج'; }
+          else if (weatherCode <= 99) { icon = '⛈️'; description = 'عاصفة'; }
           
           setWeather({
             temp: Math.round(data.current.temperature_2m),
@@ -137,8 +183,7 @@ function App() {
           });
         }
       } catch (error) {
-        console.log('Weather fetch error:', error);
-        setWeather({ temp: 25, description: 'صافي', icon: 'Clear' });
+        setWeather({ temp: 25, description: 'صافي', icon: '☀️' });
       }
     };
     fetchWeather();
@@ -149,22 +194,11 @@ function App() {
   // ═══════════════ تنسيق التاريخ ═══════════════
   const formatDate = () => {
     const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-    const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
-    const dayName = days[currentTime.getDay()];
     const day = currentTime.getDate();
-    const month = months[currentTime.getMonth()];
+    const month = currentTime.getMonth() + 1;
     const year = currentTime.getFullYear();
+    const dayName = days[currentTime.getDay()];
     return { dayName, day, month, year };
-  };
-
-  const getWeatherIcon = () => {
-    if (!weather) return <Cloud size={20} />;
-    switch (weather.icon) {
-      case 'Clear': return <Sun size={20} color="#fbbf24" />;
-      case 'Clouds': return <Cloud size={20} color="#9ca3af" />;
-      case 'Rain': return <CloudRain size={20} color="#60a5fa" />;
-      default: return <CloudSun size={20} color="#fbbf24" />;
-    }
   };
 
   useEffect(() => {
@@ -265,54 +299,26 @@ function App() {
     }
   };
 
-  // Expenses handlers
-  const handleAddExpense = async (expense) => {
-    await addDoc(collection(db, 'expenses'), { ...expense, createdAt: new Date() });
-  };
-  const handleEditExpense = async (expense) => {
-    const { id, ...data } = expense;
-    await updateDoc(doc(db, 'expenses', id), data);
-  };
-  const handleDeleteExpense = async (id) => {
-    await deleteDoc(doc(db, 'expenses', id));
-  };
-  const handleMarkPaid = async (id) => {
-    await updateDoc(doc(db, 'expenses', id), { status: 'مدفوع' });
-  };
-  const handleRefreshExpenses = () => console.log('Refreshing expenses...');
+  const handleAddExpense = async (expense) => { await addDoc(collection(db, 'expenses'), { ...expense, createdAt: new Date() }); };
+  const handleEditExpense = async (expense) => { const { id, ...data } = expense; await updateDoc(doc(db, 'expenses', id), data); };
+  const handleDeleteExpense = async (id) => { await deleteDoc(doc(db, 'expenses', id)); };
+  const handleMarkPaid = async (id) => { await updateDoc(doc(db, 'expenses', id), { status: 'مدفوع' }); };
+  const handleRefreshExpenses = () => console.log('Refreshing...');
 
-  // Tasks handlers
-  const handleAddTask = async (task) => {
-    await addDoc(collection(db, 'tasks'), { ...task, createdAt: new Date() });
-  };
-  const handleEditTask = async (task) => {
-    const { id, ...data } = task;
-    await updateDoc(doc(db, 'tasks', id), data);
-  };
-  const handleDeleteTask = async (id) => {
-    await deleteDoc(doc(db, 'tasks', id));
-  };
+  const handleAddTask = async (task) => { await addDoc(collection(db, 'tasks'), { ...task, createdAt: new Date() }); };
+  const handleEditTask = async (task) => { const { id, ...data } = task; await updateDoc(doc(db, 'tasks', id), data); };
+  const handleDeleteTask = async (id) => { await deleteDoc(doc(db, 'tasks', id)); };
   const handleToggleTaskStatus = async (id) => {
     const task = tasks.find(t => t.id === id);
-    const newStatus = task.status === 'مكتمل' ? 'قيد التنفيذ' : 'مكتمل';
-    await updateDoc(doc(db, 'tasks', id), { status: newStatus });
+    await updateDoc(doc(db, 'tasks', id), { status: task.status === 'مكتمل' ? 'قيد التنفيذ' : 'مكتمل' });
   };
 
-  // Projects handlers
-  const handleAddProject = async (project) => {
-    await addDoc(collection(db, 'projects'), { ...project, folders: [], createdAt: new Date() });
-  };
-  const handleEditProject = async (project) => {
-    const { id, ...data } = project;
-    await updateDoc(doc(db, 'projects', id), data);
-  };
-  const handleDeleteProject = async (id) => {
-    await deleteDoc(doc(db, 'projects', id));
-  };
+  const handleAddProject = async (project) => { await addDoc(collection(db, 'projects'), { ...project, folders: [], createdAt: new Date() }); };
+  const handleEditProject = async (project) => { const { id, ...data } = project; await updateDoc(doc(db, 'projects', id), data); };
+  const handleDeleteProject = async (id) => { await deleteDoc(doc(db, 'projects', id)); };
   const handleAddFolder = async (projectId, folderName) => {
     const project = projects.find(p => p.id === projectId);
-    const newFolder = { id: generateId(), name: folderName, files: [] };
-    await updateDoc(doc(db, 'projects', projectId), { folders: [...(project.folders || []), newFolder] });
+    await updateDoc(doc(db, 'projects', projectId), { folders: [...(project.folders || []), { id: generateId(), name: folderName, files: [] }] });
   };
   const handleUploadFile = async (projectId, folderId, file) => {
     const project = projects.find(p => p.id === projectId);
@@ -320,35 +326,21 @@ function App() {
     const fileRef = ref(storage, `projects/${projectId}/${folderId}/${file.name}`);
     await uploadBytes(fileRef, compressed);
     const url = await getDownloadURL(fileRef);
-    const newFile = { id: generateId(), name: file.name, url, type: file.type };
-    const updatedFolders = project.folders.map(f => f.id === folderId ? { ...f, files: [...f.files, newFile] } : f);
+    const updatedFolders = project.folders.map(f => f.id === folderId ? { ...f, files: [...f.files, { id: generateId(), name: file.name, url, type: file.type }] } : f);
     await updateDoc(doc(db, 'projects', projectId), { folders: updatedFolders });
   };
   const handleDeleteFile = async (projectId, folderId, fileId) => {
     const project = projects.find(p => p.id === projectId);
     const folder = project.folders.find(f => f.id === folderId);
     const file = folder.files.find(f => f.id === fileId);
-    const fileRef = ref(storage, `projects/${projectId}/${folderId}/${file.name}`);
-    await deleteObject(fileRef);
+    await deleteObject(ref(storage, `projects/${projectId}/${folderId}/${file.name}`));
     const updatedFolders = project.folders.map(f => f.id === folderId ? { ...f, files: f.files.filter(fi => fi.id !== fileId) } : f);
     await updateDoc(doc(db, 'projects', projectId), { folders: updatedFolders });
   };
 
-  // Accounts handlers
-  const handleAddAccount = async (account) => {
-    await addDoc(collection(db, 'accounts'), { ...account, createdAt: new Date() });
-  };
-  const handleEditAccount = async (account) => {
-    const { id, ...data } = account;
-    await updateDoc(doc(db, 'accounts', id), data);
-  };
-  const handleDeleteAccount = async (id) => {
-    await deleteDoc(doc(db, 'accounts', id));
-  };
-
-  const txt = { color: t.text.primary };
-  const txtSm = { color: t.text.muted };
-  const card = { background: t.bg.secondary, borderRadius: t.radius.xl, border: `1px solid ${t.border.primary}` };
+  const handleAddAccount = async (account) => { await addDoc(collection(db, 'accounts'), { ...account, createdAt: new Date() }); };
+  const handleEditAccount = async (account) => { const { id, ...data } = account; await updateDoc(doc(db, 'accounts', id), data); };
+  const handleDeleteAccount = async (id) => { await deleteDoc(doc(db, 'accounts', id)); };
 
   if (loading) {
     return (
@@ -362,97 +354,130 @@ function App() {
   }
 
   if (!isLoggedIn) {
-    if (showSignup) {
-      return <SignUp onBack={() => setShowSignup(false)} onSuccess={handleSignupSuccess} darkMode={darkMode} theme={theme} />;
-    }
+    if (showSignup) return <SignUp onBack={() => setShowSignup(false)} onSuccess={handleSignupSuccess} darkMode={darkMode} theme={theme} />;
     return <Login onLogin={handleLogin} onShowSignup={() => setShowSignup(true)} darkMode={darkMode} theme={theme} />;
   }
 
   const dateInfo = formatDate();
+  const cityName = cityCoordinates[city]?.name || 'الرياض';
 
   return (
     <div dir="rtl" style={{ minHeight: '100vh', background: t.bg.primary, color: t.text.primary, fontFamily: t.font.family, fontSize: `${fontSize}px`, transition: 'all 0.3s ease' }}>
       <link href={SHARED.font.url} rel="stylesheet" />
       
+      {/* ═══════════════ Global Styles ═══════════════ */}
       <style>{`
         * { font-feature-settings: "tnum"; font-variant-numeric: tabular-nums; }
         input, select, textarea { font-family: inherit; }
         input[type="number"], input[type="date"], input[type="time"], input[type="tel"] { direction: ltr; text-align: right; }
+        
+        /* إخفاء أسهم input number */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+        input[type="number"] {
+          -moz-appearance: textfield;
+          appearance: textfield;
+        }
+        
+        /* تخصيص شريط التمرير */
+        ::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+          background: ${darkMode ? '#1a1a1a' : '#f1f1f1'};
+          border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+          background: ${darkMode ? '#333333' : '#c1c1c1'};
+          border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+          background: ${darkMode ? '#444444' : '#a1a1a1'};
+        }
+        
+        /* Firefox */
+        * {
+          scrollbar-width: thin;
+          scrollbar-color: ${darkMode ? '#333333 #1a1a1a' : '#c1c1c1 #f1f1f1'};
+        }
+        
         @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
       {/* ═══════════════ Header ═══════════════ */}
       <header style={{ background: `${t.bg.secondary}ee`, backdropFilter: 'blur(10px)', borderBottom: `1px solid ${t.border.primary}`, position: 'sticky', top: 0, zIndex: 50 }}>
-        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '16px 24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '12px 24px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
             
-            {/* Logo & Company Info */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              {/* الشعار - بيج غامق متدرج إلى رمادي */}
-              <div style={{ width: 52, height: 52, background: 'linear-gradient(135deg, #d4c5a9 0%, #9ca3af 100%)', borderRadius: t.radius.lg, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #b8a88a', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                <span style={{ fontSize: 16, fontWeight: 700, color: '#4a4a4a' }}>RKZ</span>
+            {/* ═══════════════ القسم الأيسر: الشعار والمعلومات ═══════════════ */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              {/* الشعار */}
+              <div style={{ 
+                width: 48, 
+                height: 48, 
+                background: 'linear-gradient(135deg, #d4c5a9 0%, #9ca3af 100%)', 
+                borderRadius: t.radius.lg, 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                border: '1px solid #b8a88a', 
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)' 
+              }}>
+                <span style={{ fontSize: 18, fontWeight: 800, color: '#3d3d3d', letterSpacing: '-0.5px' }}>RKZ</span>
               </div>
+              
+              {/* معلومات الشركة */}
               <div>
-                <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: t.text.primary }}>ركائز الأولى للتعمير</h1>
+                <h1 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: t.text.primary }}>ركائز الأولى للتعمير</h1>
+                {/* التاريخ والوقت والطقس */}
+                <p style={{ fontSize: 11, color: t.text.muted, margin: '3px 0 0 0', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span>📅 {dateInfo.dayName} {dateInfo.day}/{dateInfo.month}/{dateInfo.year}</span>
+                  <span style={{ color: t.border.primary }}>|</span>
+                  <span>🕐 {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}</span>
+                  <span style={{ color: t.border.primary }}>|</span>
+                  <span>{weather?.icon || '☀️'} {weather?.temp || '--'}° {cityName}</span>
+                </p>
                 {/* العبارة التشجيعية */}
-                <p style={{ fontSize: 12, color: t.text.muted, margin: '4px 0 0 0', transition: 'all 0.5s ease' }}>{currentQuote}</p>
+                <p style={{ fontSize: 11, color: t.text.muted, margin: '3px 0 0 0', opacity: 0.8 }}>{currentQuote}</p>
               </div>
             </div>
 
-            {/* Center - Date & Weather */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 20, background: t.bg.tertiary, padding: '10px 20px', borderRadius: t.radius.xl, border: `1px solid ${t.border.primary}` }}>
-              {/* التاريخ */}
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 11, color: t.text.muted }}>{dateInfo.dayName}</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: t.text.primary }}>{dateInfo.day}</div>
-                <div style={{ fontSize: 11, color: t.text.muted }}>{dateInfo.month} {dateInfo.year}</div>
-              </div>
-              
-              <div style={{ width: 1, height: 40, background: t.border.primary }} />
-              
-              {/* الوقت */}
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: 22, fontWeight: 700, color: t.button.primary, fontFamily: 'monospace' }}>
-                  {currentTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })}
-                </div>
-                <div style={{ fontSize: 11, color: t.text.muted }}>
-                  {currentTime.toLocaleTimeString('en-US', { second: '2-digit' }).split(' ')[0].split(':')[2] || currentTime.getSeconds().toString().padStart(2, '0')}
-                </div>
-              </div>
-              
-              <div style={{ width: 1, height: 40, background: t.border.primary }} />
-              
-              {/* الطقس */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {getWeatherIcon()}
-                <div>
-                  <div style={{ fontSize: 16, fontWeight: 700, color: t.text.primary }}>{weather?.temp || '--'}°</div>
-                  <div style={{ fontSize: 10, color: t.text.muted }}>{city}</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Right - User & Actions */}
+            {/* ═══════════════ القسم الأيمن: المستخدم والأزرار ═══════════════ */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              {/* معلومات المستخدم مع الترحيب */}
-              <div style={{ textAlign: 'left', marginLeft: 8 }}>
-                <p style={{ fontSize: 14, fontWeight: 600, margin: 0, color: t.text.primary }}>
-                  {getGreeting()}، {currentUser?.username || 'مستخدم'}
-                </p>
-                <p style={{ fontSize: 11, color: t.text.muted, margin: 0 }}>
-                  {currentUser?.role || 'مدير النظام'}
-                </p>
+              
+              {/* العبارة الترحيبية + معلومات المستخدم في فقاعة واحدة */}
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 10, 
+                background: t.bg.tertiary, 
+                padding: '8px 14px', 
+                borderRadius: t.radius.xl,
+                border: `1px solid ${t.border.primary}`
+              }}>
+                {/* العبارة الترحيبية */}
+                <span style={{ fontSize: 12, color: t.text.muted }}>{currentGreeting} 👋</span>
+                <span style={{ color: t.border.primary }}>|</span>
+                {/* الاسم والصفة */}
+                <div style={{ textAlign: 'left' }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, margin: 0, color: t.text.primary }}>{currentUser?.username || 'مستخدم'}</p>
+                  <p style={{ fontSize: 10, color: t.text.muted, margin: 0 }}>{currentUser?.role || 'مدير النظام'}</p>
+                </div>
               </div>
               
-              {/* Theme buttons */}
-              <div style={{ display: 'flex', gap: 4, background: t.bg.tertiary, padding: 4, borderRadius: t.radius.lg }}>
+              {/* أزرار الثيم */}
+              <div style={{ display: 'flex', gap: 2, background: t.bg.tertiary, padding: 3, borderRadius: t.radius.lg }}>
                 {[
-                  { mode: 'light', icon: <Sun size={16} />, title: 'نهاري' },
-                  { mode: 'dark', icon: <Moon size={16} />, title: 'ليلي' },
-                  { mode: 'auto', icon: <Monitor size={16} />, title: 'تلقائي' },
-                ].map(({ mode, icon, title }) => (
-                  <button key={mode} onClick={() => setThemeMode(mode)} title={title} style={{
-                    padding: 8, borderRadius: t.radius.md, border: 'none',
+                  { mode: 'light', icon: <Sun size={15} /> },
+                  { mode: 'dark', icon: <Moon size={15} /> },
+                  { mode: 'auto', icon: <Monitor size={15} /> },
+                ].map(({ mode, icon }) => (
+                  <button key={mode} onClick={() => setThemeMode(mode)} style={{
+                    padding: 7, borderRadius: t.radius.md, border: 'none',
                     background: themeMode === mode ? t.button.gradient : 'transparent',
                     color: themeMode === mode ? '#fff' : t.text.muted,
                     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -460,25 +485,24 @@ function App() {
                 ))}
               </div>
 
-              {/* زر الإعدادات (ترس) */}
-              <button onClick={() => setCurrentView('settings')} title="الإعدادات" style={{
-                width: 40, height: 40, borderRadius: t.radius.lg, border: 'none',
+              {/* زر الإعدادات */}
+              <button onClick={() => setCurrentView('settings')} style={{
+                width: 36, height: 36, borderRadius: t.radius.lg, border: 'none',
                 background: currentView === 'settings' ? t.button.gradient : t.bg.tertiary,
                 color: currentView === 'settings' ? '#fff' : t.text.muted,
                 cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'all 0.2s',
               }}>
-                <SettingsIcon size={20} />
+                <SettingsIcon size={18} />
               </button>
 
               {/* زر الخروج */}
               <button onClick={handleLogout} style={{
-                display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
+                display: 'flex', alignItems: 'center', gap: 5, padding: '7px 12px',
                 borderRadius: t.radius.lg, border: 'none',
                 background: `${t.status.danger.text}15`,
-                color: t.status.danger.text, cursor: 'pointer', fontSize: 13, fontFamily: 'inherit',
+                color: t.status.danger.text, cursor: 'pointer', fontSize: 12, fontFamily: 'inherit',
               }}>
-                <LogOut size={16} />
+                <LogOut size={15} />
                 <span>خروج</span>
               </button>
             </div>
@@ -502,8 +526,8 @@ function App() {
       </main>
 
       {/* ═══════════════ Footer ═══════════════ */}
-      <footer style={{ textAlign: 'center', padding: 20, color: t.text.muted, fontSize: 12 }}>
-        <p style={{ margin: 0 }}>نظام ركائز الأولى للتعمير v7.0 - جميع الحقوق محفوظة © 2024</p>
+      <footer style={{ textAlign: 'center', padding: 20, color: t.text.muted, fontSize: 11 }}>
+        <p style={{ margin: 0 }}>نظام ركائز الأولى للتعمير v7.0 © 2024</p>
       </footer>
     </div>
   );
