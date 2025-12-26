@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { 
   Receipt, Plus, Search, Edit, Trash2, CheckCircle, RefreshCw,
-  Calendar, AlertTriangle, X, Save
+  Calendar, AlertTriangle, X, Save, ChevronDown
 } from 'lucide-react';
 import { calcDaysRemaining, formatNumber, generateCode } from '../utils/helpers';
 
@@ -120,11 +120,34 @@ const Expenses = ({ expenses, accounts = [], onAdd, onEdit, onDelete, onMarkPaid
     setLoading(false);
   };
 
+  // ستايل موحد للـ Input
   const inputStyle = {
-    width: '100%', padding: '12px 16px', borderRadius: t.radius.lg,
-    border: `1px solid ${t.border.primary}`, background: t.bg.tertiary,
-    color: t.text.primary, fontSize: 14, fontFamily: 'inherit',
-    transition: 'all 0.2s', outline: 'none',
+    width: '100%', 
+    padding: '10px 14px', 
+    borderRadius: 10,
+    border: `1px solid ${t.border.primary}`, 
+    background: t.bg.tertiary,
+    color: t.text.primary, 
+    fontSize: 14, 
+    fontFamily: 'inherit',
+    transition: 'all 0.2s', 
+    outline: 'none',
+  };
+
+  // ستايل الـ Select في الفلترة (أصغر)
+  const filterSelectStyle = {
+    padding: '10px 14px',
+    paddingLeft: 32,
+    borderRadius: 10,
+    border: `1px solid ${t.border.primary}`, 
+    background: t.bg.tertiary,
+    color: t.text.primary, 
+    fontSize: 13, 
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    appearance: 'none',
+    outline: 'none',
+    minWidth: 110,
   };
 
   const labelStyle = { display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: t.text.secondary };
@@ -138,32 +161,35 @@ const Expenses = ({ expenses, accounts = [], onAdd, onEdit, onDelete, onMarkPaid
         alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20,
       }} onClick={onClose}>
         <div style={{
-          background: t.bg.secondary, borderRadius: t.radius.xl, width: '100%', maxWidth: 500,
+          background: t.bg.secondary, borderRadius: 16, width: '100%', maxWidth: 500,
           border: `1px solid ${t.border.primary}`, maxHeight: '90vh', overflow: 'hidden',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
         }} onClick={e => e.stopPropagation()}>
           <div style={{
-            padding: '20px 24px', borderBottom: `1px solid ${t.border.primary}`,
+            padding: '16px 20px', borderBottom: `1px solid ${t.border.primary}`,
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            background: t.bg.tertiary,
           }}>
-            <h3 style={{ fontSize: 18, fontWeight: 700, color: t.text.primary, margin: 0 }}>{title}</h3>
+            <h3 style={{ fontSize: 17, fontWeight: 700, color: t.text.primary, margin: 0 }}>{title}</h3>
             <button onClick={onClose} style={{
-              width: 36, height: 36, borderRadius: t.radius.md, border: 'none',
-              background: t.bg.tertiary, color: t.text.muted, cursor: 'pointer',
+              width: 32, height: 32, borderRadius: 8, border: 'none',
+              background: t.bg.secondary, color: t.text.muted, cursor: 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}><X size={20} /></button>
+            }}><X size={18} /></button>
           </div>
-          <div style={{ padding: 24, overflowY: 'auto', maxHeight: 'calc(90vh - 140px)' }}>{children}</div>
+          <div style={{ padding: 20, overflowY: 'auto', maxHeight: 'calc(90vh - 130px)' }}>{children}</div>
           <div style={{
-            padding: '16px 24px', borderTop: `1px solid ${t.border.primary}`,
-            display: 'flex', gap: 12, justifyContent: 'flex-end',
+            padding: '14px 20px', borderTop: `1px solid ${t.border.primary}`,
+            display: 'flex', gap: 10, justifyContent: 'flex-end',
+            background: t.bg.tertiary,
           }}>
             <button onClick={onClose} style={{
-              padding: '10px 20px', borderRadius: t.radius.lg, border: `1px solid ${t.border.primary}`,
+              padding: '10px 20px', borderRadius: 10, border: `1px solid ${t.border.primary}`,
               background: 'transparent', color: t.text.secondary, cursor: 'pointer',
               fontSize: 14, fontWeight: 600, fontFamily: 'inherit',
             }}>إلغاء</button>
             <button onClick={onSubmit} disabled={loading} style={{
-              padding: '10px 24px', borderRadius: t.radius.lg, border: 'none',
+              padding: '10px 24px', borderRadius: 10, border: 'none',
               background: danger ? t.status.danger.text : t.button.gradient,
               color: '#fff', cursor: loading ? 'not-allowed' : 'pointer',
               fontSize: 14, fontWeight: 600, fontFamily: 'inherit',
@@ -189,16 +215,16 @@ const Expenses = ({ expenses, accounts = [], onAdd, onEdit, onDelete, onMarkPaid
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={onRefresh} style={{
-            width: 44, height: 44, borderRadius: t.radius.lg, border: `1px solid ${t.border.primary}`,
+            width: 40, height: 40, borderRadius: 10, border: `1px solid ${t.border.primary}`,
             background: t.bg.secondary, color: t.text.muted, cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}><RefreshCw size={20} /></button>
+          }}><RefreshCw size={18} /></button>
           <button onClick={openAddModal} style={{
-            padding: '12px 24px', borderRadius: t.radius.lg, border: 'none',
+            padding: '10px 20px', borderRadius: 10, border: 'none',
             background: t.button.gradient, color: '#fff', cursor: 'pointer',
-            fontSize: 15, fontWeight: 600, fontFamily: 'inherit',
+            fontSize: 14, fontWeight: 600, fontFamily: 'inherit',
             display: 'flex', alignItems: 'center', gap: 8,
-          }}><Plus size={20} />إضافة مصروف</button>
+          }}><Plus size={18} />إضافة مصروف</button>
         </div>
       </div>
 
@@ -210,7 +236,7 @@ const Expenses = ({ expenses, accounts = [], onAdd, onEdit, onDelete, onMarkPaid
           { label: 'غير مدفوع', value: unpaidCount, color: t.status.danger.text },
         ].map((stat, i) => (
           <div key={i} style={{
-            background: t.bg.secondary, borderRadius: t.radius.xl, padding: 20,
+            background: t.bg.secondary, borderRadius: 14, padding: 20,
             border: `1px solid ${t.border.primary}`,
           }}>
             <p style={{ fontSize: 13, color: t.text.muted, margin: '0 0 8px 0' }}>{stat.label}</p>
@@ -221,37 +247,61 @@ const Expenses = ({ expenses, accounts = [], onAdd, onEdit, onDelete, onMarkPaid
 
       {/* Search & Filters */}
       <div style={{
-        display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap',
-        background: t.bg.secondary, padding: 16, borderRadius: t.radius.xl,
+        display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center',
+        background: t.bg.secondary, padding: 12, borderRadius: 12,
         border: `1px solid ${t.border.primary}`,
       }}>
+        {/* Search Input */}
         <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
           <Search size={18} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: t.text.muted }} />
-          <input type="text" placeholder="بحث بالاسم أو الرمز..." value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)} style={{ ...inputStyle, paddingRight: 40 }} />
+          <input 
+            type="text" 
+            placeholder="بحث بالاسم أو الرمز..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)} 
+            style={{ ...inputStyle, paddingRight: 40 }} 
+          />
         </div>
-        <select value={filterType} onChange={(e) => setFilterType(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 120, cursor: 'pointer' }}>
-          <option value="all">كل الأنواع</option>
-          <option value="monthly">شهري</option>
-          <option value="yearly">سنوي</option>
-        </select>
-        <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 130, cursor: 'pointer' }}>
-          <option value="all">كل الحالات</option>
-          <option value="مدفوع">مدفوع</option>
-          <option value="غير مدفوع">غير مدفوع</option>
-        </select>
+        
+        {/* Filter: Type */}
+        <div style={{ position: 'relative' }}>
+          <select 
+            value={filterType} 
+            onChange={(e) => setFilterType(e.target.value)} 
+            style={filterSelectStyle}
+          >
+            <option value="all">كل الأنواع</option>
+            <option value="monthly">شهري</option>
+            <option value="yearly">سنوي</option>
+          </select>
+          <ChevronDown size={16} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.text.muted, pointerEvents: 'none' }} />
+        </div>
+        
+        {/* Filter: Status */}
+        <div style={{ position: 'relative' }}>
+          <select 
+            value={filterStatus} 
+            onChange={(e) => setFilterStatus(e.target.value)} 
+            style={filterSelectStyle}
+          >
+            <option value="all">كل الحالات</option>
+            <option value="مدفوع">مدفوع</option>
+            <option value="غير مدفوع">غير مدفوع</option>
+          </select>
+          <ChevronDown size={16} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.text.muted, pointerEvents: 'none' }} />
+        </div>
       </div>
 
       {/* Expenses List - Rectangle Cards */}
       {filteredExpenses.length === 0 ? (
         <div style={{
           textAlign: 'center', padding: 60, background: t.bg.secondary,
-          borderRadius: t.radius.xl, border: `1px solid ${t.border.primary}`,
+          borderRadius: 14, border: `1px solid ${t.border.primary}`,
         }}>
           <Receipt size={48} style={{ color: t.text.muted, marginBottom: 16, opacity: 0.5 }} />
           <p style={{ color: t.text.muted, fontSize: 16 }}>لا توجد مصروفات</p>
           <button onClick={openAddModal} style={{
-            marginTop: 16, padding: '10px 24px', borderRadius: t.radius.lg,
+            marginTop: 16, padding: '10px 24px', borderRadius: 10,
             border: 'none', background: t.button.gradient, color: '#fff',
             cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit',
           }}><Plus size={18} style={{ marginLeft: 8, verticalAlign: 'middle' }} />إضافة مصروف جديد</button>
@@ -348,7 +398,7 @@ const Expenses = ({ expenses, accounts = [], onAdd, onEdit, onDelete, onMarkPaid
       {/* Add Modal */}
       <Modal show={showAddModal} onClose={() => setShowAddModal(false)} title="إضافة مصروف جديد" onSubmit={handleAdd} submitText="إضافة">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ background: `${t.button.primary}15`, padding: 12, borderRadius: t.radius.lg, textAlign: 'center' }}>
+          <div style={{ background: `${t.button.primary}15`, padding: 12, borderRadius: 12, textAlign: 'center' }}>
             <span style={{ fontSize: 12, color: t.text.muted }}>رقم المصروف</span>
             <p style={{ fontSize: 18, fontWeight: 700, color: t.button.primary, margin: '4px 0 0 0', fontFamily: 'monospace' }}>{formData.code}</p>
           </div>
@@ -404,7 +454,7 @@ const Expenses = ({ expenses, accounts = [], onAdd, onEdit, onDelete, onMarkPaid
       {/* Edit Modal */}
       <Modal show={showEditModal} onClose={() => setShowEditModal(false)} title="تعديل المصروف" onSubmit={handleEdit} submitText="حفظ التعديلات">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ background: `${t.button.primary}15`, padding: 12, borderRadius: t.radius.lg, textAlign: 'center' }}>
+          <div style={{ background: `${t.button.primary}15`, padding: 12, borderRadius: 12, textAlign: 'center' }}>
             <span style={{ fontSize: 12, color: t.text.muted }}>رقم المصروف</span>
             <p style={{ fontSize: 18, fontWeight: 700, color: t.button.primary, margin: '4px 0 0 0', fontFamily: 'monospace' }}>{formData.code || 'E-0000'}</p>
           </div>
