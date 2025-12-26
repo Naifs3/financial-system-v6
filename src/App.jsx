@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, 
   query, orderBy
@@ -42,8 +42,11 @@ function App() {
   const [fontSize, setFontSize] = useState(16);
   const [city, setCity] = useState('Riyadh');
   const [weather, setWeather] = useState(null);
-  const [sessionStart, setSessionStart] = useState(null);
-  const [sessionTime, setSessionTime] = useState('00:00:00');
+  
+  // ═══════════════ عداد الوقت النشط ═══════════════
+  const [activeSeconds, setActiveSeconds] = useState(0);
+  const [isPageVisible, setIsPageVisible] = useState(true);
+  const activeSecondsRef = useRef(0);
 
   const theme = getTheme(currentThemeId, darkMode);
   const styles = getStyles(currentThemeId, darkMode);
@@ -67,13 +70,28 @@ function App() {
     "شغفنا هو سر تميزنا ❤️"
   ];
 
-  // ═══════════════ 20 عبارة ترحيبية ═══════════════
+  // ═══════════════ 20 عبارة ترحيبية مع إيموجي منفصل ═══════════════
   const greetingPhrases = [
-    "أهلاً وسهلاً", "مرحباً بك", "سعداء بوجودك", "تشرفنا بك", "حياك الله",
-    "نورت", "أهلاً بالغالي", "يسعدنا حضورك", "منور المكان", "أسعد الله يومك",
-    "طابت أوقاتك", "يا هلا والله", "نتمنى لك يوماً موفقاً", "بداية موفقة",
-    "أهلاً بمن نفتخر به", "سعيدون بعودتك", "وجودك يسعدنا", "يومك مليء بالإنجاز",
-    "هلا بالعزيز", "نورتنا يا بطل"
+    { text: "أهلاً وسهلاً", emoji: "👋" },
+    { text: "مرحباً بك", emoji: "🌟" },
+    { text: "سعداء بوجودك", emoji: "😊" },
+    { text: "تشرفنا بك", emoji: "🎉" },
+    { text: "حياك الله", emoji: "💫" },
+    { text: "نورت", emoji: "✨" },
+    { text: "أهلاً بالغالي", emoji: "💎" },
+    { text: "يسعدنا حضورك", emoji: "🌺" },
+    { text: "منور المكان", emoji: "☀️" },
+    { text: "أسعد الله يومك", emoji: "🌈" },
+    { text: "طابت أوقاتك", emoji: "🕊️" },
+    { text: "يا هلا والله", emoji: "🤗" },
+    { text: "نتمنى لك يوماً موفقاً", emoji: "🍀" },
+    { text: "بداية موفقة", emoji: "🚀" },
+    { text: "أهلاً بمن نفتخر به", emoji: "🏆" },
+    { text: "سعيدون بعودتك", emoji: "💝" },
+    { text: "وجودك يسعدنا", emoji: "🌸" },
+    { text: "يومك مليء بالإنجاز", emoji: "📈" },
+    { text: "هلا بالعزيز", emoji: "💪" },
+    { text: "نورتنا يا بطل", emoji: "🦸" }
   ];
 
   const [quoteIndex, setQuoteIndex] = useState(0);
@@ -106,26 +124,58 @@ function App() {
     setGreetingIndex(prev => (prev + 1) % greetingPhrases.length);
   };
 
-  // ═══════════════ تغيير القسم مع تغيير العبارات ═══════════════
   const handleViewChange = (view) => {
     setCurrentView(view);
     changeQuotes();
   };
 
-  // ═══════════════ تحديث الوقت وعداد الجلسة ═══════════════
+  // ═══════════════ مراقبة نشاط الصفحة ═══════════════
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-      if (sessionStart) {
-        const elapsed = Math.floor((Date.now() - sessionStart) / 1000);
-        const hrs = String(Math.floor(elapsed / 3600)).padStart(2, '0');
-        const mins = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
-        const secs = String(elapsed % 60).padStart(2, '0');
-        setSessionTime(`${hrs}:${mins}:${secs}`);
-      }
-    }, 1000);
+    const handleVisibilityChange = () => {
+      setIsPageVisible(!document.hidden);
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
+  // ═══════════════ عداد الوقت النشط ═══════════════
+  useEffect(() => {
+    // تحميل الوقت المحفوظ
+    const savedTime = localStorage.getItem('activeSessionTime');
+    if (savedTime) {
+      const parsed = parseInt(savedTime);
+      setActiveSeconds(parsed);
+      activeSecondsRef.current = parsed;
+    }
+  }, []);
+
+  useEffect(() => {
+    let interval;
+    if (isPageVisible && isLoggedIn) {
+      interval = setInterval(() => {
+        activeSecondsRef.current += 1;
+        setActiveSeconds(activeSecondsRef.current);
+        // حفظ كل 10 ثواني
+        if (activeSecondsRef.current % 10 === 0) {
+          localStorage.setItem('activeSessionTime', activeSecondsRef.current.toString());
+        }
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isPageVisible, isLoggedIn]);
+
+  // ═══════════════ تنسيق عداد الوقت ═══════════════
+  const formatActiveTime = () => {
+    const mins = Math.floor(activeSeconds / 60);
+    const secs = activeSeconds % 60;
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  // ═══════════════ تحديث الوقت ═══════════════
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
-  }, [sessionStart]);
+  }, []);
 
   // ═══════════════ تغيير العبارات كل 30 ثانية ═══════════════
   useEffect(() => {
@@ -186,10 +236,6 @@ function App() {
         if (savedUser) {
           setCurrentUser(JSON.parse(savedUser));
           setIsLoggedIn(true);
-          const savedSessionStart = localStorage.getItem('sessionStart');
-          const start = savedSessionStart ? parseInt(savedSessionStart) : Date.now();
-          setSessionStart(start);
-          if (!savedSessionStart) localStorage.setItem('sessionStart', start.toString());
         }
       } else {
         setIsLoggedIn(false);
@@ -243,9 +289,10 @@ function App() {
     setCurrentUser(userData);
     setIsLoggedIn(true);
     localStorage.setItem('currentUser', JSON.stringify(userData));
-    const now = Date.now();
-    setSessionStart(now);
-    localStorage.setItem('sessionStart', now.toString());
+    // إعادة تعيين عداد الوقت عند تسجيل الدخول
+    setActiveSeconds(0);
+    activeSecondsRef.current = 0;
+    localStorage.setItem('activeSessionTime', '0');
   };
   const handleSignupSuccess = (userData) => { setShowSignup(false); handleLogin(userData); };
   const handleLogout = async () => {
@@ -254,7 +301,9 @@ function App() {
       setIsLoggedIn(false);
       setCurrentUser(null);
       localStorage.removeItem('currentUser');
-      localStorage.removeItem('sessionStart');
+      localStorage.removeItem('activeSessionTime');
+      setActiveSeconds(0);
+      activeSecondsRef.current = 0;
     } catch (e) { console.error(e); }
   };
 
@@ -319,6 +368,7 @@ function App() {
 
   const dateInfo = formatDate();
   const cityName = cityCoordinates[city]?.name || 'الرياض';
+  const currentGreeting = greetingPhrases[greetingIndex];
 
   return (
     <div dir="rtl" style={{ minHeight: '100vh', background: t.bg.primary, color: t.text.primary, fontFamily: t.font.family, fontSize: `${fontSize}px` }}>
@@ -365,10 +415,13 @@ function App() {
             {/* ═══════════════ المستخدم والأزرار ═══════════════ */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               
-              {/* العبارة الترحيبية */}
-              <span style={{ fontSize: 11, color: t.text.muted, fontWeight: 700 }}>{greetingPhrases[greetingIndex]} 👋</span>
+              {/* العبارة الترحيبية مع إيموجي أكبر */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ fontSize: 11, color: t.text.muted, fontWeight: 700 }}>{currentGreeting.text}</span>
+                <span style={{ fontSize: 15 }}>{currentGreeting.emoji}</span>
+              </div>
               
-              {/* فقاعة المستخدم - زر للانتقال لحسابات المستخدمين */}
+              {/* فقاعة المستخدم - الاسم: الصفة */}
               <button 
                 onClick={() => handleViewChange('users')}
                 style={{ 
@@ -378,13 +431,12 @@ function App() {
                   cursor: 'pointer', transition: 'all 0.2s'
                 }}
               >
-                <div style={{ textAlign: 'left' }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, margin: 0, color: t.text.primary, lineHeight: 1.2 }}>{currentUser?.username || 'مستخدم'}</p>
-                  <p style={{ fontSize: 9, color: t.text.muted, margin: 0, lineHeight: 1.2 }}>{translateRole(currentUser?.role)}</p>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: t.text.muted, borderRight: `1px solid ${t.border.primary}`, paddingRight: 8, marginRight: 4 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: t.text.primary }}>
+                  {currentUser?.username || 'مستخدم'}: <span style={{ color: t.text.muted, fontWeight: 500 }}>{translateRole(currentUser?.role)}</span>
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: t.button.primary, borderRight: `1px solid ${t.border.primary}`, paddingRight: 8, marginRight: 4 }}>
                   <Clock size={12} />
-                  <span style={{ fontFamily: 'monospace' }}>{sessionTime}</span>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{formatActiveTime()}</span>
                 </div>
               </button>
 
