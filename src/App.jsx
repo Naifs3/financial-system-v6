@@ -20,6 +20,7 @@ import Accounts from './components/Accounts';
 import Users from './components/Users';
 import Settings from './components/Settings';
 import QuantityCalculator from './components/QuantityCalculator';
+import Resources from './components/Resources';
 import { LogOut, Settings as SettingsIcon, Bell, Clock } from 'lucide-react';
 
 // ═══════════════════════════════════════════════════════════════
@@ -259,11 +260,21 @@ function App() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [currentDate, setCurrentDate] = useState(new Date());
   
-  // البيانات
+  // البيانات الأساسية
   const [expenses, setExpenses] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
   const [accounts, setAccounts] = useState([]);
+  const [users, setUsers] = useState([]);
+
+  // ═══════════════════════════════════════════════════════════════
+  // 📦 بيانات إدارة الموارد
+  // ═══════════════════════════════════════════════════════════════
+  const [clients, setClients] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
+  const [documents, setDocuments] = useState([]);
+  const [materials, setMaterials] = useState([]);
+  const [equipment, setEquipment] = useState([]);
 
   // إعدادات المظهر الأساسية
   const [themeMode, setThemeMode] = useState(() => localStorage.getItem('themeMode') || 'dark');
@@ -279,7 +290,7 @@ function App() {
   const [fontFamily, setFontFamily] = useState(() => localStorage.getItem('rkz_fontFamily') || 'tajawal');
   const [bgEffect, setBgEffect] = useState(() => localStorage.getItem('rkz_bgEffect') || 'none');
   
-  // عداد الوقت - تم نقله لمكون منفصل
+  // عداد الوقت
   const [isPageVisible, setIsPageVisible] = useState(true);
 
   // ═══════════════════════════════════════════════════════════════
@@ -363,7 +374,7 @@ function App() {
     }
   }, [themeMode]);
 
-  // تحديث التاريخ فقط (ليس الوقت) - مرة واحدة عند التحميل
+  // تحديث التاريخ
   useEffect(() => {
     setCurrentDate(new Date());
   }, []);
@@ -440,24 +451,37 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  // Firebase listeners
+  // Firebase listeners - البيانات الأساسية
   useEffect(() => {
     if (!isLoggedIn) return;
     const unsubExpenses = onSnapshot(query(collection(db, 'expenses'), orderBy('createdAt', 'desc')), (s) => setExpenses(s.docs.map(d => ({ id: d.id, ...d.data() }))));
     const unsubTasks = onSnapshot(query(collection(db, 'tasks'), orderBy('createdAt', 'desc')), (s) => setTasks(s.docs.map(d => ({ id: d.id, ...d.data() }))));
     const unsubProjects = onSnapshot(query(collection(db, 'projects'), orderBy('createdAt', 'desc')), (s) => setProjects(s.docs.map(d => ({ id: d.id, ...d.data() }))));
     const unsubAccounts = onSnapshot(query(collection(db, 'accounts'), orderBy('createdAt', 'desc')), (s) => setAccounts(s.docs.map(d => ({ id: d.id, ...d.data() }))));
-    return () => { unsubExpenses(); unsubTasks(); unsubProjects(); unsubAccounts(); };
+    const unsubUsers = onSnapshot(query(collection(db, 'users'), orderBy('createdAt', 'desc')), (s) => setUsers(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+    return () => { unsubExpenses(); unsubTasks(); unsubProjects(); unsubAccounts(); unsubUsers(); };
   }, [isLoggedIn]);
 
   // ═══════════════════════════════════════════════════════════════
-  // Handlers
+  // 📦 Firebase listeners - إدارة الموارد
+  // ═══════════════════════════════════════════════════════════════
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    const unsubClients = onSnapshot(query(collection(db, 'clients'), orderBy('createdAt', 'desc')), (s) => setClients(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const unsubSuppliers = onSnapshot(query(collection(db, 'suppliers'), orderBy('createdAt', 'desc')), (s) => setSuppliers(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const unsubDocuments = onSnapshot(query(collection(db, 'documents'), orderBy('createdAt', 'desc')), (s) => setDocuments(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const unsubMaterials = onSnapshot(query(collection(db, 'materials'), orderBy('createdAt', 'desc')), (s) => setMaterials(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+    const unsubEquipment = onSnapshot(query(collection(db, 'equipment'), orderBy('createdAt', 'desc')), (s) => setEquipment(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+    return () => { unsubClients(); unsubSuppliers(); unsubDocuments(); unsubMaterials(); unsubEquipment(); };
+  }, [isLoggedIn]);
+
+  // ═══════════════════════════════════════════════════════════════
+  // Handlers الأساسية
   // ═══════════════════════════════════════════════════════════════
 
   const handleLogin = async (userData) => {
     setCurrentUser(userData); setIsLoggedIn(true);
     localStorage.setItem('currentUser', JSON.stringify(userData));
-    // إعادة تعيين عداد الوقت
     localStorage.setItem('activeSessionTime', '0');
   };
   
@@ -470,12 +494,14 @@ function App() {
     } catch (e) { console.error(e); }
   };
 
+  // المصروفات
   const handleAddExpense = async (e) => { await addDoc(collection(db, 'expenses'), { ...e, createdAt: new Date() }); };
   const handleEditExpense = async (e) => { const { id, ...d } = e; await updateDoc(doc(db, 'expenses', id), d); };
   const handleDeleteExpense = async (id) => { await deleteDoc(doc(db, 'expenses', id)); };
   const handleMarkPaid = async (id) => { await updateDoc(doc(db, 'expenses', id), { status: 'مدفوع' }); };
   const handleRefreshExpenses = () => {};
 
+  // المهام
   const handleAddTask = async (t) => { await addDoc(collection(db, 'tasks'), { ...t, createdAt: new Date() }); };
   const handleEditTask = async (t) => { const { id, ...d } = t; await updateDoc(doc(db, 'tasks', id), d); };
   const handleDeleteTask = async (id) => { await deleteDoc(doc(db, 'tasks', id)); };
@@ -484,6 +510,7 @@ function App() {
     await updateDoc(doc(db, 'tasks', id), { status: task.status === 'مكتمل' ? 'قيد التنفيذ' : 'مكتمل' });
   };
 
+  // المشاريع
   const handleAddProject = async (p) => { await addDoc(collection(db, 'projects'), { ...p, folders: [], createdAt: new Date() }); };
   const handleEditProject = async (p) => { const { id, ...d } = p; await updateDoc(doc(db, 'projects', id), d); };
   const handleDeleteProject = async (id) => { await deleteDoc(doc(db, 'projects', id)); };
@@ -509,9 +536,57 @@ function App() {
     await updateDoc(doc(db, 'projects', pId), { folders: updated });
   };
 
+  // الحسابات
   const handleAddAccount = async (a) => { await addDoc(collection(db, 'accounts'), { ...a, createdAt: new Date() }); };
   const handleEditAccount = async (a) => { const { id, ...d } = a; await updateDoc(doc(db, 'accounts', id), d); };
   const handleDeleteAccount = async (id) => { await deleteDoc(doc(db, 'accounts', id)); };
+
+  // ═══════════════════════════════════════════════════════════════
+  // 📦 Handlers إدارة الموارد
+  // ═══════════════════════════════════════════════════════════════
+
+  // العملاء
+  const handleAddClient = async (c) => { await addDoc(collection(db, 'clients'), { ...c, createdAt: new Date() }); };
+  const handleEditClient = async (c) => { const { id, ...d } = c; await updateDoc(doc(db, 'clients', id), d); };
+  const handleDeleteClient = async (id) => { await deleteDoc(doc(db, 'clients', id)); };
+
+  // الموردين
+  const handleAddSupplier = async (s) => { await addDoc(collection(db, 'suppliers'), { ...s, createdAt: new Date() }); };
+  const handleEditSupplier = async (s) => { const { id, ...d } = s; await updateDoc(doc(db, 'suppliers', id), d); };
+  const handleDeleteSupplier = async (id) => { await deleteDoc(doc(db, 'suppliers', id)); };
+
+  // المستندات
+  const handleAddDocument = async (d) => { await addDoc(collection(db, 'documents'), { ...d, createdAt: new Date() }); };
+  const handleEditDocument = async (d) => { const { id, ...data } = d; await updateDoc(doc(db, 'documents', id), data); };
+  const handleDeleteDocument = async (id) => { await deleteDoc(doc(db, 'documents', id)); };
+
+  // المواد
+  const handleAddMaterial = async (m) => { await addDoc(collection(db, 'materials'), { ...m, createdAt: new Date() }); };
+  const handleEditMaterial = async (m) => { const { id, ...d } = m; await updateDoc(doc(db, 'materials', id), d); };
+  const handleDeleteMaterial = async (id) => { await deleteDoc(doc(db, 'materials', id)); };
+
+  // المعدات
+  const handleAddEquipment = async (e) => { await addDoc(collection(db, 'equipment'), { ...e, createdAt: new Date() }); };
+  const handleEditEquipment = async (e) => { const { id, ...d } = e; await updateDoc(doc(db, 'equipment', id), d); };
+  const handleDeleteEquipment = async (id) => { await deleteDoc(doc(db, 'equipment', id)); };
+
+  // التنقل
+  const handleNavigate = (type, data) => {
+    switch (type) {
+      case 'project': setCurrentView('projects'); break;
+      case 'account': setCurrentView('accounts'); break;
+      case 'user': setCurrentView('users'); break;
+      case 'task': setCurrentView('tasks'); break;
+      case 'expense': setCurrentView('expenses'); break;
+      case 'client':
+      case 'supplier':
+      case 'document':
+      case 'material':
+      case 'equipment':
+        setCurrentView('resources'); break;
+      default: break;
+    }
+  };
 
   // ═══════════════════════════════════════════════════════════════
   // الواجهة
@@ -643,11 +718,49 @@ function App() {
 
       <main style={{ maxWidth: 1400, margin: '0 auto', padding: '0 24px', position: 'relative', zIndex: 1 }}>
         {currentView === 'dashboard' && <Dashboard expenses={expenses} tasks={tasks} projects={projects} accounts={accounts} darkMode={darkMode} theme={customTheme} />}
-        {currentView === 'expenses' && <Expenses expenses={expenses} accounts={accounts} onAdd={handleAddExpense} onEdit={handleEditExpense} onDelete={handleDeleteExpense} onMarkPaid={handleMarkPaid} onRefresh={handleRefreshExpenses} darkMode={darkMode} theme={customTheme} />}
-        {currentView === 'tasks' && <Tasks tasks={tasks} projects={projects} onAdd={handleAddTask} onEdit={handleEditTask} onDelete={handleDeleteTask} onToggleStatus={handleToggleTaskStatus} darkMode={darkMode} theme={customTheme} />}
-        {currentView === 'projects' && <Projects projects={projects} onAdd={handleAddProject} onEdit={handleEditProject} onDelete={handleDeleteProject} onAddFolder={handleAddFolder} onUploadFile={handleUploadFile} onDeleteFile={handleDeleteFile} darkMode={darkMode} theme={customTheme} />}
-        {currentView === 'accounts' && <Accounts accounts={accounts} onAdd={handleAddAccount} onEdit={handleEditAccount} onDelete={handleDeleteAccount} darkMode={darkMode} theme={customTheme} />}
-        {currentView === 'users' && <Users currentUser={currentUser} darkMode={darkMode} theme={customTheme} />}
+        
+        {currentView === 'expenses' && <Expenses expenses={expenses} accounts={accounts} projects={projects} users={users} onAdd={handleAddExpense} onEdit={handleEditExpense} onDelete={handleDeleteExpense} onMarkPaid={handleMarkPaid} onRefresh={handleRefreshExpenses} onNavigate={handleNavigate} darkMode={darkMode} theme={customTheme} />}
+        
+        {currentView === 'tasks' && <Tasks tasks={tasks} projects={projects} users={users} onAdd={handleAddTask} onEdit={handleEditTask} onDelete={handleDeleteTask} onToggleStatus={handleToggleTaskStatus} onNavigate={handleNavigate} darkMode={darkMode} theme={customTheme} />}
+        
+        {currentView === 'projects' && <Projects projects={projects} accounts={accounts} users={users} tasks={tasks} expenses={expenses} clients={clients} onAdd={handleAddProject} onEdit={handleEditProject} onDelete={handleDeleteProject} onAddFolder={handleAddFolder} onUploadFile={handleUploadFile} onDeleteFile={handleDeleteFile} onNavigate={handleNavigate} darkMode={darkMode} theme={customTheme} />}
+        
+        {currentView === 'accounts' && <Accounts accounts={accounts} expenses={expenses} projects={projects} onAdd={handleAddAccount} onEdit={handleEditAccount} onDelete={handleDeleteAccount} onNavigate={handleNavigate} darkMode={darkMode} theme={customTheme} />}
+        
+        {currentView === 'users' && <Users currentUser={currentUser} users={users} projects={projects} tasks={tasks} expenses={expenses} onNavigate={handleNavigate} darkMode={darkMode} theme={customTheme} />}
+        
+        {currentView === 'resources' && (
+          <Resources
+            clients={clients}
+            suppliers={suppliers}
+            documents={documents}
+            materials={materials}
+            equipment={equipment}
+            projects={projects}
+            accounts={accounts}
+            users={users}
+            expenses={expenses}
+            onAddClient={handleAddClient}
+            onEditClient={handleEditClient}
+            onDeleteClient={handleDeleteClient}
+            onAddSupplier={handleAddSupplier}
+            onEditSupplier={handleEditSupplier}
+            onDeleteSupplier={handleDeleteSupplier}
+            onAddDocument={handleAddDocument}
+            onEditDocument={handleEditDocument}
+            onDeleteDocument={handleDeleteDocument}
+            onAddMaterial={handleAddMaterial}
+            onEditMaterial={handleEditMaterial}
+            onDeleteMaterial={handleDeleteMaterial}
+            onAddEquipment={handleAddEquipment}
+            onEditEquipment={handleEditEquipment}
+            onDeleteEquipment={handleDeleteEquipment}
+            onNavigate={handleNavigate}
+            darkMode={darkMode}
+            theme={customTheme}
+          />
+        )}
+        
         {currentView === 'settings' && (
           <Settings 
             darkMode={darkMode} 
@@ -662,6 +775,7 @@ function App() {
             bgEffect={bgEffect} setBgEffect={setBgEffect}
           />
         )}
+        
         {currentView === 'calculator' && <QuantityCalculator darkMode={darkMode} theme={customTheme} />}
       </main>
 
