@@ -3,11 +3,32 @@ import React, { useState } from 'react';
 import { Wallet, Plus, Search, Edit, Trash2, AlertTriangle, X, CreditCard, Building2, Smartphone, Globe } from 'lucide-react';
 import { formatNumber, generateCode } from '../utils/helpers';
 
+// ═══════════════ Modal Component (خارج المكون الرئيسي) ═══════════════
+const Modal = ({ show, onClose, title, children, onSubmit, submitText, danger, loading, theme }) => {
+  const t = theme;
+  if (!show) return null;
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }} onClick={onClose}>
+      <div style={{ background: t.bg.secondary, borderRadius: 16, width: '100%', maxWidth: 500, border: `1px solid ${t.border.primary}`, maxHeight: '90vh', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }} onClick={e => e.stopPropagation()}>
+        <div style={{ padding: '16px 20px', borderBottom: `1px solid ${t.border.primary}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: t.bg.tertiary }}>
+          <h3 style={{ fontSize: 17, fontWeight: 700, color: t.text.primary, margin: 0 }}>{title}</h3>
+          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: t.bg.secondary, color: t.text.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={18} /></button>
+        </div>
+        <div style={{ padding: 20, overflowY: 'auto', maxHeight: 'calc(90vh - 130px)' }}>{children}</div>
+        <div style={{ padding: '14px 20px', borderTop: `1px solid ${t.border.primary}`, display: 'flex', gap: 10, justifyContent: 'flex-end', background: t.bg.tertiary }}>
+          <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, border: `1px solid ${t.border.primary}`, background: 'transparent', color: t.text.secondary, cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit' }}>إلغاء</button>
+          <button onClick={onSubmit} disabled={loading} style={{ padding: '10px 24px', borderRadius: 10, border: 'none', background: danger ? t.status.danger.text : t.button.gradient, color: '#fff', cursor: loading ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit', opacity: loading ? 0.7 : 1 }}>{loading ? 'جاري...' : submitText}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Accounts = ({ accounts, onAdd, onEdit, onDelete, darkMode, theme }) => {
   const t = theme;
   const colorKeys = t.colorKeys || Object.keys(t.colors);
   
-  const [activeTab, setActiveTab] = useState('bank'); // 'bank' or 'electronic'
+  const [activeTab, setActiveTab] = useState('bank');
   const [searchTerm, setSearchTerm] = useState('');
   
   const [showAddModal, setShowAddModal] = useState(false);
@@ -110,34 +131,19 @@ const Accounts = ({ accounts, onAdd, onEdit, onDelete, darkMode, theme }) => {
     setLoading(false);
   };
 
+  // دالة تحديث الفورم
+  const updateForm = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
   const inputStyle = { width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${t.border.primary}`, background: t.bg.tertiary, color: t.text.primary, fontSize: 14, fontFamily: 'inherit', outline: 'none' };
   const labelStyle = { display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: t.text.secondary };
 
-  // ═══════════════ زر الإضافة الموحد ═══════════════
   const addButtonStyle = {
     padding: '10px 20px', borderRadius: 10, border: 'none',
     background: t.button.gradient, color: '#fff', cursor: 'pointer',
     fontSize: 14, fontWeight: 600, fontFamily: 'inherit',
     display: 'flex', alignItems: 'center', gap: 8,
-  };
-
-  const Modal = ({ show, onClose, title, children, onSubmit, submitText, danger }) => {
-    if (!show) return null;
-    return (
-      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }} onClick={onClose}>
-        <div style={{ background: t.bg.secondary, borderRadius: 16, width: '100%', maxWidth: 500, border: `1px solid ${t.border.primary}`, maxHeight: '90vh', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }} onClick={e => e.stopPropagation()}>
-          <div style={{ padding: '16px 20px', borderBottom: `1px solid ${t.border.primary}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: t.bg.tertiary }}>
-            <h3 style={{ fontSize: 17, fontWeight: 700, color: t.text.primary, margin: 0 }}>{title}</h3>
-            <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: t.bg.secondary, color: t.text.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={18} /></button>
-          </div>
-          <div style={{ padding: 20, overflowY: 'auto', maxHeight: 'calc(90vh - 130px)' }}>{children}</div>
-          <div style={{ padding: '14px 20px', borderTop: `1px solid ${t.border.primary}`, display: 'flex', gap: 10, justifyContent: 'flex-end', background: t.bg.tertiary }}>
-            <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, border: `1px solid ${t.border.primary}`, background: 'transparent', color: t.text.secondary, cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit' }}>إلغاء</button>
-            <button onClick={onSubmit} disabled={loading} style={{ padding: '10px 24px', borderRadius: 10, border: 'none', background: danger ? t.status.danger.text : t.button.gradient, color: '#fff', cursor: loading ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit', opacity: loading ? 0.7 : 1 }}>{loading ? 'جاري...' : submitText}</button>
-          </div>
-        </div>
-      </div>
-    );
   };
 
   // الأنواع المتاحة حسب التصنيف في الفورم
@@ -260,7 +266,7 @@ const Accounts = ({ accounts, onAdd, onEdit, onDelete, darkMode, theme }) => {
       )}
 
       {/* Add Modal */}
-      <Modal show={showAddModal} onClose={() => setShowAddModal(false)} title="إضافة حساب جديد" onSubmit={handleAdd} submitText="إضافة">
+      <Modal show={showAddModal} onClose={() => setShowAddModal(false)} title="إضافة حساب جديد" onSubmit={handleAdd} submitText="إضافة" loading={loading} theme={t}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ background: `${t.button.primary}15`, padding: 12, borderRadius: 12, textAlign: 'center' }}>
             <span style={{ fontSize: 12, color: t.text.muted }}>رقم الحساب</span>
@@ -302,28 +308,53 @@ const Accounts = ({ accounts, onAdd, onEdit, onDelete, darkMode, theme }) => {
             </div>
           </div>
 
-          <div><label style={labelStyle}>اسم الحساب *</label><input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} style={{...inputStyle, borderColor: errors.name ? t.status.danger.text : t.border.primary}} placeholder={formData.category === 'bank' ? 'مثال: الحساب الرئيسي' : 'مثال: محفظة STC'} />{errors.name && <span style={{ fontSize: 12, color: t.status.danger.text }}>{errors.name}</span>}</div>
+          <div>
+            <label style={labelStyle}>اسم الحساب *</label>
+            <input type="text" value={formData.name} onChange={(e) => updateForm('name', e.target.value)} style={{...inputStyle, borderColor: errors.name ? t.status.danger.text : t.border.primary}} placeholder={formData.category === 'bank' ? 'مثال: الحساب الرئيسي' : 'مثال: محفظة STC'} />
+            {errors.name && <span style={{ fontSize: 12, color: t.status.danger.text }}>{errors.name}</span>}
+          </div>
           
-          <div><label style={labelStyle}>نوع الحساب</label><select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})} style={inputStyle}>{availableTypes.map(at => <option key={at.value} value={at.value}>{at.label}</option>)}</select></div>
+          <div>
+            <label style={labelStyle}>نوع الحساب</label>
+            <select value={formData.type} onChange={(e) => updateForm('type', e.target.value)} style={inputStyle}>
+              {availableTypes.map(at => <option key={at.value} value={at.value}>{at.label}</option>)}
+            </select>
+          </div>
           
           {formData.category === 'bank' && formData.type === 'bank' && (
             <>
-              <div><label style={labelStyle}>اسم البنك</label><input type="text" value={formData.bankName} onChange={(e) => setFormData({...formData, bankName: e.target.value})} style={inputStyle} placeholder="مثال: بنك الراجحي" /></div>
-              <div><label style={labelStyle}>رقم الحساب البنكي</label><input type="text" value={formData.accountNumber} onChange={(e) => setFormData({...formData, accountNumber: e.target.value})} style={inputStyle} placeholder="رقم الآيبان أو الحساب" /></div>
+              <div>
+                <label style={labelStyle}>اسم البنك</label>
+                <input type="text" value={formData.bankName} onChange={(e) => updateForm('bankName', e.target.value)} style={inputStyle} placeholder="مثال: بنك الراجحي" />
+              </div>
+              <div>
+                <label style={labelStyle}>رقم الحساب البنكي</label>
+                <input type="text" value={formData.accountNumber} onChange={(e) => updateForm('accountNumber', e.target.value)} style={inputStyle} placeholder="رقم الآيبان أو الحساب" />
+              </div>
             </>
           )}
           
           {formData.category === 'electronic' && (
-            <div><label style={labelStyle}>رقم الجوال / الحساب</label><input type="text" value={formData.accountNumber} onChange={(e) => setFormData({...formData, accountNumber: e.target.value})} style={inputStyle} placeholder="05xxxxxxxx" /></div>
+            <div>
+              <label style={labelStyle}>رقم الجوال / الحساب</label>
+              <input type="text" value={formData.accountNumber} onChange={(e) => updateForm('accountNumber', e.target.value)} style={inputStyle} placeholder="05xxxxxxxx" />
+            </div>
           )}
           
-          <div><label style={labelStyle}>الرصيد الحالي</label><input type="number" value={formData.balance} onChange={(e) => setFormData({...formData, balance: e.target.value})} style={inputStyle} placeholder="0" /></div>
-          <div><label style={labelStyle}>ملاحظات</label><textarea value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} style={{...inputStyle, minHeight: 80, resize: 'vertical'}} placeholder="ملاحظات إضافية..." /></div>
+          <div>
+            <label style={labelStyle}>الرصيد الحالي</label>
+            <input type="number" value={formData.balance} onChange={(e) => updateForm('balance', e.target.value)} style={inputStyle} placeholder="0" />
+          </div>
+          
+          <div>
+            <label style={labelStyle}>ملاحظات</label>
+            <textarea value={formData.notes} onChange={(e) => updateForm('notes', e.target.value)} style={{...inputStyle, minHeight: 80, resize: 'vertical'}} placeholder="ملاحظات إضافية..." />
+          </div>
         </div>
       </Modal>
 
       {/* Edit Modal */}
-      <Modal show={showEditModal} onClose={() => setShowEditModal(false)} title="تعديل الحساب" onSubmit={handleEdit} submitText="حفظ التعديلات">
+      <Modal show={showEditModal} onClose={() => setShowEditModal(false)} title="تعديل الحساب" onSubmit={handleEdit} submitText="حفظ التعديلات" loading={loading} theme={t}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ background: `${t.button.primary}15`, padding: 12, borderRadius: 12, textAlign: 'center' }}>
             <span style={{ fontSize: 12, color: t.text.muted }}>رقم الحساب</span>
@@ -365,28 +396,53 @@ const Accounts = ({ accounts, onAdd, onEdit, onDelete, darkMode, theme }) => {
             </div>
           </div>
 
-          <div><label style={labelStyle}>اسم الحساب *</label><input type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} style={{...inputStyle, borderColor: errors.name ? t.status.danger.text : t.border.primary}} /></div>
+          <div>
+            <label style={labelStyle}>اسم الحساب *</label>
+            <input type="text" value={formData.name} onChange={(e) => updateForm('name', e.target.value)} style={{...inputStyle, borderColor: errors.name ? t.status.danger.text : t.border.primary}} />
+            {errors.name && <span style={{ fontSize: 12, color: t.status.danger.text }}>{errors.name}</span>}
+          </div>
           
-          <div><label style={labelStyle}>نوع الحساب</label><select value={formData.type} onChange={(e) => setFormData({...formData, type: e.target.value})} style={inputStyle}>{availableTypes.map(at => <option key={at.value} value={at.value}>{at.label}</option>)}</select></div>
+          <div>
+            <label style={labelStyle}>نوع الحساب</label>
+            <select value={formData.type} onChange={(e) => updateForm('type', e.target.value)} style={inputStyle}>
+              {availableTypes.map(at => <option key={at.value} value={at.value}>{at.label}</option>)}
+            </select>
+          </div>
           
           {formData.category === 'bank' && formData.type === 'bank' && (
             <>
-              <div><label style={labelStyle}>اسم البنك</label><input type="text" value={formData.bankName} onChange={(e) => setFormData({...formData, bankName: e.target.value})} style={inputStyle} /></div>
-              <div><label style={labelStyle}>رقم الحساب البنكي</label><input type="text" value={formData.accountNumber} onChange={(e) => setFormData({...formData, accountNumber: e.target.value})} style={inputStyle} /></div>
+              <div>
+                <label style={labelStyle}>اسم البنك</label>
+                <input type="text" value={formData.bankName} onChange={(e) => updateForm('bankName', e.target.value)} style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>رقم الحساب البنكي</label>
+                <input type="text" value={formData.accountNumber} onChange={(e) => updateForm('accountNumber', e.target.value)} style={inputStyle} />
+              </div>
             </>
           )}
           
           {formData.category === 'electronic' && (
-            <div><label style={labelStyle}>رقم الجوال / الحساب</label><input type="text" value={formData.accountNumber} onChange={(e) => setFormData({...formData, accountNumber: e.target.value})} style={inputStyle} /></div>
+            <div>
+              <label style={labelStyle}>رقم الجوال / الحساب</label>
+              <input type="text" value={formData.accountNumber} onChange={(e) => updateForm('accountNumber', e.target.value)} style={inputStyle} />
+            </div>
           )}
           
-          <div><label style={labelStyle}>الرصيد الحالي</label><input type="number" value={formData.balance} onChange={(e) => setFormData({...formData, balance: e.target.value})} style={inputStyle} /></div>
-          <div><label style={labelStyle}>ملاحظات</label><textarea value={formData.notes} onChange={(e) => setFormData({...formData, notes: e.target.value})} style={{...inputStyle, minHeight: 80, resize: 'vertical'}} /></div>
+          <div>
+            <label style={labelStyle}>الرصيد الحالي</label>
+            <input type="number" value={formData.balance} onChange={(e) => updateForm('balance', e.target.value)} style={inputStyle} />
+          </div>
+          
+          <div>
+            <label style={labelStyle}>ملاحظات</label>
+            <textarea value={formData.notes} onChange={(e) => updateForm('notes', e.target.value)} style={{...inputStyle, minHeight: 80, resize: 'vertical'}} />
+          </div>
         </div>
       </Modal>
 
       {/* Delete Modal */}
-      <Modal show={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="حذف الحساب" onSubmit={handleDelete} submitText="حذف" danger>
+      <Modal show={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="حذف الحساب" onSubmit={handleDelete} submitText="حذف" danger loading={loading} theme={t}>
         <div style={{ textAlign: 'center', padding: 20 }}>
           <div style={{ width: 64, height: 64, borderRadius: '50%', background: t.status.danger.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}><AlertTriangle size={32} color={t.status.danger.text} /></div>
           <p style={{ fontSize: 16, color: t.text.primary, marginBottom: 8 }}>هل أنت متأكد من حذف الحساب؟</p>
