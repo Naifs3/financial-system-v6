@@ -6,6 +6,27 @@ import {
 } from 'lucide-react';
 import { calcDaysRemaining, generateCode } from '../utils/helpers';
 
+// ═══════════════ Modal Component (خارج المكون الرئيسي) ═══════════════
+const Modal = ({ show, onClose, title, children, onSubmit, submitText, danger, loading, theme }) => {
+  const t = theme;
+  if (!show) return null;
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }} onClick={onClose}>
+      <div style={{ background: t.bg.secondary, borderRadius: 16, width: '100%', maxWidth: 500, border: `1px solid ${t.border.primary}`, maxHeight: '90vh', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }} onClick={e => e.stopPropagation()}>
+        <div style={{ padding: '16px 20px', borderBottom: `1px solid ${t.border.primary}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: t.bg.tertiary }}>
+          <h3 style={{ fontSize: 17, fontWeight: 700, color: t.text.primary, margin: 0 }}>{title}</h3>
+          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: t.bg.secondary, color: t.text.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={18} /></button>
+        </div>
+        <div style={{ padding: 20, overflowY: 'auto', maxHeight: 'calc(90vh - 130px)' }}>{children}</div>
+        <div style={{ padding: '14px 20px', borderTop: `1px solid ${t.border.primary}`, display: 'flex', gap: 10, justifyContent: 'flex-end', background: t.bg.tertiary }}>
+          <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, border: `1px solid ${t.border.primary}`, background: 'transparent', color: t.text.secondary, cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit' }}>إلغاء</button>
+          <button onClick={onSubmit} disabled={loading} style={{ padding: '10px 24px', borderRadius: 10, border: 'none', background: danger ? t.status.danger.text : t.button.gradient, color: '#fff', cursor: loading ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit', opacity: loading ? 0.7 : 1 }}>{loading ? 'جاري...' : submitText}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Tasks = ({ tasks, projects = [], onAdd, onEdit, onDelete, onToggleStatus, darkMode, theme }) => {
   const t = theme;
   const colorKeys = t.colorKeys || Object.keys(t.colors);
@@ -93,40 +114,17 @@ const Tasks = ({ tasks, projects = [], onAdd, onEdit, onDelete, onToggleStatus, 
     setLoading(false);
   };
 
+  const updateForm = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
   const inputStyle = { width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${t.border.primary}`, background: t.bg.tertiary, color: t.text.primary, fontSize: 14, fontFamily: 'inherit', outline: 'none' };
   const filterSelectStyle = { padding: '10px 14px', paddingLeft: 32, borderRadius: 10, border: `1px solid ${t.border.primary}`, background: t.bg.tertiary, color: t.text.primary, fontSize: 13, fontFamily: 'inherit', cursor: 'pointer', appearance: 'none', outline: 'none', minWidth: 110 };
   const labelStyle = { display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600, color: t.text.secondary };
-
-  // ═══════════════ زر الإضافة الموحد ═══════════════
-  const addButtonStyle = {
-    padding: '10px 20px', borderRadius: 10, border: 'none',
-    background: t.button.gradient, color: '#fff', cursor: 'pointer',
-    fontSize: 14, fontWeight: 600, fontFamily: 'inherit',
-    display: 'flex', alignItems: 'center', gap: 8,
-  };
-
-  const Modal = ({ show, onClose, title, children, onSubmit, submitText, danger }) => {
-    if (!show) return null;
-    return (
-      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }} onClick={onClose}>
-        <div style={{ background: t.bg.secondary, borderRadius: 16, width: '100%', maxWidth: 500, border: `1px solid ${t.border.primary}`, maxHeight: '90vh', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }} onClick={e => e.stopPropagation()}>
-          <div style={{ padding: '16px 20px', borderBottom: `1px solid ${t.border.primary}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: t.bg.tertiary }}>
-            <h3 style={{ fontSize: 17, fontWeight: 700, color: t.text.primary, margin: 0 }}>{title}</h3>
-            <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: t.bg.secondary, color: t.text.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={18} /></button>
-          </div>
-          <div style={{ padding: 20, overflowY: 'auto', maxHeight: 'calc(90vh - 130px)' }}>{children}</div>
-          <div style={{ padding: '14px 20px', borderTop: `1px solid ${t.border.primary}`, display: 'flex', gap: 10, justifyContent: 'flex-end', background: t.bg.tertiary }}>
-            <button onClick={onClose} style={{ padding: '10px 20px', borderRadius: 10, border: `1px solid ${t.border.primary}`, background: 'transparent', color: t.text.secondary, cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit' }}>إلغاء</button>
-            <button onClick={onSubmit} disabled={loading} style={{ padding: '10px 24px', borderRadius: 10, border: 'none', background: danger ? t.status.danger.text : t.button.gradient, color: '#fff', cursor: loading ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit', opacity: loading ? 0.7 : 1 }}>{loading ? 'جاري...' : submitText}</button>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  const addButtonStyle = { padding: '10px 20px', borderRadius: 10, border: 'none', background: t.button.gradient, color: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 8 };
 
   return (
     <div style={{ padding: '24px 0', paddingBottom: 100 }}>
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
         <div>
           <h2 style={{ fontSize: 24, fontWeight: 700, color: t.text.primary, margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}><CheckSquare size={28} />المهام</h2>
@@ -135,7 +133,6 @@ const Tasks = ({ tasks, projects = [], onAdd, onEdit, onDelete, onToggleStatus, 
         <button onClick={openAddModal} style={addButtonStyle}><Plus size={18} />إضافة مهمة</button>
       </div>
 
-      {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 24 }}>
         {[{ label: 'إجمالي المهام', value: totalTasks, color: t.colors[colorKeys[0]]?.main }, { label: 'مكتملة', value: completedTasks, color: t.status.success.text }, { label: 'قيد التنفيذ', value: pendingTasks, color: t.status.warning.text }].map((stat, i) => (
           <div key={i} style={{ background: t.bg.secondary, borderRadius: 14, padding: 20, border: `1px solid ${t.border.primary}` }}>
@@ -145,29 +142,21 @@ const Tasks = ({ tasks, projects = [], onAdd, onEdit, onDelete, onToggleStatus, 
         ))}
       </div>
 
-      {/* Search & Filters */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 24, flexWrap: 'wrap', alignItems: 'center', background: t.bg.secondary, padding: 12, borderRadius: 12, border: `1px solid ${t.border.primary}` }}>
         <div style={{ flex: 1, minWidth: 200, position: 'relative' }}>
           <Search size={18} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: t.text.muted }} />
           <input type="text" placeholder="بحث بالعنوان أو الرمز..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} style={{ ...inputStyle, paddingRight: 40 }} />
         </div>
         <div style={{ position: 'relative' }}>
-          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={filterSelectStyle}>
-            <option value="all">كل الحالات</option>
-            {statuses.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} style={filterSelectStyle}><option value="all">كل الحالات</option>{statuses.map(s => <option key={s} value={s}>{s}</option>)}</select>
           <ChevronDown size={16} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.text.muted, pointerEvents: 'none' }} />
         </div>
         <div style={{ position: 'relative' }}>
-          <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} style={filterSelectStyle}>
-            <option value="all">كل الأولويات</option>
-            {priorities.map(p => <option key={p} value={p}>{p}</option>)}
-          </select>
+          <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} style={filterSelectStyle}><option value="all">كل الأولويات</option>{priorities.map(p => <option key={p} value={p}>{p}</option>)}</select>
           <ChevronDown size={16} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: t.text.muted, pointerEvents: 'none' }} />
         </div>
       </div>
 
-      {/* Tasks List */}
       {filteredTasks.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 60, background: t.bg.secondary, borderRadius: 14, border: `1px solid ${t.border.primary}` }}>
           <CheckSquare size={48} style={{ color: t.text.muted, marginBottom: 16, opacity: 0.5 }} />
@@ -212,48 +201,45 @@ const Tasks = ({ tasks, projects = [], onAdd, onEdit, onDelete, onToggleStatus, 
         </div>
       )}
 
-      {/* Add Modal */}
-      <Modal show={showAddModal} onClose={() => setShowAddModal(false)} title="إضافة مهمة جديدة" onSubmit={handleAdd} submitText="إضافة">
+      <Modal show={showAddModal} onClose={() => setShowAddModal(false)} title="إضافة مهمة جديدة" onSubmit={handleAdd} submitText="إضافة" loading={loading} theme={t}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ background: `${t.button.primary}15`, padding: 12, borderRadius: 12, textAlign: 'center' }}>
             <span style={{ fontSize: 12, color: t.text.muted }}>رقم المهمة</span>
             <p style={{ fontSize: 18, fontWeight: 700, color: t.button.primary, margin: '4px 0 0 0', fontFamily: 'monospace' }}>{formData.code}</p>
           </div>
-          <div><label style={labelStyle}>عنوان المهمة *</label><input type="text" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} style={{...inputStyle, borderColor: errors.title ? t.status.danger.text : t.border.primary}} placeholder="مثال: مراجعة العقود" />{errors.title && <span style={{ fontSize: 12, color: t.status.danger.text }}>{errors.title}</span>}</div>
-          <div><label style={labelStyle}>الوصف</label><textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} style={{...inputStyle, minHeight: 80, resize: 'vertical'}} placeholder="وصف المهمة..." /></div>
+          <div><label style={labelStyle}>عنوان المهمة *</label><input type="text" value={formData.title} onChange={(e) => updateForm('title', e.target.value)} style={{...inputStyle, borderColor: errors.title ? t.status.danger.text : t.border.primary}} placeholder="مثال: مراجعة العقود" />{errors.title && <span style={{ fontSize: 12, color: t.status.danger.text }}>{errors.title}</span>}</div>
+          <div><label style={labelStyle}>الوصف</label><textarea value={formData.description} onChange={(e) => updateForm('description', e.target.value)} style={{...inputStyle, minHeight: 80, resize: 'vertical'}} placeholder="وصف المهمة..." /></div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div><label style={labelStyle}>الأولوية</label><select value={formData.priority} onChange={(e) => setFormData({...formData, priority: e.target.value})} style={inputStyle}>{priorities.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
-            <div><label style={labelStyle}>الحالة</label><select value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})} style={inputStyle}>{statuses.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+            <div><label style={labelStyle}>الأولوية</label><select value={formData.priority} onChange={(e) => updateForm('priority', e.target.value)} style={inputStyle}>{priorities.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
+            <div><label style={labelStyle}>الحالة</label><select value={formData.status} onChange={(e) => updateForm('status', e.target.value)} style={inputStyle}>{statuses.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div><label style={labelStyle}>تاريخ الاستحقاق</label><input type="date" value={formData.dueDate} onChange={(e) => setFormData({...formData, dueDate: e.target.value})} style={inputStyle} /></div>
-            <div><label style={labelStyle}>المشروع</label><select value={formData.projectId} onChange={(e) => setFormData({...formData, projectId: e.target.value})} style={inputStyle}><option value="">بدون مشروع</option>{projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
+            <div><label style={labelStyle}>تاريخ الاستحقاق</label><input type="date" value={formData.dueDate} onChange={(e) => updateForm('dueDate', e.target.value)} style={inputStyle} /></div>
+            <div><label style={labelStyle}>المشروع</label><select value={formData.projectId} onChange={(e) => updateForm('projectId', e.target.value)} style={inputStyle}><option value="">بدون مشروع</option>{projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
           </div>
         </div>
       </Modal>
 
-      {/* Edit Modal */}
-      <Modal show={showEditModal} onClose={() => setShowEditModal(false)} title="تعديل المهمة" onSubmit={handleEdit} submitText="حفظ التعديلات">
+      <Modal show={showEditModal} onClose={() => setShowEditModal(false)} title="تعديل المهمة" onSubmit={handleEdit} submitText="حفظ التعديلات" loading={loading} theme={t}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ background: `${t.button.primary}15`, padding: 12, borderRadius: 12, textAlign: 'center' }}>
             <span style={{ fontSize: 12, color: t.text.muted }}>رقم المهمة</span>
             <p style={{ fontSize: 18, fontWeight: 700, color: t.button.primary, margin: '4px 0 0 0', fontFamily: 'monospace' }}>{formData.code || 'T-0000'}</p>
           </div>
-          <div><label style={labelStyle}>عنوان المهمة *</label><input type="text" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} style={{...inputStyle, borderColor: errors.title ? t.status.danger.text : t.border.primary}} /></div>
-          <div><label style={labelStyle}>الوصف</label><textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} style={{...inputStyle, minHeight: 80, resize: 'vertical'}} /></div>
+          <div><label style={labelStyle}>عنوان المهمة *</label><input type="text" value={formData.title} onChange={(e) => updateForm('title', e.target.value)} style={{...inputStyle, borderColor: errors.title ? t.status.danger.text : t.border.primary}} /></div>
+          <div><label style={labelStyle}>الوصف</label><textarea value={formData.description} onChange={(e) => updateForm('description', e.target.value)} style={{...inputStyle, minHeight: 80, resize: 'vertical'}} /></div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div><label style={labelStyle}>الأولوية</label><select value={formData.priority} onChange={(e) => setFormData({...formData, priority: e.target.value})} style={inputStyle}>{priorities.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
-            <div><label style={labelStyle}>الحالة</label><select value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})} style={inputStyle}>{statuses.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
+            <div><label style={labelStyle}>الأولوية</label><select value={formData.priority} onChange={(e) => updateForm('priority', e.target.value)} style={inputStyle}>{priorities.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
+            <div><label style={labelStyle}>الحالة</label><select value={formData.status} onChange={(e) => updateForm('status', e.target.value)} style={inputStyle}>{statuses.map(s => <option key={s} value={s}>{s}</option>)}</select></div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div><label style={labelStyle}>تاريخ الاستحقاق</label><input type="date" value={formData.dueDate} onChange={(e) => setFormData({...formData, dueDate: e.target.value})} style={inputStyle} /></div>
-            <div><label style={labelStyle}>المشروع</label><select value={formData.projectId} onChange={(e) => setFormData({...formData, projectId: e.target.value})} style={inputStyle}><option value="">بدون مشروع</option>{projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
+            <div><label style={labelStyle}>تاريخ الاستحقاق</label><input type="date" value={formData.dueDate} onChange={(e) => updateForm('dueDate', e.target.value)} style={inputStyle} /></div>
+            <div><label style={labelStyle}>المشروع</label><select value={formData.projectId} onChange={(e) => updateForm('projectId', e.target.value)} style={inputStyle}><option value="">بدون مشروع</option>{projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
           </div>
         </div>
       </Modal>
 
-      {/* Delete Modal */}
-      <Modal show={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="حذف المهمة" onSubmit={handleDelete} submitText="حذف" danger>
+      <Modal show={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="حذف المهمة" onSubmit={handleDelete} submitText="حذف" danger loading={loading} theme={t}>
         <div style={{ textAlign: 'center', padding: 20 }}>
           <div style={{ width: 64, height: 64, borderRadius: '50%', background: t.status.danger.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}><AlertTriangle size={32} color={t.status.danger.text} /></div>
           <p style={{ fontSize: 16, color: t.text.primary, marginBottom: 8 }}>هل أنت متأكد من حذف المهمة؟</p>
