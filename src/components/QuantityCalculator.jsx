@@ -769,111 +769,137 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
 
       {mainTab === 'items' && (
         <div style={cardStyle}>
-          {/* العنوان */}
-          <div style={{ fontSize: 16, fontWeight: 700, color: t?.text?.primary, marginBottom: 16 }}>⚙️ البنود والبرمجة</div>
+          {/* العنوان الرئيسي */}
+          <div style={{ fontSize: 18, fontWeight: 700, color: t?.text?.primary, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span>⚙️</span>
+            <span>البنود والبرمجة</span>
+          </div>
 
           {/* تبويبات القسم الرئيسية */}
-          <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
             <button 
               onClick={() => setProgrammingSection('places')}
               style={{ 
-                flex: 1, 
-                padding: '12px 16px', 
-                borderRadius: 10, 
+                padding: '16px', 
+                borderRadius: 12, 
                 border: programmingSection === 'places' ? `2px solid ${t?.button?.primary}` : `1px solid ${t?.border?.primary}`, 
                 background: programmingSection === 'places' ? `${t?.button?.primary}15` : t?.bg?.tertiary, 
                 cursor: 'pointer', 
                 fontFamily: 'inherit',
-                fontSize: 14,
-                fontWeight: 600,
-                color: programmingSection === 'places' ? t?.button?.primary : t?.text?.primary
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 8
               }}
             >
-              📍 أنواع المكان
+              <span style={{ fontSize: 28 }}>📍</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: programmingSection === 'places' ? t?.button?.primary : t?.text?.primary }}>أنواع المكان</span>
+              <span style={{ fontSize: 11, color: t?.text?.muted }}>{Object.keys(places).length} نوع</span>
             </button>
             <button 
               onClick={() => setProgrammingSection('items')}
               style={{ 
-                flex: 1, 
-                padding: '12px 16px', 
-                borderRadius: 10, 
+                padding: '16px', 
+                borderRadius: 12, 
                 border: programmingSection === 'items' ? `2px solid ${t?.button?.primary}` : `1px solid ${t?.border?.primary}`, 
                 background: programmingSection === 'items' ? `${t?.button?.primary}15` : t?.bg?.tertiary, 
                 cursor: 'pointer', 
                 fontFamily: 'inherit',
-                fontSize: 14,
-                fontWeight: 600,
-                color: programmingSection === 'items' ? t?.button?.primary : t?.text?.primary
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 8
               }}
             >
-              🔧 بنود العمل
+              <span style={{ fontSize: 28 }}>🔧</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: programmingSection === 'items' ? t?.button?.primary : t?.text?.primary }}>بنود العمل</span>
+              <span style={{ fontSize: 11, color: t?.text?.muted }}>{Object.keys(workItems).length} قسم</span>
             </button>
           </div>
 
+          {/* ═══════════════════════════════════════════════════════════════ */}
           {/* قسم أنواع المكان */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
           {programmingSection === 'places' && (
-            <>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: t?.text?.secondary }}>📍 أنواع المكان ({Object.keys(places).length})</div>
+            <div style={{ background: t?.bg?.tertiary, borderRadius: 12, padding: 16, border: `1px solid ${t?.border?.primary}` }}>
+              {/* العنوان وزر الإضافة */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, paddingBottom: 12, borderBottom: `1px solid ${t?.border?.primary}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 16 }}>📍</span>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: t?.text?.primary }}>أنواع المكان</span>
+                  <span style={{ fontSize: 12, color: t?.text?.muted, background: t?.bg?.secondary, padding: '2px 8px', borderRadius: 6 }}>{Object.keys(places).length}</span>
+                </div>
                 <button 
                   onClick={addNewPlaceType}
-                  style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: t?.button?.gradient, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit', boxShadow: `0 2px 8px ${t?.button?.primary}30` }}
+                  style={{ padding: '10px 18px', borderRadius: 10, border: 'none', background: t?.button?.gradient, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit', boxShadow: `0 2px 8px ${t?.button?.primary}30` }}
                 >
-                  <Plus size={16} /> إضافة نوع
+                  <Plus size={18} />
+                  <span>إضافة نوع</span>
                 </button>
               </div>
               
-              <div style={{ display: 'grid', gap: 12 }}>
+              {/* قائمة أنواع المكان */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {Object.entries(places).map(([key, place], idx) => {
                   const color = getCategoryColor(idx);
                   return (
-                    <div key={key} style={{ background: t?.bg?.tertiary, borderRadius: 12, overflow: 'hidden', border: `1px solid ${t?.border?.primary}`, opacity: place.enabled ? 1 : 0.6 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px' }}>
-                        <span style={{ fontSize: 28 }}>{place.icon}</span>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 16, fontWeight: 600, color: t?.text?.primary }}>{place.name}</div>
-                          <div style={{ fontSize: 12, color: t?.text?.muted }}>{place.places.length} مكان</div>
+                    <div key={key} style={{ background: t?.bg?.secondary, borderRadius: 10, border: `1px solid ${t?.border?.primary}`, overflow: 'hidden' }}>
+                      {/* رأس نوع المكان */}
+                      <div style={{ display: 'flex', alignItems: 'center', padding: 16, gap: 16 }}>
+                        {/* الأيقونة والاسم */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+                          <div style={{ width: 48, height: 48, borderRadius: 10, background: `${color.main}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span style={{ fontSize: 26 }}>{place.icon}</span>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 15, fontWeight: 600, color: t?.text?.primary, marginBottom: 2 }}>{place.name}</div>
+                            <div style={{ fontSize: 12, color: t?.text?.muted }}>{place.places.length} مكان</div>
+                          </div>
                         </div>
                         
-                        {/* زر تشغيل/إطفاء */}
-                        <div 
-                          onClick={() => togglePlaceType(key)}
-                          style={{ 
-                            width: 44, 
-                            height: 24, 
-                            borderRadius: 12, 
-                            background: place.enabled ? t?.status?.success?.text : t?.bg?.secondary, 
-                            position: 'relative',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            border: `1px solid ${t?.border?.primary}`
-                          }}
-                        >
-                          <div style={{ 
-                            width: 18, 
-                            height: 18, 
-                            borderRadius: '50%', 
-                            background: '#fff', 
-                            position: 'absolute', 
-                            top: 2, 
-                            right: place.enabled ? 2 : 22,
-                            transition: 'all 0.2s',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-                          }} />
+                        {/* الأزرار */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          {/* زر تشغيل/إطفاء */}
+                          <div 
+                            onClick={() => togglePlaceType(key)}
+                            style={{ 
+                              width: 50, 
+                              height: 28, 
+                              borderRadius: 14, 
+                              background: place.enabled ? t?.status?.success?.text : t?.bg?.tertiary, 
+                              position: 'relative',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              border: `1px solid ${place.enabled ? t?.status?.success?.text : t?.border?.primary}`
+                            }}
+                          >
+                            <div style={{ 
+                              width: 22, 
+                              height: 22, 
+                              borderRadius: '50%', 
+                              background: '#fff', 
+                              position: 'absolute', 
+                              top: 2, 
+                              right: place.enabled ? 2 : 24,
+                              transition: 'all 0.2s',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                            }} />
+                          </div>
+                          
+                          {/* زر التحرير */}
+                          <button 
+                            onClick={() => setEditingPlaceType({ key, name: place.name, icon: place.icon, places: [...place.places] })}
+                            style={{ width: 40, height: 40, borderRadius: 10, border: 'none', background: t?.button?.gradient, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: `0 2px 8px ${t?.button?.primary}30` }}
+                          >
+                            <Edit3 size={18} />
+                          </button>
                         </div>
-
-                        <button 
-                          onClick={() => setEditingPlaceType({ key, name: place.name, icon: place.icon, places: [...place.places] })}
-                          style={{ width: 36, height: 36, borderRadius: 8, border: 'none', background: t?.button?.gradient, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: `0 2px 6px ${t?.button?.primary}30` }}
-                        >
-                          <Edit3 size={16} />
-                        </button>
                       </div>
                       
-                      {/* الأماكن */}
-                      <div style={{ padding: '0 20px 16px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                      {/* قائمة الأماكن */}
+                      <div style={{ padding: '0 16px 16px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                         {place.places.map((p, i) => (
-                          <span key={i} style={{ padding: '6px 12px', borderRadius: 8, background: `${color.main}15`, color: color.main, fontSize: 12, fontWeight: 600 }}>
+                          <span key={i} style={{ padding: '8px 14px', borderRadius: 8, background: `${color.main}12`, color: color.main, fontSize: 13, fontWeight: 500, border: `1px solid ${color.main}30` }}>
                             {p}
                           </span>
                         ))}
@@ -882,165 +908,215 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                   );
                 })}
               </div>
-            </>
+            </div>
           )}
 
+          {/* ═══════════════════════════════════════════════════════════════ */}
           {/* قسم بنود العمل */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
           {programmingSection === 'items' && (
-            <>
+            <div style={{ background: t?.bg?.tertiary, borderRadius: 12, padding: 16, border: `1px solid ${t?.border?.primary}` }}>
               {/* تبويبات نوع المكان */}
-              <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-                {Object.entries(places).map(([key, place]) => (
-                  <button 
-                    key={key}
-                    onClick={() => setProgrammingTab(key)}
-                    style={{ 
-                      padding: '10px 16px', 
-                      borderRadius: 10, 
-                      border: programmingTab === key ? `2px solid ${t?.button?.primary}` : `1px solid ${t?.border?.primary}`, 
-                      background: programmingTab === key ? `${t?.button?.primary}15` : t?.bg?.tertiary, 
-                      cursor: 'pointer', 
-                      fontFamily: 'inherit',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6
-                    }}
-                  >
-                    <span style={{ fontSize: 18 }}>{place.icon}</span>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: programmingTab === key ? t?.button?.primary : t?.text?.primary }}>{place.name}</span>
-                  </button>
-                ))}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 16, paddingBottom: 16, borderBottom: `1px solid ${t?.border?.primary}`, overflowX: 'auto' }}>
+                {Object.entries(places).map(([key, place], idx) => {
+                  const color = getCategoryColor(idx);
+                  const isActive = programmingTab === key;
+                  return (
+                    <button 
+                      key={key}
+                      onClick={() => setProgrammingTab(key)}
+                      style={{ 
+                        padding: '10px 20px', 
+                        borderRadius: 10, 
+                        border: isActive ? `2px solid ${color.main}` : `1px solid ${t?.border?.primary}`, 
+                        background: isActive ? `${color.main}15` : t?.bg?.secondary, 
+                        cursor: 'pointer', 
+                        fontFamily: 'inherit',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        whiteSpace: 'nowrap',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <span style={{ fontSize: 18 }}>{place.icon}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: isActive ? color.main : t?.text?.primary }}>{place.name}</span>
+                    </button>
+                  );
+                })}
               </div>
 
+              {/* العنوان وزر الإضافة */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: t?.text?.secondary }}>
-                  🔧 بنود {places[programmingTab]?.name || ''} ({Object.keys(workItems).length} قسم)
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 16 }}>🔧</span>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: t?.text?.primary }}>بنود {places[programmingTab]?.name}</span>
+                  <span style={{ fontSize: 12, color: t?.text?.muted, background: t?.bg?.secondary, padding: '2px 8px', borderRadius: 6 }}>{Object.keys(workItems).length}</span>
                 </div>
                 <button 
                   onClick={addNewCategory} 
-                  style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: t?.button?.gradient, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit', boxShadow: `0 2px 8px ${t?.button?.primary}30` }}
+                  style={{ padding: '10px 18px', borderRadius: 10, border: 'none', background: t?.button?.gradient, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit', boxShadow: `0 2px 8px ${t?.button?.primary}30` }}
                 >
-                  <Plus size={16} /> إضافة قسم
+                  <Plus size={18} />
+                  <span>إضافة قسم</span>
                 </button>
               </div>
 
-              {/* البنود الرئيسية */}
-              <div style={{ display: 'grid', gap: 12 }}>
+              {/* قائمة الأقسام */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {Object.entries(workItems).map(([catKey, cat], catIdx) => {
                   const color = getCategoryColor(catIdx);
                   const isCatEnabled = isCategoryEnabledInPlace(programmingTab, catKey);
+                  const isExpanded = selectedCategory === catKey;
+                  
                   return (
-                    <div key={catKey} style={{ background: t?.bg?.tertiary, borderRadius: 12, overflow: 'hidden', border: `1px solid ${t?.border?.primary}`, opacity: isCatEnabled ? 1 : 0.6 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px' }}>
-                        <span style={{ fontSize: 24, cursor: 'pointer' }} onClick={() => toggleCategory(catKey)}>{cat.icon}</span>
-                        <span style={{ fontSize: 16, fontWeight: 600, flex: 1, color: t?.text?.primary, cursor: 'pointer' }} onClick={() => toggleCategory(catKey)}>{cat.name}</span>
-                        <span style={{ fontSize: 12, color: t?.text?.muted, background: t?.bg?.secondary, padding: '4px 10px', borderRadius: 8 }}>{cat.items.length} بند</span>
-                        
-                        {/* زر تشغيل/إطفاء القسم */}
-                        <div 
-                          onClick={(e) => { e.stopPropagation(); toggleCategoryInPlace(programmingTab, catKey); }}
-                          style={{ 
-                            width: 44, 
-                            height: 24, 
-                            borderRadius: 12, 
-                            background: isCatEnabled ? t?.status?.success?.text : t?.bg?.secondary, 
-                            position: 'relative',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            border: `1px solid ${t?.border?.primary}`
-                          }}
-                        >
-                          <div style={{ 
-                            width: 18, 
-                            height: 18, 
-                            borderRadius: '50%', 
-                            background: '#fff', 
-                            position: 'absolute', 
-                            top: 2, 
-                            right: isCatEnabled ? 2 : 22,
-                            transition: 'all 0.2s',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-                          }} />
+                    <div key={catKey} style={{ background: t?.bg?.secondary, borderRadius: 10, border: isExpanded ? `2px solid ${color.main}` : `1px solid ${t?.border?.primary}`, overflow: 'hidden', transition: 'all 0.2s' }}>
+                      {/* رأس القسم */}
+                      <div 
+                        style={{ display: 'flex', alignItems: 'center', padding: 16, gap: 12, cursor: 'pointer', opacity: isCatEnabled ? 1 : 0.6 }}
+                        onClick={() => toggleCategory(catKey)}
+                      >
+                        {/* الأيقونة والاسم */}
+                        <div style={{ width: 44, height: 44, borderRadius: 10, background: `${color.main}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <span style={{ fontSize: 24 }}>{cat.icon}</span>
                         </div>
-
-                        {selectedCategory === catKey && (
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); addNewWorkItem(catKey); }}
-                            style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: t?.button?.gradient, color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'inherit', boxShadow: `0 2px 6px ${t?.button?.primary}30` }}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 15, fontWeight: 600, color: t?.text?.primary, marginBottom: 2 }}>{cat.name}</div>
+                          <div style={{ fontSize: 12, color: t?.text?.muted }}>{cat.items.length} بند</div>
+                        </div>
+                        
+                        {/* الأزرار */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }} onClick={e => e.stopPropagation()}>
+                          {/* زر تشغيل/إطفاء */}
+                          <div 
+                            onClick={() => toggleCategoryInPlace(programmingTab, catKey)}
+                            style={{ 
+                              width: 50, 
+                              height: 28, 
+                              borderRadius: 14, 
+                              background: isCatEnabled ? t?.status?.success?.text : t?.bg?.tertiary, 
+                              position: 'relative',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              border: `1px solid ${isCatEnabled ? t?.status?.success?.text : t?.border?.primary}`
+                            }}
                           >
-                            <Plus size={14} /> بند
+                            <div style={{ 
+                              width: 22, 
+                              height: 22, 
+                              borderRadius: '50%', 
+                              background: '#fff', 
+                              position: 'absolute', 
+                              top: 2, 
+                              right: isCatEnabled ? 2 : 24,
+                              transition: 'all 0.2s',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                            }} />
+                          </div>
+                          
+                          {/* زر التحرير */}
+                          <button 
+                            onClick={() => setEditingCategory({ catKey, name: cat.name, icon: cat.icon })}
+                            style={{ width: 36, height: 36, borderRadius: 8, border: 'none', background: `${t?.button?.primary}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                          >
+                            <Edit3 size={16} color={t?.button?.primary} />
                           </button>
-                        )}
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); setEditingCategory({ catKey, name: cat.name, icon: cat.icon }); }}
-                          style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: `${t?.button?.primary}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                        >
-                          <Edit3 size={16} color={t?.button?.primary} />
-                        </button>
-                        <div onClick={() => toggleCategory(catKey)} style={{ cursor: 'pointer' }}>
-                          {selectedCategory === catKey ? <ChevronUp size={20} color={t?.text?.muted} /> : <ChevronDown size={20} color={t?.text?.muted} />}
+                          
+                          {/* السهم */}
+                          <div style={{ width: 36, height: 36, borderRadius: 8, background: isExpanded ? `${color.main}15` : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {isExpanded ? <ChevronUp size={20} color={color.main} /> : <ChevronDown size={20} color={t?.text?.muted} />}
+                          </div>
                         </div>
                       </div>
                       
                       {/* البنود الفرعية */}
-                      {selectedCategory === catKey && (
-                        <div style={{ padding: '0 20px 20px' }}>
+                      {isExpanded && (
+                        <div style={{ padding: '0 16px 16px' }}>
+                          {/* زر إضافة بند */}
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+                            <button 
+                              onClick={() => addNewWorkItem(catKey)}
+                              style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: t?.button?.gradient, color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit', boxShadow: `0 2px 6px ${t?.button?.primary}30` }}
+                            >
+                              <Plus size={16} />
+                              <span>إضافة بند</span>
+                            </button>
+                          </div>
+                          
                           {cat.items.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: 20, color: t?.text?.muted, fontSize: 13 }}>
+                            <div style={{ textAlign: 'center', padding: 24, color: t?.text?.muted, fontSize: 13, background: t?.bg?.tertiary, borderRadius: 8 }}>
                               لا توجد بنود في هذا القسم
                             </div>
                           ) : (
-                            cat.items.map(item => {
-                              const isItemEnabled = isItemEnabledInPlace(programmingTab, catKey, item.id);
-                              return (
-                                <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: t?.bg?.secondary, borderRadius: 10, marginBottom: 8, border: `1px solid ${t?.border?.primary}`, opacity: isItemEnabled ? 1 : 0.5 }}>
-                                  {/* زر تشغيل/إطفاء البند */}
-                                  <div 
-                                    onClick={(e) => { e.stopPropagation(); toggleItemInPlace(programmingTab, catKey, item.id); }}
-                                    style={{ 
-                                      width: 40, 
-                                      height: 22, 
-                                      borderRadius: 11, 
-                                      background: isItemEnabled ? t?.status?.success?.text : t?.bg?.tertiary, 
-                                      position: 'relative',
-                                      cursor: 'pointer',
-                                      transition: 'all 0.2s',
-                                      border: `1px solid ${t?.border?.primary}`,
-                                      flexShrink: 0
-                                    }}
-                                  >
-                                    <div style={{ 
-                                      width: 16, 
-                                      height: 16, 
-                                      borderRadius: '50%', 
-                                      background: '#fff', 
-                                      position: 'absolute', 
-                                      top: 2, 
-                                      right: isItemEnabled ? 2 : 20,
-                                      transition: 'all 0.2s',
-                                      boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
-                                    }} />
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              {cat.items.map(item => {
+                                const isItemEnabled = isItemEnabledInPlace(programmingTab, catKey, item.id);
+                                return (
+                                  <div key={item.id} style={{ display: 'flex', alignItems: 'center', padding: 14, background: t?.bg?.tertiary, borderRadius: 10, border: `1px solid ${t?.border?.primary}`, gap: 12, opacity: isItemEnabled ? 1 : 0.5, transition: 'all 0.2s' }}>
+                                    {/* زر تشغيل/إطفاء */}
+                                    <div 
+                                      onClick={() => toggleItemInPlace(programmingTab, catKey, item.id)}
+                                      style={{ 
+                                        width: 44, 
+                                        height: 24, 
+                                        borderRadius: 12, 
+                                        background: isItemEnabled ? t?.status?.success?.text : t?.bg?.secondary, 
+                                        position: 'relative',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        border: `1px solid ${isItemEnabled ? t?.status?.success?.text : t?.border?.primary}`,
+                                        flexShrink: 0
+                                      }}
+                                    >
+                                      <div style={{ 
+                                        width: 18, 
+                                        height: 18, 
+                                        borderRadius: '50%', 
+                                        background: '#fff', 
+                                        position: 'absolute', 
+                                        top: 2, 
+                                        right: isItemEnabled ? 2 : 22,
+                                        transition: 'all 0.2s',
+                                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                                      }} />
+                                    </div>
+                                    
+                                    {/* معلومات البند */}
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <div style={{ fontSize: 14, fontWeight: 600, color: t?.text?.primary, marginBottom: 2 }}>{item.name}</div>
+                                      <div style={{ fontSize: 11, color: t?.text?.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.desc}</div>
+                                    </div>
+                                    
+                                    {/* نوع البند */}
+                                    <span style={{ 
+                                      fontSize: 11, 
+                                      padding: '4px 10px', 
+                                      borderRadius: 6, 
+                                      fontWeight: 600,
+                                      flexShrink: 0,
+                                      color: item.type === 'floor' ? t?.status?.success?.text : item.type === 'wall' ? t?.status?.info?.text : t?.status?.warning?.text, 
+                                      background: item.type === 'floor' ? t?.status?.success?.bg : item.type === 'wall' ? t?.status?.info?.bg : t?.status?.warning?.bg
+                                    }}>
+                                      {item.type === 'floor' ? 'أرضية' : item.type === 'wall' ? 'جدران' : 'أسقف'}
+                                    </span>
+                                    
+                                    {/* السعر */}
+                                    <div style={{ textAlign: 'center', minWidth: 70, flexShrink: 0 }}>
+                                      <div style={{ fontSize: 14, fontWeight: 700, color: color.main }}>{formatNum(item.exec)}</div>
+                                      <div style={{ fontSize: 10, color: t?.text?.muted }}>ر.س/م²</div>
+                                    </div>
+                                    
+                                    {/* زر التحرير */}
+                                    <button 
+                                      onClick={() => setEditingItem({ catKey, item: { ...item } })}
+                                      style={{ width: 36, height: 36, borderRadius: 8, border: 'none', background: `${t?.button?.primary}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+                                    >
+                                      <Edit3 size={16} color={t?.button?.primary} />
+                                    </button>
                                   </div>
-                                  <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => setEditingItem({ catKey, item: { ...item } })}>
-                                    <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2, color: t?.text?.primary }}>{item.name}</div>
-                                    <div style={{ fontSize: 11, color: t?.text?.muted }}>{item.desc}</div>
-                                  </div>
-                                  <span style={{ fontSize: 10, color: item.type === 'floor' ? t?.status?.success?.text : item.type === 'wall' ? t?.status?.info?.text : t?.status?.warning?.text, background: item.type === 'floor' ? t?.status?.success?.bg : item.type === 'wall' ? t?.status?.info?.bg : t?.status?.warning?.bg, padding: '3px 8px', borderRadius: 6 }}>
-                                    {item.type === 'floor' ? 'أرضية' : item.type === 'wall' ? 'جدران' : 'أسقف'}
-                                  </span>
-                                  <div style={{ textAlign: 'left', minWidth: 60 }}>
-                                    <div style={{ fontSize: 13, fontWeight: 700, color: color.main }}>{formatNum(item.exec)}</div>
-                                    <div style={{ fontSize: 10, color: t?.text?.muted }}>ر.س</div>
-                                  </div>
-                                  <button 
-                                    onClick={() => setEditingItem({ catKey, item: { ...item } })}
-                                    style={{ width: 28, height: 28, borderRadius: 6, border: 'none', background: `${t?.button?.primary}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
-                                  >
-                                    <Edit3 size={14} color={t?.button?.primary} />
-                                  </button>
-                                </div>
-                              );
-                            })
+                                );
+                              })}
+                            </div>
                           )}
                         </div>
                       )}
@@ -1048,7 +1124,7 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                   );
                 })}
               </div>
-            </>
+            </div>
           )}
         </div>
       )}
