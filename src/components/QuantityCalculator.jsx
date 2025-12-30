@@ -11,11 +11,11 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
   const [multiPlaces, setMultiPlaces] = useState([]);
 
   const [workItems, setWorkItems] = useState({
-    tiles: { name: 'البلاط', icon: '🔲', items: [{ id: 't1', name: 'إزالة بلاط', desc: 'إزالة البلاط القديم', exec: 15, cont: 10, type: 'floor' }, { id: 't2', name: 'صبة أرضية', desc: 'صب الخرسانة مع المواد', exec: 47, cont: 35, type: 'floor' }, { id: 't3', name: 'تبليط', desc: 'تركيب البلاط الجديد', exec: 30, cont: 20, type: 'floor' }] },
-    paint: { name: 'الدهانات', icon: '🎨', items: [{ id: 'p1', name: 'دهان داخلي', desc: 'دهان جوتن فاخر', exec: 21, cont: 14, type: 'wall' }, { id: 'p2', name: 'معجون', desc: 'تجهيز وتسوية الجدران', exec: 15, cont: 10, type: 'wall' }] },
-    gypsum: { name: 'الجبس', icon: '🏛️', items: [{ id: 'g1', name: 'جبسمبورد', desc: 'تركيب ألواح الجبس', exec: 60, cont: 40, type: 'ceiling' }] },
-    electrical: { name: 'الكهرباء', icon: '⚡', items: [{ id: 'e1', name: 'تأسيس كهرباء', desc: 'تمديدات شاملة', exec: 45, cont: 30, type: 'floor' }] },
-    plumbing: { name: 'السباكة', icon: '🔧', items: [{ id: 'pb1', name: 'تأسيس سباكة', desc: 'تمديدات شاملة', exec: 80, cont: 55, type: 'floor' }] },
+    tiles: { name: 'البلاط', icon: '🔲', programmed: true, items: [{ id: 't1', name: 'إزالة بلاط', desc: 'إزالة البلاط القديم', exec: 15, cont: 10, type: 'floor' }, { id: 't2', name: 'صبة أرضية', desc: 'صب الخرسانة مع المواد', exec: 47, cont: 35, type: 'floor' }, { id: 't3', name: 'تبليط', desc: 'تركيب البلاط الجديد', exec: 30, cont: 20, type: 'floor' }] },
+    paint: { name: 'الدهانات', icon: '🎨', programmed: true, items: [{ id: 'p1', name: 'دهان داخلي', desc: 'دهان جوتن فاخر', exec: 21, cont: 14, type: 'wall' }, { id: 'p2', name: 'معجون', desc: 'تجهيز وتسوية الجدران', exec: 15, cont: 10, type: 'wall' }] },
+    gypsum: { name: 'الجبس', icon: '🏛️', programmed: true, items: [{ id: 'g1', name: 'جبسمبورد', desc: 'تركيب ألواح الجبس', exec: 60, cont: 40, type: 'ceiling' }] },
+    electrical: { name: 'الكهرباء', icon: '⚡', programmed: true, items: [{ id: 'e1', name: 'تأسيس كهرباء', desc: 'تمديدات شاملة', exec: 45, cont: 30, type: 'floor' }] },
+    plumbing: { name: 'السباكة', icon: '🔧', programmed: true, items: [{ id: 'pb1', name: 'تأسيس سباكة', desc: 'تمديدات شاملة', exec: 80, cont: 55, type: 'floor' }] },
   });
 
   const [places] = useState({ dry: { name: 'جاف', icon: '🏠', enabled: true, places: ['صالة', 'مجلس', 'غرفة نوم', 'ممر'] }, wet: { name: 'رطب', icon: '🚿', enabled: true, places: ['مطبخ', 'دورة مياه', 'غسيل'] }, outdoor: { name: 'خارجي', icon: '🌳', enabled: true, places: ['حوش', 'سطح', 'موقف'] } });
@@ -57,10 +57,10 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
     const newKey = 'cat_' + Date.now();
     setWorkItems(prev => ({
       ...prev,
-      [newKey]: { name: 'قسم جديد', icon: '📦', items: [] }
+      [newKey]: { name: 'قسم جديد', icon: '📦', items: [], programmed: false }
     }));
     // فتح نافذة التحرير للقسم الجديد
-    setEditingCategory({ catKey: newKey, name: 'قسم جديد', icon: '📦' });
+    setEditingCategory({ catKey: newKey, name: 'قسم جديد', icon: '📦', isNew: true });
   };
 
   const deleteCategory = (catKey) => {
@@ -396,7 +396,7 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                     <div style={{ fontSize: 14, marginBottom: 12, fontWeight: 600, color: t?.text?.secondary }}>🔧 بنود العمل</div>
                     <div style={{ background: t?.bg?.tertiary, borderRadius: 10, border: `1px solid ${t?.border?.primary}`, padding: 12, marginBottom: 16 }}>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-                        {Object.entries(workItems).filter(([ck]) => programming[selectedPlaceType]?.[ck]?.length > 0).map(([key, cat], idx) => {
+                        {Object.entries(workItems).filter(([ck, cat]) => cat.programmed && programming[selectedPlaceType]?.[ck]?.length > 0).map(([key, cat], idx) => {
                           const color = getCategoryColor(idx);
                           const isSelected = selectedCategory === key;
                           return (
@@ -558,7 +558,29 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
 
       {mainTab === 'items' && (
         <div style={cardStyle}>
-          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 16, color: t?.text?.primary }}>⚙️ إدارة البنود</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ fontSize: 16, fontWeight: 700, color: t?.text?.primary }}>⚙️ إدارة البنود</div>
+            <button 
+              onClick={addNewCategory} 
+              style={{ 
+                padding: '8px 16px', 
+                borderRadius: 10, 
+                border: 'none', 
+                background: t?.button?.gradient, 
+                color: '#fff', 
+                fontSize: 13, 
+                fontWeight: 600, 
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 6, 
+                fontFamily: 'inherit',
+                boxShadow: `0 2px 8px ${t?.button?.primary}30`
+              }}
+            >
+              <Plus size={16} /> إضافة قسم
+            </button>
+          </div>
           <div style={{ display: 'grid', gap: 12 }}>
             {Object.entries(workItems).map(([catKey, cat], catIdx) => {
               const color = getCategoryColor(catIdx);
@@ -568,6 +590,28 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                     <span style={{ fontSize: 24, cursor: 'pointer' }} onClick={() => toggleCategory(catKey)}>{cat.icon}</span>
                     <span style={{ fontSize: 16, fontWeight: 600, flex: 1, color: t?.text?.primary, cursor: 'pointer' }} onClick={() => toggleCategory(catKey)}>{cat.name}</span>
                     <span style={{ fontSize: 12, color: t?.text?.muted, background: t?.bg?.secondary, padding: '4px 10px', borderRadius: 8 }}>{cat.items.length} بند</span>
+                    {selectedCategory === catKey && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); addNewWorkItem(catKey); }}
+                        style={{ 
+                          padding: '6px 12px', 
+                          borderRadius: 8, 
+                          border: 'none', 
+                          background: t?.button?.gradient, 
+                          color: '#fff', 
+                          fontSize: 12, 
+                          fontWeight: 600, 
+                          cursor: 'pointer', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 4, 
+                          fontFamily: 'inherit',
+                          boxShadow: `0 2px 6px ${t?.button?.primary}30`
+                        }}
+                      >
+                        <Plus size={14} /> بند
+                      </button>
+                    )}
                     <button 
                       onClick={(e) => { e.stopPropagation(); setEditingCategory({ catKey, name: cat.name, icon: cat.icon }); }}
                       style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: `${t?.button?.primary}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
@@ -580,44 +624,25 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                   </div>
                   {selectedCategory === catKey && (
                     <div style={{ padding: '0 20px 20px' }}>
-                      {cat.items.map(item => (
-                        <div key={item.id} onClick={() => setEditingItem({ catKey, item: { ...item } })} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: t?.bg?.secondary, borderRadius: 10, marginBottom: 8, border: `1px solid ${t?.border?.primary}`, cursor: 'pointer' }}>
-                          <div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2, color: t?.text?.primary }}>{item.name}</div><div style={{ fontSize: 11, color: t?.text?.muted }}>{item.desc}</div></div>
-                          <span style={{ fontSize: 10, color: item.type === 'floor' ? t?.status?.success?.text : item.type === 'wall' ? t?.status?.info?.text : t?.status?.warning?.text, background: item.type === 'floor' ? t?.status?.success?.bg : item.type === 'wall' ? t?.status?.info?.bg : t?.status?.warning?.bg, padding: '3px 8px', borderRadius: 6 }}>{item.type === 'floor' ? 'أرضية' : item.type === 'wall' ? 'جدران' : 'أسقف'}</span>
-                          <div style={{ textAlign: 'left', minWidth: 60 }}><div style={{ fontSize: 13, fontWeight: 700, color: color.main }}>{formatNum(item.exec)}</div><div style={{ fontSize: 10, color: t?.text?.muted }}>ر.س</div></div>
-                          <div style={{ width: 28, height: 28, borderRadius: 6, background: `${t?.button?.primary}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Edit3 size={14} color={t?.button?.primary} /></div>
+                      {cat.items.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: 20, color: t?.text?.muted, fontSize: 13 }}>
+                          لا توجد بنود في هذا القسم
                         </div>
-                      ))}
-                      <button onClick={() => addNewWorkItem(catKey)} style={{ width: '100%', padding: 12, borderRadius: 10, border: `2px dashed ${t?.border?.primary}`, background: 'transparent', color: t?.text?.muted, fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'inherit' }}><Plus size={16} /> إضافة بند جديد</button>
+                      ) : (
+                        cat.items.map(item => (
+                          <div key={item.id} onClick={() => setEditingItem({ catKey, item: { ...item } })} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px', background: t?.bg?.secondary, borderRadius: 10, marginBottom: 8, border: `1px solid ${t?.border?.primary}`, cursor: 'pointer' }}>
+                            <div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2, color: t?.text?.primary }}>{item.name}</div><div style={{ fontSize: 11, color: t?.text?.muted }}>{item.desc}</div></div>
+                            <span style={{ fontSize: 10, color: item.type === 'floor' ? t?.status?.success?.text : item.type === 'wall' ? t?.status?.info?.text : t?.status?.warning?.text, background: item.type === 'floor' ? t?.status?.success?.bg : item.type === 'wall' ? t?.status?.info?.bg : t?.status?.warning?.bg, padding: '3px 8px', borderRadius: 6 }}>{item.type === 'floor' ? 'أرضية' : item.type === 'wall' ? 'جدران' : 'أسقف'}</span>
+                            <div style={{ textAlign: 'left', minWidth: 60 }}><div style={{ fontSize: 13, fontWeight: 700, color: color.main }}>{formatNum(item.exec)}</div><div style={{ fontSize: 10, color: t?.text?.muted }}>ر.س</div></div>
+                            <div style={{ width: 28, height: 28, borderRadius: 6, background: `${t?.button?.primary}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Edit3 size={14} color={t?.button?.primary} /></div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   )}
                 </div>
               );
             })}
-            
-            {/* زر إضافة قسم جديد */}
-            <button 
-              onClick={addNewCategory} 
-              style={{ 
-                width: '100%', 
-                padding: 16, 
-                borderRadius: 12, 
-                border: `2px dashed ${t?.button?.primary}`, 
-                background: `${t?.button?.primary}10`, 
-                color: t?.button?.primary, 
-                fontSize: 14, 
-                fontWeight: 600, 
-                cursor: 'pointer', 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                gap: 10, 
-                fontFamily: 'inherit',
-                transition: 'all 0.2s'
-              }}
-            >
-              <Plus size={20} /> إضافة قسم جديد
-            </button>
           </div>
         </div>
       )}
