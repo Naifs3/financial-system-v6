@@ -30,6 +30,7 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
   const [height, setHeight] = useState(4);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [editingItem, setEditingItem] = useState(null);
+  const [editingCategory, setEditingCategory] = useState(null);
   const [reportData, setReportData] = useState({ companyName: 'ركائز الأولى', headerTitle: 'تقدير تكلفة', projectTitle: 'مشروع ترميم', vatRate: 15, footerEmail: 'info@company.com' });
 
   // دوال تحرير البنود
@@ -42,6 +43,14 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
     const newItem = { id: newId, name: 'بند جديد', desc: 'وصف البند', exec: 0, cont: 0, type: 'floor' };
     setWorkItems(prev => ({ ...prev, [catKey]: { ...prev[catKey], items: [...prev[catKey].items, newItem] } }));
     setEditingItem({ catKey, item: newItem });
+  };
+
+  const updateCategoryName = (catKey, newName) => {
+    setWorkItems(prev => ({ ...prev, [catKey]: { ...prev[catKey], name: newName } }));
+  };
+
+  const updateCategoryIcon = (catKey, newIcon) => {
+    setWorkItems(prev => ({ ...prev, [catKey]: { ...prev[catKey], icon: newIcon } }));
   };
 
   const formatNum = (n) => Number(n).toLocaleString('en-US');
@@ -148,7 +157,7 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
   const cardStyle = { background: t?.bg?.secondary, borderRadius: 12, border: `1px solid ${t?.border?.primary}`, padding: 20, marginBottom: 16 };
   const btnStyle = (active) => ({ padding: '10px 20px', borderRadius: 10, border: active ? 'none' : `1px solid ${t?.border?.primary}`, background: active ? t?.button?.gradient : 'transparent', color: active ? '#fff' : t?.text?.muted, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'inherit', transition: 'all 0.2s' });
   const inputStyle = { width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${t?.border?.primary}`, background: t?.bg?.tertiary, color: t?.text?.primary, fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', ...noSpinner };
-  const selectStyle = { ...inputStyle, appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'left 12px center', paddingLeft: 36, cursor: 'pointer' };
+  const selectStyle = { ...inputStyle, appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'left 12px center', paddingLeft: 40, cursor: 'pointer' };
 
   const DimensionInput = ({ label, value, onChange }) => (
     <div style={{ 
@@ -168,16 +177,17 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
             width: 44, 
             height: 44, 
             borderRadius: 10, 
-            border: `1px solid ${t?.border?.primary}`, 
-            background: t?.bg?.secondary, 
-            color: t?.text?.primary, 
+            border: 'none', 
+            background: t?.button?.gradient, 
+            color: '#fff', 
             fontSize: 22, 
             cursor: 'pointer', 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center',
             fontFamily: 'inherit',
-            transition: 'all 0.2s'
+            transition: 'all 0.2s',
+            boxShadow: `0 2px 8px ${t?.button?.primary}30`
           }}
         >−</button>
         <div style={{ display: 'flex', alignItems: 'baseline', minWidth: 70, justifyContent: 'center' }}>
@@ -207,16 +217,17 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
             width: 44, 
             height: 44, 
             borderRadius: 10, 
-            border: `1px solid ${t?.border?.primary}`, 
-            background: t?.bg?.secondary, 
-            color: t?.text?.primary, 
+            border: 'none', 
+            background: t?.button?.gradient, 
+            color: '#fff', 
             fontSize: 22, 
             cursor: 'pointer', 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'center',
             fontFamily: 'inherit',
-            transition: 'all 0.2s'
+            transition: 'all 0.2s',
+            boxShadow: `0 2px 8px ${t?.button?.primary}30`
           }}
         >+</button>
       </div>
@@ -534,12 +545,19 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
               const color = getCategoryColor(catIdx);
               return (
                 <div key={catKey} style={{ background: t?.bg?.tertiary, borderRadius: 12, overflow: 'hidden', border: `1px solid ${t?.border?.primary}` }}>
-                  <div onClick={() => toggleCategory(catKey)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px', cursor: 'pointer' }}>
-                    <span style={{ fontSize: 24 }}>{cat.icon}</span>
-                    <span style={{ fontSize: 16, fontWeight: 600, flex: 1, color: t?.text?.primary }}>{cat.name}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px' }}>
+                    <span style={{ fontSize: 24, cursor: 'pointer' }} onClick={() => toggleCategory(catKey)}>{cat.icon}</span>
+                    <span style={{ fontSize: 16, fontWeight: 600, flex: 1, color: t?.text?.primary, cursor: 'pointer' }} onClick={() => toggleCategory(catKey)}>{cat.name}</span>
                     <span style={{ fontSize: 12, color: t?.text?.muted, background: t?.bg?.secondary, padding: '4px 10px', borderRadius: 8 }}>{cat.items.length} بند</span>
-                    <div style={{ width: 28, height: 28, borderRadius: 6, background: `${t?.button?.primary}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Edit3 size={14} color={t?.button?.primary} /></div>
-                    {selectedCategory === catKey ? <ChevronUp size={20} color={t?.text?.muted} /> : <ChevronDown size={20} color={t?.text?.muted} />}
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); setEditingCategory({ catKey, name: cat.name, icon: cat.icon }); }}
+                      style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: `${t?.button?.primary}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                    >
+                      <Edit3 size={16} color={t?.button?.primary} />
+                    </button>
+                    <div onClick={() => toggleCategory(catKey)} style={{ cursor: 'pointer' }}>
+                      {selectedCategory === catKey ? <ChevronUp size={20} color={t?.text?.muted} /> : <ChevronDown size={20} color={t?.text?.muted} />}
+                    </div>
                   </div>
                   {selectedCategory === catKey && (
                     <div style={{ padding: '0 20px 20px' }}>
@@ -589,6 +607,78 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
               <button onClick={() => { setWorkItems(prev => ({ ...prev, [editingItem.catKey]: { ...prev[editingItem.catKey], items: prev[editingItem.catKey].items.map(item => item.id === editingItem.item.id ? editingItem.item : item) } })); setEditingItem(null); }} style={{ flex: 1, padding: '12px 16px', borderRadius: 10, border: 'none', background: t?.button?.gradient, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✓ حفظ التعديلات</button>
             </div>
             <button onClick={() => setEditingItem(null)} style={{ width: '100%', padding: '12px 16px', borderRadius: 10, border: `1px solid ${t?.border?.primary}`, background: 'transparent', color: t?.text?.muted, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>إلغاء</button>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة تحرير القسم الرئيسي */}
+      {editingCategory && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }} onClick={() => setEditingCategory(null)}>
+          <div style={{ background: t?.bg?.secondary, borderRadius: 16, padding: 24, width: '100%', maxWidth: 400, border: `1px solid ${t?.border?.primary}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div style={{ fontSize: 17, fontWeight: 700, color: t?.text?.primary }}>✏️ تحرير القسم</div>
+              <button onClick={() => setEditingCategory(null)} style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: t?.bg?.tertiary, color: t?.text?.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={18} /></button>
+            </div>
+            
+            {/* أيقونة القسم */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 8, fontWeight: 600 }}>أيقونة القسم</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {['🔲', '🎨', '🏛️', '⚡', '🔧', '🪵', '🚪', '🪟', '💡', '❄️', '🔥', '🛁'].map(icon => (
+                  <button 
+                    key={icon} 
+                    onClick={() => setEditingCategory({ ...editingCategory, icon })}
+                    style={{ 
+                      width: 44, 
+                      height: 44, 
+                      borderRadius: 10, 
+                      border: editingCategory.icon === icon ? `2px solid ${t?.button?.primary}` : `1px solid ${t?.border?.primary}`, 
+                      background: editingCategory.icon === icon ? `${t?.button?.primary}15` : t?.bg?.tertiary, 
+                      fontSize: 22, 
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {icon}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* اسم القسم */}
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>اسم القسم</div>
+              <input 
+                type="text" 
+                value={editingCategory.name} 
+                onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })} 
+                onFocus={handleInputFocus} 
+                style={inputStyle} 
+              />
+            </div>
+
+            {/* معاينة */}
+            <div style={{ padding: 16, borderRadius: 10, background: t?.bg?.tertiary, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 28 }}>{editingCategory.icon}</span>
+              <span style={{ fontSize: 16, fontWeight: 600, color: t?.text?.primary }}>{editingCategory.name}</span>
+            </div>
+
+            {/* أزرار */}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button 
+                onClick={() => {
+                  updateCategoryName(editingCategory.catKey, editingCategory.name);
+                  updateCategoryIcon(editingCategory.catKey, editingCategory.icon);
+                  setEditingCategory(null);
+                }} 
+                style={{ flex: 1, padding: '12px 16px', borderRadius: 10, border: 'none', background: t?.button?.gradient, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}
+              >
+                ✓ حفظ التعديلات
+              </button>
+            </div>
+            <button onClick={() => setEditingCategory(null)} style={{ width: '100%', marginTop: 10, padding: '12px 16px', borderRadius: 10, border: `1px solid ${t?.border?.primary}`, background: 'transparent', color: t?.text?.muted, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>إلغاء</button>
           </div>
         </div>
       )}
