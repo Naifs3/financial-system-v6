@@ -165,7 +165,7 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
       alignItems: 'center', 
       justifyContent: 'space-between', 
       padding: '12px 16px', 
-      background: t?.bg?.tertiary, 
+      background: t?.bg?.secondary, 
       borderRadius: 10, 
       border: `1px solid ${t?.border?.primary}` 
     }}>
@@ -323,8 +323,8 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                         <DimensionInput label="العرض" value={width} onChange={setWidth} />
                         <DimensionInput label="الارتفاع" value={height} onChange={setHeight} />
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, padding: 16, background: t?.bg?.tertiary, borderRadius: 12, border: `1px solid ${t?.border?.primary}` }}>
-                        <div style={{ textAlign: 'center', padding: 12 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, padding: 16, background: t?.bg?.secondary, borderRadius: 12, border: `1px solid ${t?.border?.primary}` }}>
+                        <div style={{ textAlign: 'center', padding: 12, background: t?.bg?.tertiary, borderRadius: 10 }}>
                           <div style={{ fontSize: 12, color: t?.text?.muted, marginBottom: 6 }}>مساحة الأرضية</div>
                           <div style={{ fontSize: 11, color: t?.text?.muted, marginBottom: 8, fontFamily: 'monospace', background: t?.bg?.secondary, padding: '4px 8px', borderRadius: 6, display: 'inline-block' }}>
                             {formatNum(length)} × {formatNum(width)}
@@ -334,7 +334,7 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                             <span style={{ fontSize: 14, color: t?.text?.muted }}>م²</span>
                           </div>
                         </div>
-                        <div style={{ textAlign: 'center', padding: 12 }}>
+                        <div style={{ textAlign: 'center', padding: 12, background: t?.bg?.tertiary, borderRadius: 10 }}>
                           <div style={{ fontSize: 12, color: t?.text?.muted, marginBottom: 6 }}>مساحة الجدران</div>
                           <div style={{ fontSize: 11, color: t?.text?.muted, marginBottom: 8, fontFamily: 'monospace', background: t?.bg?.secondary, padding: '4px 8px', borderRadius: 6, display: 'inline-block' }}>
                             2×({formatNum(length)}+{formatNum(width)})×{formatNum(height)}
