@@ -151,14 +151,74 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
   const selectStyle = { ...inputStyle, appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'left 12px center', paddingLeft: 36, cursor: 'pointer' };
 
   const DimensionInput = ({ label, value, onChange }) => (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: t?.bg?.tertiary, borderRadius: 10, border: `1px solid ${t?.border?.primary}` }}>
+    <div style={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'space-between', 
+      padding: '12px 16px', 
+      background: t?.bg?.tertiary, 
+      borderRadius: 10, 
+      border: `1px solid ${t?.border?.primary}` 
+    }}>
       <div style={{ fontSize: 14, color: t?.text?.primary, fontWeight: 600 }}>{label}</div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button onClick={() => adjust(onChange, value, -0.5)} style={{ width: 40, height: 40, borderRadius: 8, border: `1px solid ${t?.border?.primary}`, background: t?.bg?.secondary, color: t?.text?.primary, fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit' }}>−</button>
-        <div style={{ display: 'flex', alignItems: 'baseline' }}>
-          <input type="number" value={value} onFocus={handleInputFocus} onChange={(e) => onChange(parseFloat(e.target.value) || 0)} style={{ width: 45, background: 'transparent', border: 'none', color: t?.text?.primary, fontSize: 24, fontWeight: 700, textAlign: 'center', outline: 'none', fontFamily: 'inherit', ...noSpinner }} /><span style={{ fontSize: 13, color: t?.text?.muted }}>م</span>
+        <button 
+          onClick={() => adjust(onChange, value, -0.5)} 
+          style={{ 
+            width: 44, 
+            height: 44, 
+            borderRadius: 10, 
+            border: `1px solid ${t?.border?.primary}`, 
+            background: t?.bg?.secondary, 
+            color: t?.text?.primary, 
+            fontSize: 22, 
+            cursor: 'pointer', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            fontFamily: 'inherit',
+            transition: 'all 0.2s'
+          }}
+        >−</button>
+        <div style={{ display: 'flex', alignItems: 'baseline', minWidth: 70, justifyContent: 'center' }}>
+          <input 
+            type="number" 
+            value={value} 
+            onFocus={handleInputFocus} 
+            onChange={(e) => onChange(parseFloat(e.target.value) || 0)} 
+            style={{ 
+              width: 50, 
+              background: 'transparent', 
+              border: 'none', 
+              color: t?.text?.primary, 
+              fontSize: 28, 
+              fontWeight: 700, 
+              textAlign: 'center', 
+              outline: 'none',
+              fontFamily: 'inherit',
+              ...noSpinner 
+            }} 
+          />
+          <span style={{ fontSize: 14, color: t?.text?.muted, marginRight: 2 }}>م</span>
         </div>
-        <button onClick={() => adjust(onChange, value, 0.5)} style={{ width: 40, height: 40, borderRadius: 8, border: `1px solid ${t?.border?.primary}`, background: t?.bg?.secondary, color: t?.text?.primary, fontSize: 20, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit' }}>+</button>
+        <button 
+          onClick={() => adjust(onChange, value, 0.5)} 
+          style={{ 
+            width: 44, 
+            height: 44, 
+            borderRadius: 10, 
+            border: `1px solid ${t?.border?.primary}`, 
+            background: t?.bg?.secondary, 
+            color: t?.text?.primary, 
+            fontSize: 22, 
+            cursor: 'pointer', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            fontFamily: 'inherit',
+            transition: 'all 0.2s'
+          }}
+        >+</button>
       </div>
     </div>
   );
@@ -252,16 +312,26 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                         <DimensionInput label="العرض" value={width} onChange={setWidth} />
                         <DimensionInput label="الارتفاع" value={height} onChange={setHeight} />
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, padding: 12, background: t?.bg?.secondary, borderRadius: 10 }}>
-                        <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 11, color: t?.text?.muted, marginBottom: 4 }}>مساحة الأرضية</div>
-                          <div style={{ fontSize: 11, color: t?.text?.muted, marginBottom: 4 }}>{formatNum(length)} × {formatNum(width)}</div>
-                          <div style={{ fontSize: 20, fontWeight: 700, color: t?.status?.success?.text }}>{formatNum(calcFloorArea())} م²</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, padding: 16, background: t?.bg?.tertiary, borderRadius: 12, border: `1px solid ${t?.border?.primary}` }}>
+                        <div style={{ textAlign: 'center', padding: 12 }}>
+                          <div style={{ fontSize: 12, color: t?.text?.muted, marginBottom: 6 }}>مساحة الأرضية</div>
+                          <div style={{ fontSize: 11, color: t?.text?.muted, marginBottom: 8, fontFamily: 'monospace', background: t?.bg?.secondary, padding: '4px 8px', borderRadius: 6, display: 'inline-block' }}>
+                            {formatNum(length)} × {formatNum(width)}
+                          </div>
+                          <div style={{ fontSize: 28, fontWeight: 700, color: t?.status?.success?.text, display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 4 }}>
+                            {formatNum(calcFloorArea())}
+                            <span style={{ fontSize: 14, color: t?.text?.muted }}>م²</span>
+                          </div>
                         </div>
-                        <div style={{ textAlign: 'center' }}>
-                          <div style={{ fontSize: 11, color: t?.text?.muted, marginBottom: 4 }}>مساحة الجدران</div>
-                          <div style={{ fontSize: 11, color: t?.text?.muted, marginBottom: 4 }}>2×({formatNum(length)}+{formatNum(width)})×{formatNum(height)}</div>
-                          <div style={{ fontSize: 20, fontWeight: 700, color: t?.status?.info?.text }}>{formatNum(calcWallArea())} م²</div>
+                        <div style={{ textAlign: 'center', padding: 12 }}>
+                          <div style={{ fontSize: 12, color: t?.text?.muted, marginBottom: 6 }}>مساحة الجدران</div>
+                          <div style={{ fontSize: 11, color: t?.text?.muted, marginBottom: 8, fontFamily: 'monospace', background: t?.bg?.secondary, padding: '4px 8px', borderRadius: 6, display: 'inline-block' }}>
+                            2×({formatNum(length)}+{formatNum(width)})×{formatNum(height)}
+                          </div>
+                          <div style={{ fontSize: 28, fontWeight: 700, color: t?.status?.info?.text, display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 4 }}>
+                            {formatNum(calcWallArea())}
+                            <span style={{ fontSize: 14, color: t?.text?.muted }}>م²</span>
+                          </div>
                         </div>
                       </div>
                       {placeMode === 'multi' && (
