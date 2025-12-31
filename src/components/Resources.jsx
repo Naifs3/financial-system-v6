@@ -1,5 +1,6 @@
 // src/components/Resources.jsx
 import React, { useState } from 'react';
+import ReactDOM from 'react-dom';
 import { 
   Package, Plus, Search, Edit, Trash2, AlertTriangle, X, ChevronDown,
   Users, Building2, FileText, Boxes, Wrench, Receipt, FileSignature, 
@@ -274,13 +275,17 @@ const Resources = ({
   // ═══════════════════════════════════════════════════════════
   // مكون المودال
   // ═══════════════════════════════════════════════════════════
-  const Modal = ({ show, onClose, title, children, onSubmit, submitText, danger, hideFooter }) => {
+  const Modal = ({ show, onClose, title, code, children, onSubmit, submitText, danger, hideFooter }) => {
     if (!show) return null;
-    return (
-      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 20 }} onClick={onClose}>
+    
+    const modalContent = (
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999999, padding: 20 }} onClick={onClose}>
         <div style={{ background: t.bg.secondary, borderRadius: 16, width: '100%', maxWidth: 550, border: `1px solid ${t.border.primary}`, maxHeight: '90vh', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }} onClick={e => e.stopPropagation()}>
           <div style={{ padding: '16px 20px', borderBottom: `1px solid ${t.border.primary}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: t.bg.tertiary }}>
-            <h3 style={{ fontSize: 17, fontWeight: 700, color: t.text.primary, margin: 0 }}>{title}</h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <h3 style={{ fontSize: 17, fontWeight: 700, color: t.text.primary, margin: 0 }}>{title}</h3>
+              {code && <span style={{ fontSize: 12, fontWeight: 700, color: t.button.primary, background: `${t.button.primary}15`, padding: '4px 10px', borderRadius: 6, fontFamily: 'monospace' }}>{code}</span>}
+            </div>
             <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: t.bg.secondary, color: t.text.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><X size={18} /></button>
           </div>
           <div style={{ padding: 20, overflowY: 'auto', maxHeight: 'calc(90vh - 140px)' }}>{children}</div>
@@ -293,6 +298,8 @@ const Resources = ({
         </div>
       </div>
     );
+    
+    return ReactDOM.createPortal(modalContent, document.body);
   };
 
   // ═══════════════════════════════════════════════════════════
@@ -303,10 +310,6 @@ const Resources = ({
       case 'clients':
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ background: `${t.button.primary}15`, padding: 12, borderRadius: 12, textAlign: 'center' }}>
-              <span style={{ fontSize: 12, color: t.text.muted }}>رقم العميل</span>
-              <p style={{ fontSize: 18, fontWeight: 700, color: t.button.primary, margin: '4px 0 0 0', fontFamily: 'monospace' }}>{formData.code}</p>
-            </div>
             <div>
               <label style={labelStyle}>نوع العميل</label>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -327,10 +330,6 @@ const Resources = ({
       case 'suppliers':
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ background: `#f9731615`, padding: 12, borderRadius: 12, textAlign: 'center' }}>
-              <span style={{ fontSize: 12, color: t.text.muted }}>رقم المورد</span>
-              <p style={{ fontSize: 18, fontWeight: 700, color: '#f97316', margin: '4px 0 0 0', fontFamily: 'monospace' }}>{formData.code}</p>
-            </div>
             <div><label style={labelStyle}>اسم المورد *</label><input type="text" value={formData.name || ''} onChange={(e) => setFormData({...formData, name: e.target.value})} style={{...inputStyle, borderColor: errors.name ? t.status.danger.text : t.border.primary}} placeholder="اسم المورد أو الشركة" /></div>
             <div><label style={labelStyle}>التصنيف</label><input type="text" value={formData.category || ''} onChange={(e) => setFormData({...formData, category: e.target.value})} style={inputStyle} placeholder="مثال: مواد بناء، كهرباء، سباكة..." /></div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -345,10 +344,6 @@ const Resources = ({
       case 'documents':
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ background: `#8b5cf615`, padding: 12, borderRadius: 12, textAlign: 'center' }}>
-              <span style={{ fontSize: 12, color: t.text.muted }}>رقم المستند</span>
-              <p style={{ fontSize: 18, fontWeight: 700, color: '#8b5cf6', margin: '4px 0 0 0', fontFamily: 'monospace' }}>{formData.code}</p>
-            </div>
             <div>
               <label style={labelStyle}>نوع المستند</label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
@@ -386,10 +381,6 @@ const Resources = ({
       case 'materials':
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ background: `#10b98115`, padding: 12, borderRadius: 12, textAlign: 'center' }}>
-              <span style={{ fontSize: 12, color: t.text.muted }}>رقم الصنف</span>
-              <p style={{ fontSize: 18, fontWeight: 700, color: '#10b981', margin: '4px 0 0 0', fontFamily: 'monospace' }}>{formData.code}</p>
-            </div>
             <div><label style={labelStyle}>اسم الصنف *</label><input type="text" value={formData.name || ''} onChange={(e) => setFormData({...formData, name: e.target.value})} style={{...inputStyle, borderColor: errors.name ? t.status.danger.text : t.border.primary}} placeholder="مثال: حديد تسليح 16مم" /></div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div><label style={labelStyle}>الوحدة</label><select value={formData.unit || 'unit'} onChange={(e) => setFormData({...formData, unit: e.target.value})} style={inputStyle}>
@@ -417,10 +408,6 @@ const Resources = ({
       case 'equipment':
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div style={{ background: `#ef444415`, padding: 12, borderRadius: 12, textAlign: 'center' }}>
-              <span style={{ fontSize: 12, color: t.text.muted }}>رقم المعدة</span>
-              <p style={{ fontSize: 18, fontWeight: 700, color: '#ef4444', margin: '4px 0 0 0', fontFamily: 'monospace' }}>{formData.code}</p>
-            </div>
             <div><label style={labelStyle}>اسم المعدة *</label><input type="text" value={formData.name || ''} onChange={(e) => setFormData({...formData, name: e.target.value})} style={{...inputStyle, borderColor: errors.name ? t.status.danger.text : t.border.primary}} placeholder="مثال: حفارة كوماتسو" /></div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <div><label style={labelStyle}>النوع</label><input type="text" value={formData.type || ''} onChange={(e) => setFormData({...formData, type: e.target.value})} style={inputStyle} placeholder="حفارة، شاحنة، رافعة..." /></div>
@@ -732,17 +719,17 @@ const Resources = ({
       )}
 
       {/* Add Modal */}
-      <Modal show={showAddModal} onClose={() => setShowAddModal(false)} title={`إضافة ${activeTabInfo?.label}`} onSubmit={handleAdd} submitText="إضافة">
+      <Modal show={showAddModal} onClose={() => setShowAddModal(false)} title={`إضافة ${activeTabInfo?.label}`} code={formData.code} onSubmit={handleAdd} submitText="إضافة">
         {renderFormContent()}
       </Modal>
 
       {/* Edit Modal */}
-      <Modal show={showEditModal} onClose={() => setShowEditModal(false)} title={`تعديل ${activeTabInfo?.label}`} onSubmit={handleEdit} submitText="حفظ التعديلات">
+      <Modal show={showEditModal} onClose={() => setShowEditModal(false)} title={`تعديل ${activeTabInfo?.label}`} code={formData.code} onSubmit={handleEdit} submitText="حفظ التعديلات">
         {renderFormContent()}
       </Modal>
 
       {/* Delete Modal */}
-      <Modal show={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="تأكيد الحذف" onSubmit={handleDelete} submitText="حذف" danger>
+      <Modal show={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="تأكيد الحذف" code={selectedItem?.code} onSubmit={handleDelete} submitText="حذف" danger>
         <div style={{ textAlign: 'center', padding: 20 }}>
           <div style={{ width: 64, height: 64, borderRadius: '50%', background: t.status.danger.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
             <AlertTriangle size={32} color={t.status.danger.text} />
@@ -754,7 +741,7 @@ const Resources = ({
       </Modal>
 
       {/* View Modal */}
-      <Modal show={showViewModal} onClose={() => setShowViewModal(false)} title="تفاصيل" hideFooter>
+      <Modal show={showViewModal} onClose={() => setShowViewModal(false)} title="تفاصيل" code={selectedItem?.code} hideFooter>
         {selectedItem && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {Object.entries(selectedItem).filter(([key]) => !['id'].includes(key)).map(([key, value]) => (
