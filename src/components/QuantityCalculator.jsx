@@ -124,7 +124,92 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
   const [placeMode, setPlaceMode] = useState('single');
   const [multiPlaces, setMultiPlaces] = useState([]);
 
+  // ═══════════════════════════════════════════════════════════════
+  // نظام المشاريع
+  // ═══════════════════════════════════════════════════════════════
+  const [projects, setProjects] = useState(() => {
+    try {
+      const saved = localStorage.getItem('calc_projects');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  
+  const [currentProjectId, setCurrentProjectId] = useState(null);
+  const [editingProject, setEditingProject] = useState(null);
+
+  // حفظ المشاريع
+  useEffect(() => {
+    localStorage.setItem('calc_projects', JSON.stringify(projects));
+  }, [projects]);
+
+  // الحصول على المشروع الحالي
+  const currentProject = projects.find(p => p.id === currentProjectId);
+
+  // إنشاء مشروع جديد
+  const createNewProject = () => {
+    const newProject = {
+      id: Date.now().toString(),
+      name: 'مشروع جديد',
+      description: '',
+      clientName: '',
+      clientPhone: '',
+      location: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      addedItems: {},
+      categoryOptions: {},
+      reportData: { companyName: 'ركائز الأولى', headerTitle: 'تقدير تكلفة', projectTitle: 'مشروع ترميم', vatRate: 15, footerEmail: 'info@company.com' }
+    };
+    setProjects(prev => [...prev, newProject]);
+    setCurrentProjectId(newProject.id);
+    setEditingProject({ ...newProject, isNew: true });
+  };
+
+  // حفظ تعديلات المشروع
+  const saveProject = (projectData) => {
+    setProjects(prev => prev.map(p => 
+      p.id === projectData.id 
+        ? { ...projectData, updatedAt: new Date().toISOString() }
+        : p
+    ));
+    setEditingProject(null);
+  };
+
+  // حذف مشروع
+  const deleteProject = (projectId) => {
+    if (confirm('هل تريد حذف هذا المشروع؟')) {
+      setProjects(prev => prev.filter(p => p.id !== projectId));
+      if (currentProjectId === projectId) {
+        setCurrentProjectId(null);
+      }
+    }
+  };
+
+  // تكرار مشروع
+  const duplicateProject = (project) => {
+    const newProject = {
+      ...project,
+      id: Date.now().toString(),
+      name: project.name + ' (نسخة)',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    setProjects(prev => [...prev, newProject]);
+  };
+
+  // تحديث بيانات المشروع الحالي
+  const updateCurrentProject = (updates) => {
+    if (!currentProjectId) return;
+    setProjects(prev => prev.map(p => 
+      p.id === currentProjectId 
+        ? { ...p, ...updates, updatedAt: new Date().toISOString() }
+        : p
+    ));
+  };
+
+  // ═══════════════════════════════════════════════════════════════
   // تحميل البيانات من localStorage
+  // ═══════════════════════════════════════════════════════════════
   const [workItems, setWorkItems] = useState(() => {
     try {
       const saved = localStorage.getItem('calc_workItems');
@@ -146,23 +231,33 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
     } catch { return defaultProgramming; }
   });
   
-  const [addedItems, setAddedItems] = useState(() => {
-    try {
-      const saved = localStorage.getItem('calc_addedItems');
-      return saved ? JSON.parse(saved) : {};
-    } catch { return {}; }
-  });
-  
-  const [categoryOptions, setCategoryOptions] = useState(() => {
-    try {
-      const saved = localStorage.getItem('calc_categoryOptions');
-      return saved ? JSON.parse(saved) : {};
-    } catch { return {}; }
-  });
+  // البنود المضافة والخيارات من المشروع الحالي
+  const addedItems = currentProject?.addedItems || {};
+  const categoryOptions = currentProject?.categoryOptions || {};
+  const reportData = currentProject?.reportData || { companyName: 'ركائز الأولى', headerTitle: 'تقدير تكلفة', projectTitle: 'مشروع ترميم', vatRate: 15, footerEmail: 'info@company.com' };
+
+  // تحديث البنود المضافة
+  const setAddedItems = (newItems) => {
+    const items = typeof newItems === 'function' ? newItems(addedItems) : newItems;
+    updateCurrentProject({ addedItems: items });
+  };
+
+  // تحديث خيارات الفئات
+  const setCategoryOptions = (newOptions) => {
+    const options = typeof newOptions === 'function' ? newOptions(categoryOptions) : newOptions;
+    updateCurrentProject({ categoryOptions: options });
+  };
+
+  // تحديث بيانات التقرير
+  const setReportData = (newData) => {
+    const data = typeof newData === 'function' ? newData(reportData) : newData;
+    updateCurrentProject({ reportData: data });
+  };
   
   const [programmingTab, setProgrammingTab] = useState('dry');
   const [programmingSection, setProgrammingSection] = useState('places');
   const [editingPlaceType, setEditingPlaceType] = useState(null);
+  const [editingWorkPlace, setEditingWorkPlace] = useState(null); // لتحرير أماكن العمل
 
   const [selectedPlaceType, setSelectedPlaceType] = useState('');
   const [selectedPlace, setSelectedPlace] = useState('');
@@ -173,7 +268,6 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [editingItem, setEditingItem] = useState(null);
   const [editingCategory, setEditingCategory] = useState(null);
-  const [reportData, setReportData] = useState({ companyName: 'ركائز الأولى', headerTitle: 'تقدير تكلفة', projectTitle: 'مشروع ترميم', vatRate: 15, footerEmail: 'info@company.com' });
 
   // States للملخص العام
   const [summaryExpanded, setSummaryExpanded] = useState({});
@@ -191,14 +285,6 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
   useEffect(() => {
     localStorage.setItem('calc_programming', JSON.stringify(programming));
   }, [programming]);
-
-  useEffect(() => {
-    localStorage.setItem('calc_addedItems', JSON.stringify(addedItems));
-  }, [addedItems]);
-
-  useEffect(() => {
-    localStorage.setItem('calc_categoryOptions', JSON.stringify(categoryOptions));
-  }, [categoryOptions]);
 
   // Toggle فئة في الملخص العام
   const toggleSummaryCategory = (catKey) => {
@@ -730,20 +816,168 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
             <Calculator size={28} />
             حاسبة الكميات
           </h2>
-          <p style={{ fontSize: 14, color: t?.text?.muted, marginTop: 4 }}>حساب تكاليف البنود والمساحات</p>
+          <p style={{ fontSize: 14, color: t?.text?.muted, marginTop: 4 }}>
+            {currentProject ? currentProject.name : 'إدارة المشاريع والحسابات'}
+          </p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
+          {currentProject && (
+            <button 
+              onClick={() => setCurrentProjectId(null)} 
+              style={{ padding: '10px 16px', borderRadius: 10, border: `1px solid ${t?.border?.primary}`, background: t?.bg?.secondary, color: t?.text?.muted, cursor: 'pointer', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}
+            >
+              ← المشاريع
+            </button>
+          )}
           {onRefresh && <button onClick={onRefresh} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${t?.border?.primary}`, background: t?.bg?.secondary, color: t?.text?.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><RefreshCw size={18} /></button>}
         </div>
       </div>
 
-      {/* Tabs */}
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={() => setMainTab('calculator')} style={{ ...btnStyle(mainTab === 'calculator'), flex: 1 }}><Calculator size={18} /> الحاسبة</button>
-          <button onClick={() => setMainTab('items')} style={{ ...btnStyle(mainTab === 'items'), flex: 1 }}><Layers size={18} /> البنود والبرمجة</button>
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* قائمة المشاريع - تظهر إذا لم يكن هناك مشروع مفتوح */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {!currentProjectId ? (
+        <div>
+          {/* زر إضافة مشروع جديد */}
+          <div style={cardStyle}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: t?.text?.primary }}>📁 المشاريع ({projects.length})</div>
+              <button 
+                onClick={createNewProject}
+                style={{ padding: '12px 24px', borderRadius: 10, border: 'none', background: t?.button?.gradient, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit', boxShadow: `0 4px 12px ${t?.button?.primary}30` }}
+              >
+                <Plus size={20} />
+                مشروع جديد
+              </button>
+            </div>
+
+            {/* قائمة المشاريع */}
+            {projects.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 40, background: t?.bg?.tertiary, borderRadius: 12 }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>📂</div>
+                <div style={{ fontSize: 16, color: t?.text?.muted, marginBottom: 8 }}>لا توجد مشاريع بعد</div>
+                <div style={{ fontSize: 13, color: t?.text?.muted }}>اضغط على "مشروع جديد" للبدء</div>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: 12 }}>
+                {projects.map((project, idx) => {
+                  const color = getCategoryColor(idx);
+                  const projectItems = Object.keys(project.addedItems || {}).length;
+                  const projectTotal = Object.values(project.addedItems || {}).reduce((sum, item) => sum + (item.area * item.exec), 0);
+                  
+                  return (
+                    <div 
+                      key={project.id}
+                      style={{ 
+                        background: t?.bg?.tertiary, 
+                        borderRadius: 12, 
+                        border: `1px solid ${t?.border?.primary}`,
+                        overflow: 'hidden'
+                      }}
+                    >
+                      <div 
+                        onClick={() => setCurrentProjectId(project.id)}
+                        style={{ 
+                          padding: 16, 
+                          cursor: 'pointer',
+                          borderRight: `4px solid ${color.main}`
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 16, fontWeight: 700, color: t?.text?.primary, marginBottom: 6 }}>
+                              {project.name}
+                            </div>
+                            {project.clientName && (
+                              <div style={{ fontSize: 12, color: t?.text?.muted, marginBottom: 4 }}>
+                                👤 {project.clientName}
+                              </div>
+                            )}
+                            {project.location && (
+                              <div style={{ fontSize: 12, color: t?.text?.muted, marginBottom: 4 }}>
+                                📍 {project.location}
+                              </div>
+                            )}
+                            <div style={{ display: 'flex', gap: 12, marginTop: 8, flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: 11, color: t?.text?.muted, background: t?.bg?.secondary, padding: '4px 8px', borderRadius: 6 }}>
+                                📋 {projectItems} بند
+                              </span>
+                              <span style={{ fontSize: 11, color: color.main, background: `${color.main}15`, padding: '4px 8px', borderRadius: 6, fontWeight: 600 }}>
+                                💰 {formatNum(projectTotal)} ر.س
+                              </span>
+                              <span style={{ fontSize: 10, color: t?.text?.muted }}>
+                                📅 {new Date(project.updatedAt).toLocaleDateString('ar-SA')}
+                              </span>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
+                            <button 
+                              onClick={() => setEditingProject({ ...project })}
+                              style={{ width: 36, height: 36, borderRadius: 8, border: 'none', background: `${t?.button?.primary}15`, color: t?.button?.primary, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            >
+                              <Edit3 size={16} />
+                            </button>
+                            <button 
+                              onClick={() => duplicateProject(project)}
+                              style={{ width: 36, height: 36, borderRadius: 8, border: 'none', background: `${t?.status?.info?.text}15`, color: t?.status?.info?.text, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            >
+                              <Copy size={16} />
+                            </button>
+                            <button 
+                              onClick={() => deleteProject(project.id)}
+                              style={{ width: 36, height: 36, borderRadius: 8, border: 'none', background: t?.status?.danger?.bg, color: t?.status?.danger?.text, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* زر البرمجة */}
+          <div style={cardStyle}>
+            <button 
+              onClick={() => setMainTab('items')} 
+              style={{ 
+                width: '100%', 
+                padding: 16, 
+                borderRadius: 10, 
+                border: `1px solid ${t?.border?.primary}`, 
+                background: t?.bg?.tertiary, 
+                color: t?.text?.primary, 
+                fontSize: 14, 
+                fontWeight: 600, 
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: 10,
+                fontFamily: 'inherit'
+              }}
+            >
+              <Layers size={20} />
+              إعدادات البنود والبرمجة
+            </button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <>
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* الحاسبة - تظهر عند فتح مشروع */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+
+          {/* Tabs */}
+          <div style={cardStyle}>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setMainTab('calculator')} style={{ ...btnStyle(mainTab === 'calculator'), flex: 1 }}><Calculator size={18} /> الحاسبة</button>
+              <button onClick={() => setMainTab('items')} style={{ ...btnStyle(mainTab === 'items'), flex: 1 }}><Layers size={18} /> البنود والبرمجة</button>
+            </div>
+          </div>
 
       {mainTab === 'calculator' && (
         <div>
@@ -1915,6 +2149,13 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                   );
                 })}
               </div>
+              <button 
+                onClick={() => { setEditingItem(null); setEditingWorkPlace(true); }}
+                style={{ marginTop: 10, width: '100%', padding: '10px', borderRadius: 8, border: `1px dashed ${t?.border?.primary}`, background: 'transparent', color: t?.text?.muted, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'inherit' }}
+              >
+                <Edit3 size={14} />
+                تحرير أماكن العمل (الصالة، الغرفة، ...)
+              </button>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
@@ -2008,6 +2249,13 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                   );
                 })}
               </div>
+              <button 
+                onClick={() => { setEditingCategory(null); setEditingWorkPlace(true); }}
+                style={{ marginTop: 10, width: '100%', padding: '10px', borderRadius: 8, border: `1px dashed ${t?.border?.primary}`, background: 'transparent', color: t?.text?.muted, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'inherit' }}
+              >
+                <Edit3 size={14} />
+                تحرير أماكن العمل (الصالة، الغرفة، ...)
+              </button>
             </div>
 
             {/* معاينة */}
@@ -2136,6 +2384,144 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* نافذة تحرير المشروع */}
+      {editingProject && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: 20 }} onClick={() => setEditingProject(null)}>
+          <div style={{ background: t?.bg?.secondary, borderRadius: 16, padding: 24, width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto', border: `1px solid ${t?.border?.primary}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid ${t?.border?.primary}` }}>
+              <span style={{ fontSize: 20 }}>📁</span>
+              <span style={{ fontSize: 17, fontWeight: 700, color: t?.text?.primary }}>{editingProject.isNew ? 'مشروع جديد' : 'تحرير المشروع'}</span>
+            </div>
+            
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>اسم المشروع *</div>
+              <input type="text" value={editingProject.name} onChange={(e) => setEditingProject({ ...editingProject, name: e.target.value })} onFocus={handleInputFocus} style={inputStyle} placeholder="أدخل اسم المشروع" />
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>وصف المشروع</div>
+              <textarea value={editingProject.description || ''} onChange={(e) => setEditingProject({ ...editingProject, description: e.target.value })} onFocus={handleInputFocus} style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }} placeholder="وصف مختصر للمشروع..." />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>اسم العميل</div>
+                <input type="text" value={editingProject.clientName || ''} onChange={(e) => setEditingProject({ ...editingProject, clientName: e.target.value })} onFocus={handleInputFocus} style={inputStyle} placeholder="اسم العميل" />
+              </div>
+              <div>
+                <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>رقم الجوال</div>
+                <input type="tel" value={editingProject.clientPhone || ''} onChange={(e) => setEditingProject({ ...editingProject, clientPhone: e.target.value })} onFocus={handleInputFocus} style={inputStyle} placeholder="05xxxxxxxx" />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>موقع المشروع</div>
+              <input type="text" value={editingProject.location || ''} onChange={(e) => setEditingProject({ ...editingProject, location: e.target.value })} onFocus={handleInputFocus} style={inputStyle} placeholder="المدينة / الحي" />
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, paddingTop: 16, borderTop: `1px solid ${t?.border?.primary}` }}>
+              <button onClick={() => setEditingProject(null)} style={{ padding: '12px 20px', borderRadius: 10, border: `1px solid ${t?.border?.primary}`, background: 'transparent', color: t?.text?.muted, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>إلغاء</button>
+              <button 
+                onClick={() => saveProject(editingProject)} 
+                disabled={!editingProject.name.trim()}
+                style={{ flex: 1, padding: '12px 20px', borderRadius: 10, border: 'none', background: editingProject.name.trim() ? t?.button?.gradient : t?.bg?.tertiary, color: editingProject.name.trim() ? '#fff' : t?.text?.muted, fontSize: 14, fontWeight: 600, cursor: editingProject.name.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}
+              >
+                ✓ حفظ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة تحرير مكان العمل */}
+      {editingWorkPlace && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: 20 }} onClick={() => setEditingWorkPlace(null)}>
+          <div style={{ background: t?.bg?.secondary, borderRadius: 16, padding: 24, width: '100%', maxWidth: 450, maxHeight: '90vh', overflowY: 'auto', border: `1px solid ${t?.border?.primary}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid ${t?.border?.primary}` }}>
+              <span style={{ fontSize: 20 }}>📍</span>
+              <span style={{ fontSize: 17, fontWeight: 700, color: t?.text?.primary }}>تحرير أماكن العمل</span>
+            </div>
+            
+            {/* قائمة أنواع المكان */}
+            {Object.entries(places).map(([typeKey, placeType], typeIdx) => {
+              const color = getCategoryColor(typeIdx);
+              return (
+                <div key={typeKey} style={{ marginBottom: 16, background: t?.bg?.tertiary, borderRadius: 10, padding: 14, border: `1px solid ${t?.border?.primary}` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                    <span style={{ fontSize: 20 }}>{placeType.icon}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: color.main }}>{placeType.name}</span>
+                    <span style={{ fontSize: 11, color: t?.text?.muted, background: t?.bg?.secondary, padding: '2px 8px', borderRadius: 4, marginRight: 'auto' }}>{placeType.places.length} مكان</span>
+                    <button 
+                      onClick={() => {
+                        const newPlace = prompt('أدخل اسم المكان الجديد:');
+                        if (newPlace?.trim()) {
+                          setPlaces(prev => ({
+                            ...prev,
+                            [typeKey]: {
+                              ...prev[typeKey],
+                              places: [...prev[typeKey].places, newPlace.trim()]
+                            }
+                          }));
+                        }
+                      }}
+                      style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: `${color.main}15`, color: color.main, fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'inherit' }}
+                    >
+                      <Plus size={12} /> إضافة
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {placeType.places.map((place, placeIdx) => (
+                      <div key={placeIdx} style={{ display: 'flex', alignItems: 'center', gap: 4, background: t?.bg?.secondary, padding: '6px 10px', borderRadius: 6, border: `1px solid ${t?.border?.primary}` }}>
+                        <span style={{ fontSize: 12, color: t?.text?.primary }}>{place}</span>
+                        <button 
+                          onClick={() => {
+                            const newName = prompt('تعديل اسم المكان:', place);
+                            if (newName?.trim() && newName !== place) {
+                              setPlaces(prev => ({
+                                ...prev,
+                                [typeKey]: {
+                                  ...prev[typeKey],
+                                  places: prev[typeKey].places.map((p, i) => i === placeIdx ? newName.trim() : p)
+                                }
+                              }));
+                            }
+                          }}
+                          style={{ background: 'none', border: 'none', color: t?.button?.primary, cursor: 'pointer', padding: 2 }}
+                        >
+                          <Edit3 size={12} />
+                        </button>
+                        <button 
+                          onClick={() => {
+                            if (placeType.places.length > 1 && confirm(`حذف "${place}"؟`)) {
+                              setPlaces(prev => ({
+                                ...prev,
+                                [typeKey]: {
+                                  ...prev[typeKey],
+                                  places: prev[typeKey].places.filter((_, i) => i !== placeIdx)
+                                }
+                              }));
+                            }
+                          }}
+                          style={{ background: 'none', border: 'none', color: t?.status?.danger?.text, cursor: 'pointer', padding: 2 }}
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+
+            <div style={{ display: 'flex', gap: 10, paddingTop: 16, borderTop: `1px solid ${t?.border?.primary}` }}>
+              <button onClick={() => setEditingWorkPlace(null)} style={{ flex: 1, padding: '12px 20px', borderRadius: 10, border: 'none', background: t?.button?.gradient, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✓ تم</button>
+            </div>
+          </div>
+        </div>
+      )}
+        </>
       )}
     </div>
   );
