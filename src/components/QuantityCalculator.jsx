@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Calculator, ChevronDown, ChevronUp, Plus, Trash2, Layers, FileText, X, MapPin, RefreshCw, Edit3, Copy, Check, Truck, Box, Ruler, AlertCircle } from 'lucide-react';
 
+// إعدادات أنواع البنود
+const typeConfig = {
+  floor: { name: 'أرضية', icon: '🏠', color: '#10b981', formula: (l, w, h) => l * w, formulaText: (l, w, h) => `${l} × ${w}` },
+  wall: { name: 'جدران', icon: '🧱', color: '#3b82f6', formula: (l, w, h) => (l + w) * 2 * h, formulaText: (l, w, h) => `(${l} + ${w}) × 2 × ${h}` },
+  ceiling: { name: 'سقف', icon: '☁️', color: '#f59e0b', formula: (l, w, h) => l * w, formulaText: (l, w, h) => `${l} × ${w}` }
+};
+
 // البيانات الافتراضية
 const defaultWorkItems = {
   tiles: { name: 'البلاط', icon: '🔲', items: [
@@ -8,8 +15,10 @@ const defaultWorkItems = {
     { id: 't2', name: 'إزالة بلاط (كمية كبيرة)', desc: 'إزالة البلاط القديم بدون حاوية', exec: 20, cont: 15, type: 'floor' },
     { id: 't3', name: 'صبة ميزانية (شامل المواد)', desc: 'صبة أرضية بدون سباكة أو كهرباء - شامل المواد', exec: 47, cont: 35, type: 'floor' },
     { id: 't4', name: 'صبة ميزانية (بدون مواد)', desc: 'صبة أرضية بدون سباكة أو كهرباء - بدون مواد', exec: 20, cont: 15, type: 'floor' },
-    { id: 't5', name: 'تركيب بلاط (أكبر من 120مم)', desc: 'تركيب بالغراء أو الخلطة الأسمنتية - بدون مواد', exec: 33, cont: 25, type: 'floor' },
-    { id: 't6', name: 'تركيب بلاط (أصغر من 120مم)', desc: 'تركيب بالغراء أو الخلطة الأسمنتية - بدون مواد', exec: 25, cont: 19, type: 'floor' },
+    { id: 't5', name: 'تركيب بلاط أرضيات (أكبر من 120سم)', desc: 'تركيب بالغراء أو الخلطة الأسمنتية - بدون مواد', exec: 33, cont: 25, type: 'floor' },
+    { id: 't6', name: 'تركيب بلاط أرضيات (أصغر من 120سم)', desc: 'تركيب بالغراء أو الخلطة الأسمنتية - بدون مواد', exec: 25, cont: 19, type: 'floor' },
+    { id: 't10', name: 'تركيب بلاط جدران (أكبر من 120سم)', desc: 'تركيب بالغراء أو الخلطة الأسمنتية - بدون مواد', exec: 33, cont: 25, type: 'wall' },
+    { id: 't11', name: 'تركيب بلاط جدران (أصغر من 120سم)', desc: 'تركيب بالغراء أو الخلطة الأسمنتية - بدون مواد', exec: 25, cont: 19, type: 'wall' },
     { id: 't7', name: 'تركيب نعلات', desc: 'نعلات داخلية أو خارجية بورسلان أو سيراميك - بدون مواد', exec: 13, cont: 10, type: 'wall' },
     { id: 't8', name: 'تركيب بلدورات الرصيف', desc: 'بدون أعمال الري أو السباكة أو الكهرباء - بدون مواد', exec: 33, cont: 25, type: 'floor' },
     { id: 't9', name: 'تركيب بلاط الرصيف', desc: 'بدون أعمال الري أو السباكة أو الكهرباء - بدون مواد', exec: 33, cont: 25, type: 'floor' }
@@ -21,7 +30,7 @@ const defaultWorkItems = {
     { id: 'm4', name: 'تركيب رخام (مقاسات صغيرة)', desc: 'تركيب رخام مقاسات صغيرة - بدون مواد', exec: 60, cont: 45, type: 'floor' },
     { id: 'm5', name: 'تركيب رخام درج', desc: 'تركيب رخام الدرج - بدون مواد', exec: 67, cont: 50, type: 'floor' }
   ]},
-  paint: { name: 'الدهانات', icon: '🎨', items: [
+  paint: { name: 'جديد الدهانات', icon: '🎨', items: [
     { id: 'p1', name: 'دهان داخلي (جوتن)', desc: 'مع المواد - طبقتين معجون + طبقتين دهان', exec: 21, cont: 16, type: 'wall' },
     { id: 'p2', name: 'دهان داخلي (الجزيرة)', desc: 'مع المواد - طبقتين معجون + طبقتين دهان', exec: 20, cont: 15, type: 'wall' },
     { id: 'p3', name: 'دهان داخلي (عسيب)', desc: 'مع المواد - طبقتين معجون + طبقتين دهان', exec: 19, cont: 14, type: 'wall' },
@@ -611,8 +620,32 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
   const formatNum = (n) => Number(n).toLocaleString('en-US');
   const calcFloorArea = () => length * width;
   const calcWallArea = () => 2 * (length + width) * height;
+  const calcCeilingArea = () => length * width;
   const getArea = () => calcFloorArea();
   const getWallArea = () => calcWallArea();
+  
+  // حساب المساحة حسب نوع البند
+  const getAreaByType = (type) => {
+    switch(type) {
+      case 'wall': return calcWallArea();
+      case 'ceiling': return calcCeilingArea();
+      default: return calcFloorArea();
+    }
+  };
+  
+  // الحصول على نص المعادلة حسب نوع البند
+  const getFormulaByType = (type, l = length, w = width, h = height) => {
+    const area = type === 'wall' ? 2 * (l + w) * h : l * w;
+    switch(type) {
+      case 'wall': return `(${formatNum(l)} + ${formatNum(w)}) × 2 × ${formatNum(h)} = ${formatNum(area)} م²`;
+      case 'ceiling': return `${formatNum(l)} × ${formatNum(w)} = ${formatNum(area)} م²`;
+      default: return `${formatNum(l)} × ${formatNum(w)} = ${formatNum(area)} م²`;
+    }
+  };
+  
+  // الحصول على معلومات نوع البند
+  const getTypeInfo = (type) => typeConfig[type] || typeConfig.floor;
+  
   const handleInputFocus = (e) => e.target.select();
   const adjust = (setter, value, delta) => setter(Math.max(0, +(value + delta).toFixed(1)));
   const toggleItem = (id) => setSelectedItems(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
@@ -1026,28 +1059,46 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                         <DimensionInput label="العرض" value={width} onChange={setWidth} />
                         <DimensionInput label="الارتفاع" value={height} onChange={setHeight} />
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                        <div style={{ textAlign: 'center', padding: 16, background: t?.bg?.tertiary, borderRadius: 10, border: `1px solid ${t?.border?.primary}` }}>
-                          <div style={{ fontSize: 12, color: t?.text?.muted, marginBottom: 6 }}>مساحة الأرضية</div>
-                          <div style={{ fontSize: 11, color: t?.text?.muted, marginBottom: 8, fontFamily: 'monospace', background: t?.bg?.secondary, padding: '4px 8px', borderRadius: 6, display: 'inline-block' }}>
+                      
+                      {/* عرض المعادلات والمساحات */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                        {/* مساحة الأرضية */}
+                        <div style={{ textAlign: 'center', padding: 14, background: `${typeConfig.floor.color}10`, borderRadius: 10, border: `1px solid ${typeConfig.floor.color}30` }}>
+                          <div style={{ fontSize: 20, marginBottom: 4 }}>{typeConfig.floor.icon}</div>
+                          <div style={{ fontSize: 12, color: typeConfig.floor.color, marginBottom: 4, fontWeight: 600 }}>{typeConfig.floor.name}</div>
+                          <div style={{ fontSize: 10, color: t?.text?.muted, marginBottom: 6, fontFamily: 'monospace', background: t?.bg?.secondary, padding: '3px 6px', borderRadius: 4, display: 'inline-block' }}>
                             {formatNum(length)} × {formatNum(width)}
                           </div>
-                          <div style={{ fontSize: 28, fontWeight: 700, color: t?.status?.success?.text, display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 4 }}>
-                            {formatNum(calcFloorArea())}
-                            <span style={{ fontSize: 14, color: t?.text?.muted }}>م²</span>
+                          <div style={{ fontSize: 22, fontWeight: 700, color: typeConfig.floor.color }}>
+                            {formatNum(calcFloorArea())} <span style={{ fontSize: 11, fontWeight: 400 }}>م²</span>
                           </div>
                         </div>
-                        <div style={{ textAlign: 'center', padding: 16, background: t?.bg?.tertiary, borderRadius: 10, border: `1px solid ${t?.border?.primary}` }}>
-                          <div style={{ fontSize: 12, color: t?.text?.muted, marginBottom: 6 }}>مساحة الجدران</div>
-                          <div style={{ fontSize: 11, color: t?.text?.muted, marginBottom: 8, fontFamily: 'monospace', background: t?.bg?.secondary, padding: '4px 8px', borderRadius: 6, display: 'inline-block' }}>
-                            2×({formatNum(length)}+{formatNum(width)})×{formatNum(height)}
+                        
+                        {/* مساحة الجدران */}
+                        <div style={{ textAlign: 'center', padding: 14, background: `${typeConfig.wall.color}10`, borderRadius: 10, border: `1px solid ${typeConfig.wall.color}30` }}>
+                          <div style={{ fontSize: 20, marginBottom: 4 }}>{typeConfig.wall.icon}</div>
+                          <div style={{ fontSize: 12, color: typeConfig.wall.color, marginBottom: 4, fontWeight: 600 }}>{typeConfig.wall.name}</div>
+                          <div style={{ fontSize: 10, color: t?.text?.muted, marginBottom: 6, fontFamily: 'monospace', background: t?.bg?.secondary, padding: '3px 6px', borderRadius: 4, display: 'inline-block' }}>
+                            ({formatNum(length)}+{formatNum(width)})×2×{formatNum(height)}
                           </div>
-                          <div style={{ fontSize: 28, fontWeight: 700, color: t?.status?.info?.text, display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: 4 }}>
-                            {formatNum(calcWallArea())}
-                            <span style={{ fontSize: 14, color: t?.text?.muted }}>م²</span>
+                          <div style={{ fontSize: 22, fontWeight: 700, color: typeConfig.wall.color }}>
+                            {formatNum(calcWallArea())} <span style={{ fontSize: 11, fontWeight: 400 }}>م²</span>
+                          </div>
+                        </div>
+                        
+                        {/* مساحة السقف */}
+                        <div style={{ textAlign: 'center', padding: 14, background: `${typeConfig.ceiling.color}10`, borderRadius: 10, border: `1px solid ${typeConfig.ceiling.color}30` }}>
+                          <div style={{ fontSize: 20, marginBottom: 4 }}>{typeConfig.ceiling.icon}</div>
+                          <div style={{ fontSize: 12, color: typeConfig.ceiling.color, marginBottom: 4, fontWeight: 600 }}>{typeConfig.ceiling.name}</div>
+                          <div style={{ fontSize: 10, color: t?.text?.muted, marginBottom: 6, fontFamily: 'monospace', background: t?.bg?.secondary, padding: '3px 6px', borderRadius: 4, display: 'inline-block' }}>
+                            {formatNum(length)} × {formatNum(width)}
+                          </div>
+                          <div style={{ fontSize: 22, fontWeight: 700, color: typeConfig.ceiling.color }}>
+                            {formatNum(calcFloorArea())} <span style={{ fontSize: 11, fontWeight: 400 }}>م²</span>
                           </div>
                         </div>
                       </div>
+                      
                       {placeMode === 'multi' && (
                         <button onClick={addMultiPlace} disabled={!selectedPlace || getArea() <= 0} style={{ width: '100%', padding: 12, borderRadius: 10, border: 'none', marginTop: 16, background: selectedPlace && getArea() > 0 ? t?.status?.success?.text : t?.bg?.tertiary, color: selectedPlace && getArea() > 0 ? '#fff' : t?.text?.muted, fontWeight: 600, fontSize: 14, cursor: selectedPlace && getArea() > 0 ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>➕ إضافة للقائمة</button>
                       )}
@@ -1112,29 +1163,42 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                           </button>
                         </div>
                         <div style={{ background: t?.bg?.tertiary, borderRadius: 10, border: `1px solid ${t?.border?.primary}`, padding: 12, marginBottom: 16 }}>
-                          <div className="work-items-scroll" style={{ display: 'grid', gap: 8, maxHeight: 220, overflowY: 'auto', paddingLeft: 8 }}>
+                          <div className="work-items-scroll" style={{ display: 'grid', gap: 8, maxHeight: 280, overflowY: 'auto', paddingLeft: 8 }}>
                             {workItems[selectedCategory].items.filter(i => isItemEnabledInPlace(selectedPlaceType, selectedCategory, i.id)).map(item => {
                               const isSelected = selectedItems.includes(item.id);
+                              const typeInfo = getTypeInfo(item.type);
+                              const itemArea = getAreaByType(item.type);
                               return (
-                                <div key={item.id} style={{ padding: '12px 14px', borderRadius: 10, border: isSelected ? `2px solid ${t?.button?.primary}` : `1px solid ${t?.border?.primary}`, background: isSelected ? `${t?.button?.primary}15` : t?.bg?.secondary, display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <div key={item.id} style={{ padding: '12px 14px', borderRadius: 10, border: isSelected ? `2px solid ${typeInfo.color}` : `1px solid ${t?.border?.primary}`, background: isSelected ? `${typeInfo.color}10` : t?.bg?.secondary, display: 'flex', alignItems: 'center', gap: 10 }}>
                                   <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => toggleItem(item.id)}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                         <span style={{ fontSize: 14, fontWeight: 600, color: t?.text?.primary }}>{item.name}</span>
-                                        <span style={{ fontSize: 10, color: item.type === 'wall' ? t?.status?.info?.text : item.type === 'ceiling' ? t?.status?.warning?.text : t?.status?.success?.text, background: item.type === 'wall' ? t?.status?.info?.bg : item.type === 'ceiling' ? t?.status?.warning?.bg : t?.status?.success?.bg, padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>
-                                          {item.type === 'wall' ? 'جدران' : item.type === 'ceiling' ? 'أسقف' : 'أرضية'}
+                                        <span style={{ fontSize: 10, color: typeInfo.color, background: `${typeInfo.color}15`, padding: '2px 8px', borderRadius: 4, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                          {typeInfo.icon} {typeInfo.name}
                                         </span>
                                       </div>
-                                      <span style={{ fontSize: 13, color: t?.status?.success?.text, fontWeight: 600 }}>{formatNum(item.exec)} ر.س</span>
                                     </div>
-                                    <div style={{ fontSize: 11, color: t?.text?.muted }}>{item.desc}</div>
+                                    <div style={{ fontSize: 11, color: t?.text?.muted, marginBottom: 6 }}>{item.desc}</div>
+                                    {/* المعادلة والسعر */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                      <span style={{ fontSize: 10, color: t?.text?.muted, fontFamily: 'monospace', background: t?.bg?.tertiary, padding: '3px 8px', borderRadius: 4 }}>
+                                        {getFormulaByType(item.type)}
+                                      </span>
+                                      <span style={{ fontSize: 12, color: typeInfo.color, fontWeight: 600 }}>
+                                        {formatNum(item.exec)} ر.س/م²
+                                      </span>
+                                      <span style={{ fontSize: 12, color: t?.status?.success?.text, fontWeight: 700, marginRight: 'auto' }}>
+                                        = {formatNum(itemArea * item.exec)} ر.س
+                                      </span>
+                                    </div>
                                   </div>
                                   {/* زر التحرير */}
                                   <button 
                                     onClick={(e) => { e.stopPropagation(); setEditingItem({ catKey: selectedCategory, item: { ...item } }); }}
-                                    style={{ width: 36, height: 36, borderRadius: 8, border: 'none', background: `${t?.button?.primary}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+                                    style={{ width: 36, height: 36, borderRadius: 8, border: 'none', background: `${typeInfo.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
                                   >
-                                    <Edit3 size={16} color={t?.button?.primary} />
+                                    <Edit3 size={16} color={typeInfo.color} />
                                   </button>
                                 </div>
                               );
@@ -1168,18 +1232,24 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                     {cat.items.map(item => {
                       // البحث عن البند الأصلي للتحرير
                       const originalItem = workItems[catKey]?.items.find(i => i.id === item.id);
+                      const typeInfo = getTypeInfo(item.type);
                       return (
-                        <div key={item.key} style={{ background: t?.bg?.tertiary, borderRadius: 10, padding: 14, marginBottom: 10, border: `1px solid ${t?.border?.primary}` }}>
+                        <div key={item.key} style={{ background: t?.bg?.tertiary, borderRadius: 10, padding: 14, marginBottom: 10, border: `1px solid ${typeInfo.color}30` }}>
                           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
-                            <div>
-                              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4, color: t?.text?.primary }}>{item.name}</div>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: t?.text?.primary }}>{item.name}</span>
+                                <span style={{ fontSize: 10, color: typeInfo.color, background: `${typeInfo.color}15`, padding: '2px 8px', borderRadius: 4, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  {typeInfo.icon} {typeInfo.name}
+                                </span>
+                              </div>
                               <div style={{ fontSize: 12, color: t?.text?.muted }}>{item.desc}</div>
                             </div>
                             <div style={{ display: 'flex', gap: 6 }}>
                               {originalItem && (
                                 <button 
                                   onClick={() => setEditingItem({ catKey, item: { ...originalItem } })}
-                                  style={{ background: `${t?.button?.primary}15`, border: 'none', color: t?.button?.primary, padding: '6px', borderRadius: 6, cursor: 'pointer' }}
+                                  style={{ background: `${typeInfo.color}15`, border: 'none', color: typeInfo.color, padding: '6px', borderRadius: 6, cursor: 'pointer' }}
                                 >
                                   <Edit3 size={14} />
                                 </button>
@@ -1192,14 +1262,17 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                             <span style={{ fontSize: 13, color: t?.button?.primary, fontWeight: 600 }}>{item.place}</span>
                             {item.isMulti && <span style={{ fontSize: 11, background: t?.status?.success?.bg, color: t?.status?.success?.text, padding: '2px 8px', borderRadius: 6 }}>{item.placesCount} أماكن</span>}
                           </div>
-                          <div style={{ background: t?.bg?.secondary, borderRadius: 8, padding: 10, marginBottom: 10 }}>
-                            <div style={{ fontSize: 11, color: t?.text?.muted, marginBottom: 4 }}>📐 المعادلة:</div>
-                            <div style={{ fontSize: 12, color: t?.status?.info?.text, fontFamily: 'monospace' }}>{item.formula}</div>
+                          <div style={{ background: `${typeInfo.color}08`, borderRadius: 8, padding: 10, marginBottom: 10, border: `1px solid ${typeInfo.color}20` }}>
+                            <div style={{ fontSize: 11, color: t?.text?.muted, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <Ruler size={12} />
+                              المعادلة ({typeInfo.name}):
+                            </div>
+                            <div style={{ fontSize: 12, color: typeInfo.color, fontFamily: 'monospace', fontWeight: 600 }}>{item.formula}</div>
                             {item.isMulti && <div style={{ fontSize: 12, color: t?.status?.success?.text, fontWeight: 600, marginTop: 6 }}>{item.totalFormula}</div>}
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <input type="number" value={item.area} onFocus={handleInputFocus} onChange={(e) => updateAddedItemArea(item.key, e.target.value)} style={{ width: 70, padding: '6px 8px', borderRadius: 6, border: `1px solid ${t?.border?.primary}`, background: t?.bg?.secondary, color: t?.text?.primary, fontSize: 14, textAlign: 'center', fontFamily: 'inherit', ...noSpinner }} />
+                              <input type="number" value={item.area} onFocus={handleInputFocus} onChange={(e) => updateAddedItemArea(item.key, e.target.value)} style={{ width: 70, padding: '6px 8px', borderRadius: 6, border: `1px solid ${typeInfo.color}50`, background: `${typeInfo.color}08`, color: typeInfo.color, fontSize: 14, textAlign: 'center', fontFamily: 'inherit', fontWeight: 600, ...noSpinner }} />
                               <span style={{ fontSize: 12, color: t?.text?.muted }}>م²</span>
                             </div>
                             <span style={{ fontSize: 14, color: t?.text?.muted }}>×</span>
@@ -2015,8 +2088,9 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                               {cat.items.map(item => {
                                 const isItemEnabled = isItemEnabledInPlace(programmingTab, catKey, item.id);
+                                const typeInfo = getTypeInfo(item.type);
                                 return (
-                                  <div key={item.id} style={{ display: 'flex', alignItems: 'center', padding: 14, background: t?.bg?.tertiary, borderRadius: 10, border: `1px solid ${t?.border?.primary}`, gap: 12, opacity: isItemEnabled ? 1 : 0.5, transition: 'all 0.2s' }}>
+                                  <div key={item.id} style={{ display: 'flex', alignItems: 'center', padding: 14, background: t?.bg?.tertiary, borderRadius: 10, border: `1px solid ${typeInfo.color}30`, gap: 12, opacity: isItemEnabled ? 1 : 0.5, transition: 'all 0.2s' }}>
                                     {/* زر تشغيل/إطفاء */}
                                     <div 
                                       onClick={() => toggleItemInPlace(programmingTab, catKey, item.id)}
@@ -2024,11 +2098,11 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                                         width: 44, 
                                         height: 24, 
                                         borderRadius: 12, 
-                                        background: isItemEnabled ? t?.status?.success?.text : t?.bg?.secondary, 
+                                        background: isItemEnabled ? typeInfo.color : t?.bg?.secondary, 
                                         position: 'relative',
                                         cursor: 'pointer',
                                         transition: 'all 0.2s',
-                                        border: `1px solid ${isItemEnabled ? t?.status?.success?.text : t?.border?.primary}`,
+                                        border: `1px solid ${isItemEnabled ? typeInfo.color : t?.border?.primary}`,
                                         flexShrink: 0
                                       }}
                                     >
@@ -2047,21 +2121,26 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                                     
                                     {/* معلومات البند */}
                                     <div style={{ flex: 1, minWidth: 0 }}>
-                                      <div style={{ fontSize: 14, fontWeight: 600, color: t?.text?.primary, marginBottom: 2 }}>{item.name}</div>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                                        <span style={{ fontSize: 14, fontWeight: 600, color: t?.text?.primary }}>{item.name}</span>
+                                      </div>
                                       <div style={{ fontSize: 11, color: t?.text?.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.desc}</div>
                                     </div>
                                     
                                     {/* نوع البند */}
                                     <span style={{ 
-                                      fontSize: 11, 
+                                      fontSize: 10, 
                                       padding: '4px 10px', 
                                       borderRadius: 6, 
                                       fontWeight: 600,
                                       flexShrink: 0,
-                                      color: item.type === 'floor' ? t?.status?.success?.text : item.type === 'wall' ? t?.status?.info?.text : t?.status?.warning?.text, 
-                                      background: item.type === 'floor' ? t?.status?.success?.bg : item.type === 'wall' ? t?.status?.info?.bg : t?.status?.warning?.bg
+                                      color: typeInfo.color, 
+                                      background: `${typeInfo.color}15`,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 4
                                     }}>
-                                      {item.type === 'floor' ? 'أرضية' : item.type === 'wall' ? 'جدران' : 'أسقف'}
+                                      {typeInfo.icon} {typeInfo.name}
                                     </span>
                                     
                                     {/* السعر */}
@@ -2115,11 +2194,34 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
 
             <div style={{ marginBottom: 16 }}><div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>اسم البند</div><input type="text" value={editingItem.item.name} onChange={(e) => setEditingItem({ ...editingItem, item: { ...editingItem.item, name: e.target.value } })} onFocus={handleInputFocus} style={inputStyle} /></div>
             <div style={{ marginBottom: 16 }}><div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>وصف البند</div><input type="text" value={editingItem.item.desc} onChange={(e) => setEditingItem({ ...editingItem, item: { ...editingItem.item, desc: e.target.value } })} onFocus={handleInputFocus} style={inputStyle} /></div>
+            
+            {/* نوع البند مع المعادلة */}
             <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 8, fontWeight: 600 }}>نوع البند</div>
+              <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 8, fontWeight: 600 }}>نوع البند (طريقة حساب المساحة)</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                {[{ value: 'floor', label: 'أرضية', status: 'success' }, { value: 'wall', label: 'جدران', status: 'info' }, { value: 'ceiling', label: 'أسقف', status: 'warning' }].map(type => (
-                  <button key={type.value} onClick={() => setEditingItem({ ...editingItem, item: { ...editingItem.item, type: type.value } })} style={{ padding: '12px', borderRadius: 10, border: editingItem.item.type === type.value ? `1px solid ${t?.status?.[type.status]?.text}` : `1px solid ${t?.border?.primary}`, background: editingItem.item.type === type.value ? t?.status?.[type.status]?.bg : 'transparent', color: editingItem.item.type === type.value ? t?.status?.[type.status]?.text : t?.text?.muted, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>{type.label}</button>
+                {Object.entries(typeConfig).map(([typeKey, typeInfo]) => (
+                  <button 
+                    key={typeKey} 
+                    onClick={() => setEditingItem({ ...editingItem, item: { ...editingItem.item, type: typeKey } })} 
+                    style={{ 
+                      padding: '14px 10px', 
+                      borderRadius: 10, 
+                      border: editingItem.item.type === typeKey ? `2px solid ${typeInfo.color}` : `1px solid ${t?.border?.primary}`, 
+                      background: editingItem.item.type === typeKey ? `${typeInfo.color}15` : 'transparent', 
+                      color: editingItem.item.type === typeKey ? typeInfo.color : t?.text?.muted, 
+                      fontSize: 12, 
+                      fontWeight: 600, 
+                      cursor: 'pointer', 
+                      fontFamily: 'inherit',
+                      textAlign: 'center'
+                    }}
+                  >
+                    <div style={{ fontSize: 24, marginBottom: 6 }}>{typeInfo.icon}</div>
+                    <div>{typeInfo.name}</div>
+                    <div style={{ fontSize: 9, marginTop: 4, opacity: 0.7, fontFamily: 'monospace' }}>
+                      {typeKey === 'wall' ? '(ط+ع)×2×ر' : 'ط × ع'}
+                    </div>
+                  </button>
                 ))}
               </div>
             </div>
