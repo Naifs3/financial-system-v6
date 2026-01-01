@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calculator, ChevronDown, ChevronUp, Plus, Trash2, Layers, FileText, X, MapPin, RefreshCw, Edit3, Copy, Check, Truck, Box, Ruler, AlertCircle } from 'lucide-react';
+import { Calculator, ChevronDown, ChevronUp, Plus, Trash2, Layers, FileText, X, MapPin, RefreshCw, Edit3, Copy, Check, Truck, Box, Ruler, AlertCircle, RotateCcw } from 'lucide-react';
 
 // إعدادات أنواع البنود
 const typeConfig = {
@@ -8,77 +8,77 @@ const typeConfig = {
   ceiling: { name: 'سقف', icon: '☁️', color: '#f59e0b', formula: (l, w, h) => l * w, formulaText: (l, w, h) => `${l} × ${w}` }
 };
 
-// البيانات الافتراضية
+// البيانات الافتراضية مع الكود والمجموعة
 const defaultWorkItems = {
   tiles: { name: 'البلاط', icon: '🔲', items: [
-    { id: 't1', name: 'إزالة بلاط (كمية متوسطة)', desc: 'إزالة البلاط القديم بدون حاوية', exec: 13, cont: 10, type: 'floor' },
-    { id: 't2', name: 'إزالة بلاط (كمية كبيرة)', desc: 'إزالة البلاط القديم بدون حاوية', exec: 20, cont: 15, type: 'floor' },
-    { id: 't3', name: 'صبة ميزانية (شامل المواد)', desc: 'صبة أرضية بدون سباكة أو كهرباء - شامل المواد', exec: 47, cont: 35, type: 'floor' },
-    { id: 't4', name: 'صبة ميزانية (بدون مواد)', desc: 'صبة أرضية بدون سباكة أو كهرباء - بدون مواد', exec: 20, cont: 15, type: 'floor' },
-    { id: 't5', name: 'تركيب بلاط أرضيات (أكبر من 120سم)', desc: 'تركيب بالغراء أو الخلطة الأسمنتية - بدون مواد', exec: 33, cont: 25, type: 'floor' },
-    { id: 't6', name: 'تركيب بلاط أرضيات (أصغر من 120سم)', desc: 'تركيب بالغراء أو الخلطة الأسمنتية - بدون مواد', exec: 25, cont: 19, type: 'floor' },
-    { id: 't10', name: 'تركيب بلاط جدران (أكبر من 120سم)', desc: 'تركيب بالغراء أو الخلطة الأسمنتية - بدون مواد', exec: 33, cont: 25, type: 'wall' },
-    { id: 't11', name: 'تركيب بلاط جدران (أصغر من 120سم)', desc: 'تركيب بالغراء أو الخلطة الأسمنتية - بدون مواد', exec: 25, cont: 19, type: 'wall' },
-    { id: 't7', name: 'تركيب نعلات', desc: 'نعلات داخلية أو خارجية بورسلان أو سيراميك - بدون مواد', exec: 13, cont: 10, type: 'wall' },
-    { id: 't8', name: 'تركيب بلدورات الرصيف', desc: 'بدون أعمال الري أو السباكة أو الكهرباء - بدون مواد', exec: 33, cont: 25, type: 'floor' },
-    { id: 't9', name: 'تركيب بلاط الرصيف', desc: 'بدون أعمال الري أو السباكة أو الكهرباء - بدون مواد', exec: 33, cont: 25, type: 'floor' }
+    { id: 't1', code: 'RB01', group: 'إزالة', name: 'إزالة بلاط (كمية متوسطة)', desc: 'إزالة البلاط القديم بدون حاوية', exec: 13, cont: 10, type: 'floor' },
+    { id: 't2', code: 'RB02', group: 'إزالة', name: 'إزالة بلاط (كمية كبيرة)', desc: 'إزالة البلاط القديم بدون حاوية', exec: 20, cont: 15, type: 'floor' },
+    { id: 't3', code: 'SB01', group: 'صبات', name: 'صبة ميزانية (شامل المواد)', desc: 'صبة أرضية بدون سباكة أو كهرباء - شامل المواد', exec: 47, cont: 35, type: 'floor' },
+    { id: 't4', code: 'SB02', group: 'صبات', name: 'صبة ميزانية (بدون مواد)', desc: 'صبة أرضية بدون سباكة أو كهرباء - بدون مواد', exec: 20, cont: 15, type: 'floor' },
+    { id: 't5', code: 'TF01', group: 'تبليط', name: 'تركيب بلاط أرضيات (أكبر من 120سم)', desc: 'تركيب بالغراء أو الخلطة الأسمنتية - بدون مواد', exec: 33, cont: 25, type: 'floor' },
+    { id: 't6', code: 'TF02', group: 'تبليط', name: 'تركيب بلاط أرضيات (أصغر من 120سم)', desc: 'تركيب بالغراء أو الخلطة الأسمنتية - بدون مواد', exec: 25, cont: 19, type: 'floor' },
+    { id: 't10', code: 'TW01', group: 'تبليط', name: 'تركيب بلاط جدران (أكبر من 120سم)', desc: 'تركيب بالغراء أو الخلطة الأسمنتية - بدون مواد', exec: 33, cont: 25, type: 'wall' },
+    { id: 't11', code: 'TW02', group: 'تبليط', name: 'تركيب بلاط جدران (أصغر من 120سم)', desc: 'تركيب بالغراء أو الخلطة الأسمنتية - بدون مواد', exec: 25, cont: 19, type: 'wall' },
+    { id: 't7', code: 'NL01', group: 'نعلات', name: 'تركيب نعلات', desc: 'نعلات داخلية أو خارجية بورسلان أو سيراميك - بدون مواد', exec: 13, cont: 10, type: 'wall' },
+    { id: 't8', code: 'RS01', group: 'رصيف', name: 'تركيب بلدورات الرصيف', desc: 'بدون أعمال الري أو السباكة أو الكهرباء - بدون مواد', exec: 33, cont: 25, type: 'floor' },
+    { id: 't9', code: 'RS02', group: 'رصيف', name: 'تركيب بلاط الرصيف', desc: 'بدون أعمال الري أو السباكة أو الكهرباء - بدون مواد', exec: 33, cont: 25, type: 'floor' }
   ]},
   marble: { name: 'الرخام', icon: '🪨', items: [
-    { id: 'm1', name: 'تركيب نعلات درج', desc: 'رخام نعلات الدرج - بدون مواد', exec: 13, cont: 10, type: 'wall' },
-    { id: 'm2', name: 'تركيب بسطات درج', desc: 'رخام بسطات الدرج', exec: 33, cont: 25, type: 'floor' },
-    { id: 'm3', name: 'تركيب رخام (مقاسات كبيرة)', desc: 'تركيب رخام مقاسات كبيرة - بدون مواد', exec: 100, cont: 75, type: 'floor' },
-    { id: 'm4', name: 'تركيب رخام (مقاسات صغيرة)', desc: 'تركيب رخام مقاسات صغيرة - بدون مواد', exec: 60, cont: 45, type: 'floor' },
-    { id: 'm5', name: 'تركيب رخام درج', desc: 'تركيب رخام الدرج - بدون مواد', exec: 67, cont: 50, type: 'floor' }
+    { id: 'm1', code: 'MN01', group: 'نعلات', name: 'تركيب نعلات درج', desc: 'رخام نعلات الدرج - بدون مواد', exec: 13, cont: 10, type: 'wall' },
+    { id: 'm2', code: 'MD01', group: 'درج', name: 'تركيب بسطات درج', desc: 'رخام بسطات الدرج', exec: 33, cont: 25, type: 'floor' },
+    { id: 'm3', code: 'MR01', group: 'رخام', name: 'تركيب رخام (مقاسات كبيرة)', desc: 'تركيب رخام مقاسات كبيرة - بدون مواد', exec: 100, cont: 75, type: 'floor' },
+    { id: 'm4', code: 'MR02', group: 'رخام', name: 'تركيب رخام (مقاسات صغيرة)', desc: 'تركيب رخام مقاسات صغيرة - بدون مواد', exec: 60, cont: 45, type: 'floor' },
+    { id: 'm5', code: 'MD02', group: 'درج', name: 'تركيب رخام درج', desc: 'تركيب رخام الدرج - بدون مواد', exec: 67, cont: 50, type: 'floor' }
   ]},
   paint: { name: 'جديد الدهانات', icon: '🎨', items: [
-    { id: 'p1', name: 'دهان داخلي (جوتن)', desc: 'مع المواد - طبقتين معجون + طبقتين دهان', exec: 21, cont: 16, type: 'wall' },
-    { id: 'p2', name: 'دهان داخلي (الجزيرة)', desc: 'مع المواد - طبقتين معجون + طبقتين دهان', exec: 20, cont: 15, type: 'wall' },
-    { id: 'p3', name: 'دهان داخلي (عسيب)', desc: 'مع المواد - طبقتين معجون + طبقتين دهان', exec: 19, cont: 14, type: 'wall' },
-    { id: 'p4', name: 'دهان داخلي (بدون مواد)', desc: 'بدون مواد - طبقتين معجون + طبقتين دهان', exec: 12, cont: 9, type: 'wall' },
-    { id: 'p5', name: 'زيادة طبقة معجون ثالثة', desc: 'طبقة إضافية - بدون مواد', exec: 3, cont: 2, type: 'wall' },
-    { id: 'p6', name: 'دهان خارجي رشة (مع مواد)', desc: 'رشة من جميع الشركات - مع المواد', exec: 19, cont: 14, type: 'wall' },
-    { id: 'p7', name: 'دهان خارجي بروفايل (جوتن)', desc: 'مع المواد - طبقتين معجون + طبقتين دهان', exec: 33, cont: 25, type: 'wall' },
-    { id: 'p8', name: 'دهان خارجي بروفايل (الجزيرة)', desc: 'مع المواد - طبقتين معجون + طبقتين دهان', exec: 33, cont: 25, type: 'wall' },
-    { id: 'p9', name: 'دهان خارجي بروفايل (عسيب)', desc: 'مع المواد - طبقتين معجون + طبقتين دهان', exec: 29, cont: 22, type: 'wall' },
-    { id: 'p10', name: 'دهان خارجي (بدون مواد)', desc: 'دهان فقط - بدون مواد', exec: 11, cont: 8, type: 'wall' },
-    { id: 'p11', name: 'دهان خارجي رشة (بدون مواد)', desc: 'رشة - بدون مواد', exec: 8, cont: 6, type: 'wall' },
-    { id: 'p12', name: 'دهان خارجي بروفايل (بدون مواد)', desc: 'بروفايل - بدون مواد', exec: 7, cont: 5, type: 'wall' }
+    { id: 'p1', code: 'PD01', group: 'دهان داخلي', name: 'دهان داخلي (جوتن)', desc: 'مع المواد - طبقتين معجون + طبقتين دهان', exec: 21, cont: 16, type: 'wall' },
+    { id: 'p2', code: 'PD02', group: 'دهان داخلي', name: 'دهان داخلي (الجزيرة)', desc: 'مع المواد - طبقتين معجون + طبقتين دهان', exec: 20, cont: 15, type: 'wall' },
+    { id: 'p3', code: 'PD03', group: 'دهان داخلي', name: 'دهان داخلي (عسيب)', desc: 'مع المواد - طبقتين معجون + طبقتين دهان', exec: 19, cont: 14, type: 'wall' },
+    { id: 'p4', code: 'PD04', group: 'دهان داخلي', name: 'دهان داخلي (بدون مواد)', desc: 'بدون مواد - طبقتين معجون + طبقتين دهان', exec: 12, cont: 9, type: 'wall' },
+    { id: 'p5', code: 'PM01', group: 'معجون', name: 'زيادة طبقة معجون ثالثة', desc: 'طبقة إضافية - بدون مواد', exec: 3, cont: 2, type: 'wall' },
+    { id: 'p6', code: 'PX01', group: 'دهان خارجي', name: 'دهان خارجي رشة (مع مواد)', desc: 'رشة من جميع الشركات - مع المواد', exec: 19, cont: 14, type: 'wall' },
+    { id: 'p7', code: 'PX02', group: 'دهان خارجي', name: 'دهان خارجي بروفايل (جوتن)', desc: 'مع المواد - طبقتين معجون + طبقتين دهان', exec: 33, cont: 25, type: 'wall' },
+    { id: 'p8', code: 'PX03', group: 'دهان خارجي', name: 'دهان خارجي بروفايل (الجزيرة)', desc: 'مع المواد - طبقتين معجون + طبقتين دهان', exec: 33, cont: 25, type: 'wall' },
+    { id: 'p9', code: 'PX04', group: 'دهان خارجي', name: 'دهان خارجي بروفايل (عسيب)', desc: 'مع المواد - طبقتين معجون + طبقتين دهان', exec: 29, cont: 22, type: 'wall' },
+    { id: 'p10', code: 'PX05', group: 'دهان خارجي', name: 'دهان خارجي (بدون مواد)', desc: 'دهان فقط - بدون مواد', exec: 11, cont: 8, type: 'wall' },
+    { id: 'p11', code: 'PX06', group: 'دهان خارجي', name: 'دهان خارجي رشة (بدون مواد)', desc: 'رشة - بدون مواد', exec: 8, cont: 6, type: 'wall' },
+    { id: 'p12', code: 'PX07', group: 'دهان خارجي', name: 'دهان خارجي بروفايل (بدون مواد)', desc: 'بروفايل - بدون مواد', exec: 7, cont: 5, type: 'wall' }
   ]},
   paintRenew: { name: 'تجديد الدهانات', icon: '🔄', items: [
-    { id: 'rp1', name: 'إزالة الدهانات', desc: 'إزالة الدهانات الداخلية والخارجية', exec: 5, cont: 4, type: 'wall' },
-    { id: 'rp2', name: 'تجديد دهان (جوتن)', desc: 'تجديد داخلي أو خارجي - مع المواد', exec: 16, cont: 12, type: 'wall' },
-    { id: 'rp3', name: 'تجديد دهان (الجزيرة)', desc: 'تجديد داخلي أو خارجي - مع المواد', exec: 15, cont: 11, type: 'wall' },
-    { id: 'rp4', name: 'تجديد دهان (عسيب)', desc: 'تجديد داخلي أو خارجي - مع المواد', exec: 13, cont: 10, type: 'wall' },
-    { id: 'rp5', name: 'تجديد دهان (بدون مواد)', desc: 'دهان فقط - بدون مواد', exec: 7, cont: 5, type: 'wall' }
+    { id: 'rp1', code: 'RP01', group: 'إزالة', name: 'إزالة الدهانات', desc: 'إزالة الدهانات الداخلية والخارجية', exec: 5, cont: 4, type: 'wall' },
+    { id: 'rp2', code: 'RP02', group: 'تجديد', name: 'تجديد دهان (جوتن)', desc: 'تجديد داخلي أو خارجي - مع المواد', exec: 16, cont: 12, type: 'wall' },
+    { id: 'rp3', code: 'RP03', group: 'تجديد', name: 'تجديد دهان (الجزيرة)', desc: 'تجديد داخلي أو خارجي - مع المواد', exec: 15, cont: 11, type: 'wall' },
+    { id: 'rp4', code: 'RP04', group: 'تجديد', name: 'تجديد دهان (عسيب)', desc: 'تجديد داخلي أو خارجي - مع المواد', exec: 13, cont: 10, type: 'wall' },
+    { id: 'rp5', code: 'RP05', group: 'تجديد', name: 'تجديد دهان (بدون مواد)', desc: 'دهان فقط - بدون مواد', exec: 7, cont: 5, type: 'wall' }
   ]},
   gypsumBoardPaint: { name: 'دهانات الجبسمبورد', icon: '✨', items: [
-    { id: 'gb1', name: 'دهان جبسمبورد (جوتن)', desc: 'مع المواد من شركة جوتن', exec: 21, cont: 16, type: 'ceiling' },
-    { id: 'gb2', name: 'دهان جبسمبورد (الجزيرة)', desc: 'مع المواد من شركة الجزيرة', exec: 20, cont: 15, type: 'ceiling' },
-    { id: 'gb3', name: 'دهان جبسمبورد (عسيب)', desc: 'مع المواد من شركة عسيب', exec: 19, cont: 14, type: 'ceiling' },
-    { id: 'gb4', name: 'دهان جبسمبورد (بدون مواد)', desc: 'بدون مواد', exec: 16, cont: 12, type: 'ceiling' }
+    { id: 'gb1', code: 'GB01', group: 'دهان جبس', name: 'دهان جبسمبورد (جوتن)', desc: 'مع المواد من شركة جوتن', exec: 21, cont: 16, type: 'ceiling' },
+    { id: 'gb2', code: 'GB02', group: 'دهان جبس', name: 'دهان جبسمبورد (الجزيرة)', desc: 'مع المواد من شركة الجزيرة', exec: 20, cont: 15, type: 'ceiling' },
+    { id: 'gb3', code: 'GB03', group: 'دهان جبس', name: 'دهان جبسمبورد (عسيب)', desc: 'مع المواد من شركة عسيب', exec: 19, cont: 14, type: 'ceiling' },
+    { id: 'gb4', code: 'GB04', group: 'دهان جبس', name: 'دهان جبسمبورد (بدون مواد)', desc: 'بدون مواد', exec: 16, cont: 12, type: 'ceiling' }
   ]},
   localGypsumPaint: { name: 'دهانات الجبس البلدي', icon: '🏺', items: [
-    { id: 'gp1', name: 'دهان جبس بلدي (جوتن)', desc: 'مع المواد من شركة جوتن', exec: 17, cont: 13, type: 'ceiling' },
-    { id: 'gp2', name: 'دهان جبس بلدي (الجزيرة)', desc: 'مع المواد من شركة الجزيرة', exec: 17, cont: 13, type: 'ceiling' },
-    { id: 'gp3', name: 'دهان جبس بلدي (عسيب)', desc: 'مع المواد من شركة عسيب', exec: 15, cont: 11, type: 'ceiling' },
-    { id: 'gp4', name: 'دهان جبس بلدي (بدون مواد)', desc: 'بدون مواد', exec: 9, cont: 7, type: 'ceiling' }
+    { id: 'gp1', code: 'GL01', group: 'دهان جبس', name: 'دهان جبس بلدي (جوتن)', desc: 'مع المواد من شركة جوتن', exec: 17, cont: 13, type: 'ceiling' },
+    { id: 'gp2', code: 'GL02', group: 'دهان جبس', name: 'دهان جبس بلدي (الجزيرة)', desc: 'مع المواد من شركة الجزيرة', exec: 17, cont: 13, type: 'ceiling' },
+    { id: 'gp3', code: 'GL03', group: 'دهان جبس', name: 'دهان جبس بلدي (عسيب)', desc: 'مع المواد من شركة عسيب', exec: 15, cont: 11, type: 'ceiling' },
+    { id: 'gp4', code: 'GL04', group: 'دهان جبس', name: 'دهان جبس بلدي (بدون مواد)', desc: 'بدون مواد', exec: 9, cont: 7, type: 'ceiling' }
   ]},
   gypsum: { name: 'الجبس', icon: '🏗️', items: [
-    { id: 'g1', name: 'تركيب جبسمبورد', desc: 'تركيب ألواح جبسمبورد', exec: 60, cont: 45, type: 'ceiling' },
-    { id: 'g2', name: 'تركيب واجهات جبسمبورد', desc: 'تركيب واجهات وديكورات جبسمبورد', exec: 120, cont: 90, type: 'wall' },
-    { id: 'g3', name: 'تركيب جبس بلدي', desc: 'تركيب جبس بلدي للأسقف', exec: 53, cont: 40, type: 'ceiling' },
-    { id: 'g4', name: 'تركيب واجهات جبس بلدي', desc: 'تركيب واجهات وديكورات جبس بلدي', exec: 120, cont: 90, type: 'wall' },
-    { id: 'g5', name: 'إزالة الجبس القديم', desc: 'إزالة الجبس القديم - بدون حاوية', exec: 5, cont: 4, type: 'ceiling' }
+    { id: 'g1', code: 'GS01', group: 'جبسمبورد', name: 'تركيب جبسمبورد', desc: 'تركيب ألواح جبسمبورد', exec: 60, cont: 45, type: 'ceiling' },
+    { id: 'g2', code: 'GS02', group: 'جبسمبورد', name: 'تركيب واجهات جبسمبورد', desc: 'تركيب واجهات وديكورات جبسمبورد', exec: 120, cont: 90, type: 'wall' },
+    { id: 'g3', code: 'GS03', group: 'جبس بلدي', name: 'تركيب جبس بلدي', desc: 'تركيب جبس بلدي للأسقف', exec: 53, cont: 40, type: 'ceiling' },
+    { id: 'g4', code: 'GS04', group: 'جبس بلدي', name: 'تركيب واجهات جبس بلدي', desc: 'تركيب واجهات وديكورات جبس بلدي', exec: 120, cont: 90, type: 'wall' },
+    { id: 'g5', code: 'GS05', group: 'إزالة', name: 'إزالة الجبس القديم', desc: 'إزالة الجبس القديم - بدون حاوية', exec: 5, cont: 4, type: 'ceiling' }
   ]},
   plaster: { name: 'اللياسة', icon: '🧱', items: [
-    { id: 'l1', name: 'لياسة قدة وزاوية', desc: 'مع تجهيز السطح وإزالة الأجزاء التالفة - سماكة لا تزيد عن 2 سم - بدون مواد', exec: 13, cont: 10, type: 'wall' },
-    { id: 'l2', name: 'لياسة ودع وقدة زاوية', desc: 'مع تجهيز السطح وإزالة الأجزاء التالفة - سماكة لا تزيد عن 2 سم - بدون مواد', exec: 20, cont: 15, type: 'wall' },
-    { id: 'l3', name: 'مواد اللياسة', desc: 'مواد اللياسة فقط - بدون عمالة', exec: 19, cont: 14, type: 'wall' }
+    { id: 'l1', code: 'LS01', group: 'لياسة', name: 'لياسة قدة وزاوية', desc: 'مع تجهيز السطح وإزالة الأجزاء التالفة - سماكة لا تزيد عن 2 سم - بدون مواد', exec: 13, cont: 10, type: 'wall' },
+    { id: 'l2', code: 'LS02', group: 'لياسة', name: 'لياسة ودع وقدة زاوية', desc: 'مع تجهيز السطح وإزالة الأجزاء التالفة - سماكة لا تزيد عن 2 سم - بدون مواد', exec: 20, cont: 15, type: 'wall' },
+    { id: 'l3', code: 'LS03', group: 'مواد', name: 'مواد اللياسة', desc: 'مواد اللياسة فقط - بدون عمالة', exec: 19, cont: 14, type: 'wall' }
   ]},
   structure: { name: 'العظم', icon: '🏛️', items: [
-    { id: 'b1', name: 'أعمال عظم (بالمواد)', desc: 'أعمال العظم الإنشائية شاملة المواد', exec: 998, cont: 750, type: 'floor' },
-    { id: 'b2', name: 'أعمال عظم (بدون مواد)', desc: 'أعمال العظم الإنشائية بدون مواد', exec: 665, cont: 500, type: 'floor' },
-    { id: 'b3', name: 'إنشاءات متفرقة', desc: 'أعمال إنشائية متفرقة', exec: 333, cont: 250, type: 'floor' }
+    { id: 'b1', code: 'ST01', group: 'عظم', name: 'أعمال عظم (بالمواد)', desc: 'أعمال العظم الإنشائية شاملة المواد', exec: 998, cont: 750, type: 'floor' },
+    { id: 'b2', code: 'ST02', group: 'عظم', name: 'أعمال عظم (بدون مواد)', desc: 'أعمال العظم الإنشائية بدون مواد', exec: 665, cont: 500, type: 'floor' },
+    { id: 'b3', code: 'ST03', group: 'متفرقات', name: 'إنشاءات متفرقة', desc: 'أعمال إنشائية متفرقة', exec: 333, cont: 250, type: 'floor' }
   ]}
 };
 
@@ -90,7 +90,7 @@ const defaultPlaces = {
 
 const defaultProgramming = { 
   dry: { 
-    tiles: { enabled: true, items: ['t1', 't2', 't3', 't4', 't5', 't6', 't7'] },
+    tiles: { enabled: true, items: ['t1', 't2', 't3', 't4', 't5', 't6', 't10', 't11', 't7'] },
     marble: { enabled: true, items: ['m1', 'm2', 'm3', 'm4', 'm5'] },
     paint: { enabled: true, items: ['p1', 'p2', 'p3', 'p4', 'p5'] },
     paintRenew: { enabled: true, items: ['rp1', 'rp2', 'rp3', 'rp4', 'rp5'] },
@@ -101,7 +101,7 @@ const defaultProgramming = {
     structure: { enabled: true, items: ['b1', 'b2', 'b3'] }
   }, 
   wet: { 
-    tiles: { enabled: true, items: ['t1', 't2', 't3', 't4', 't5', 't6', 't7'] },
+    tiles: { enabled: true, items: ['t1', 't2', 't3', 't4', 't5', 't6', 't10', 't11', 't7'] },
     marble: { enabled: true, items: ['m1', 'm2', 'm3', 'm4', 'm5'] },
     paint: { enabled: true, items: ['p1', 'p2', 'p3', 'p4', 'p5'] },
     paintRenew: { enabled: true, items: ['rp1', 'rp2', 'rp3', 'rp4', 'rp5'] },
@@ -112,7 +112,7 @@ const defaultProgramming = {
     structure: { enabled: true, items: ['b1', 'b2', 'b3'] }
   }, 
   outdoor: { 
-    tiles: { enabled: true, items: ['t1', 't2', 't3', 't4', 't5', 't6', 't7', 't8', 't9'] },
+    tiles: { enabled: true, items: ['t1', 't2', 't3', 't4', 't5', 't6', 't10', 't11', 't7', 't8', 't9'] },
     marble: { enabled: true, items: ['m1', 'm2', 'm3', 'm4', 'm5'] },
     paint: { enabled: true, items: ['p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12'] },
     paintRenew: { enabled: true, items: ['rp1', 'rp2', 'rp3', 'rp4', 'rp5'] },
@@ -300,17 +300,20 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
     setSummaryExpanded(prev => ({ ...prev, [catKey]: !prev[catKey] }));
   };
 
-  // Toggle خيار في الملخص العام (يبدأ بـ null)
+  // Toggle خيار في الملخص العام (3 حالات: with / notMentioned / without)
   const toggleCategoryOption = (catKey, option) => {
     setCategoryOptions(prev => {
       const currentValue = prev[catKey]?.[option];
       let newValue;
+      // الدورة: null -> 'with' -> 'notMentioned' -> 'without' -> 'with'
       if (currentValue === null || currentValue === undefined) {
-        newValue = true;
-      } else if (currentValue === true) {
-        newValue = false;
+        newValue = 'with';
+      } else if (currentValue === 'with') {
+        newValue = 'notMentioned';
+      } else if (currentValue === 'notMentioned') {
+        newValue = 'without';
       } else {
-        newValue = true;
+        newValue = 'with';
       }
       return {
         ...prev,
@@ -322,15 +325,88 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
     });
   };
 
-  // الحصول على خيارات الفئة (تبدأ بـ null)
+  // تحديث مبلغ إضافي (حاوية/مواد)
+  const updateCategoryAmount = (catKey, field, value) => {
+    setCategoryOptions(prev => ({
+      ...prev,
+      [catKey]: { 
+        ...prev[catKey], 
+        [field]: parseFloat(value) || 0 
+      }
+    }));
+  };
+
+  // تحديث خيارات العرض (ذكر الأمتار، جمع الأمتار، إظهار السعر)
+  const toggleDisplayOption = (catKey, option) => {
+    setCategoryOptions(prev => ({
+      ...prev,
+      [catKey]: { 
+        ...prev[catKey], 
+        [option]: !prev[catKey]?.[option]
+      }
+    }));
+  };
+
+  // تحديث مبلغ آخر ونسبة الربح
+  const updateCustomAmount = (catKey, field, value) => {
+    setCategoryOptions(prev => ({
+      ...prev,
+      [catKey]: { 
+        ...prev[catKey], 
+        [field]: parseFloat(value) || 0 
+      }
+    }));
+  };
+
+  // إعادة تعيين المبلغ للأصلي
+  const resetToOriginalAmount = (catKey) => {
+    setCategoryOptions(prev => ({
+      ...prev,
+      [catKey]: { 
+        ...prev[catKey], 
+        customAmount: 0,
+        profitPercent: 0
+      }
+    }));
+  };
+
+  // تحديث نص الملخص المخصص
+  const updateCustomSummaryText = (catKey, text) => {
+    setCategoryOptions(prev => ({
+      ...prev,
+      [catKey]: { 
+        ...prev[catKey], 
+        customSummaryText: text
+      }
+    }));
+  };
+
+  // إعادة تعيين نص الملخص للأصلي
+  const resetSummaryText = (catKey) => {
+    setCategoryOptions(prev => {
+      const newOptions = { ...prev[catKey] };
+      delete newOptions.customSummaryText;
+      return { ...prev, [catKey]: newOptions };
+    });
+  };
+
+  // الحصول على خيارات الفئة
   const getCategoryOptions = (catKey) => {
     return {
       withContainer: categoryOptions[catKey]?.withContainer ?? null,
-      withMaterials: categoryOptions[catKey]?.withMaterials ?? null
+      withMaterials: categoryOptions[catKey]?.withMaterials ?? null,
+      containerAmount: categoryOptions[catKey]?.containerAmount ?? 0,
+      materialsAmount: categoryOptions[catKey]?.materialsAmount ?? 0,
+      showMeters: categoryOptions[catKey]?.showMeters ?? false,
+      sumMeters: categoryOptions[catKey]?.sumMeters ?? false,
+      showPrice: categoryOptions[catKey]?.showPrice ?? false,
+      customAmount: categoryOptions[catKey]?.customAmount ?? 0,
+      profitPercent: categoryOptions[catKey]?.profitPercent ?? 0,
+      customSummaryText: categoryOptions[catKey]?.customSummaryText ?? null
     };
   };
 
-  // التحقق من اكتمال الخيارات
+  // التحقق من اكتمال الخيارات (يجب الضغط على كل زر مرة واحدة على الأقل)
   const isOptionsComplete = (catKey) => {
     const options = getCategoryOptions(catKey);
     return options.withContainer !== null && options.withMaterials !== null;
@@ -345,42 +421,138 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
   // إنشاء ملخص الخدمة النصي الكامل مع العبارات الجديدة
   const getFullServiceSummary = (catKey, catData) => {
     const options = getCategoryOptions(catKey);
-    const itemsWithQty = catData.items.map(item => 
-      `${item.name} (${formatNum(item.area)} م²)`
-    );
+    
+    // إذا يوجد نص مخصص، استخدمه
+    if (options.customSummaryText) {
+      return options.customSummaryText;
+    }
+    
+    // تجميع البنود حسب المجموعة
+    const groupedItems = {};
+    catData.items.forEach(item => {
+      const group = item.group || 'أخرى';
+      if (!groupedItems[group]) {
+        groupedItems[group] = { items: [], totalArea: 0 };
+      }
+      groupedItems[group].items.push(item);
+      groupedItems[group].totalArea += item.area;
+    });
     
     let summary = 'تشمل الخدمة: ';
-    if (itemsWithQty.length === 1) {
-      summary += itemsWithQty[0];
+    
+    // عرض البنود مع الأمتار إذا مفعّل
+    if (options.showMeters) {
+      const itemsWithQty = catData.items.map(item => {
+        const itemInfo = workItems[catKey]?.items.find(i => i.id === item.id);
+        const code = itemInfo?.code || '';
+        return `${code ? `[${code}] ` : ''}${item.name} (${formatNum(item.area)} م²)`;
+      });
+      
+      if (itemsWithQty.length === 1) {
+        summary += itemsWithQty[0];
+      } else {
+        const lastItem = itemsWithQty.pop();
+        summary += itemsWithQty.join('، و') + '، و' + lastItem;
+      }
     } else {
-      const lastItem = itemsWithQty.pop();
-      summary += itemsWithQty.join('، و') + '، و' + lastItem;
+      const itemNames = catData.items.map(item => {
+        const itemInfo = workItems[catKey]?.items.find(i => i.id === item.id);
+        const code = itemInfo?.code || '';
+        return `${code ? `[${code}] ` : ''}${item.name}`;
+      });
+      
+      if (itemNames.length === 1) {
+        summary += itemNames[0];
+      } else {
+        const lastItem = itemNames.pop();
+        summary += itemNames.join('، و') + '، و' + lastItem;
+      }
     }
+    
+    // جمع الأمتار حسب المجموعة إذا مفعّل
+    if (options.sumMeters && Object.keys(groupedItems).length > 0) {
+      summary += ' | الإجمالي: ';
+      const groupSummaries = Object.entries(groupedItems).map(([group, data]) => 
+        `${group}: ${formatNum(data.totalArea)} م²`
+      );
+      summary += groupSummaries.join(' - ');
+    }
+    
     summary += '.';
     
-    // تنسيق العبارات حسب الخيارات
+    // تنسيق العبارات حسب الخيارات (3 حالات)
     const withMaterials = options.withMaterials;
     const withContainer = options.withContainer;
     
-    if (withMaterials === false && withContainer === false) {
-      summary += ' لاتشمل الأسعار تكلفة المواد أو الحاوية.';
-    } else if (withMaterials === true && withContainer === true) {
-      summary += ' تشمل الأسعار تكلفة المواد والحاوية.';
-    } else if (withMaterials === true && withContainer === false) {
-      summary += ' تشمل الأسعار تكلفة المواد، ولاتشمل تكلفة الحاوية.';
-    } else if (withMaterials === false && withContainer === true) {
-      summary += ' تشمل الأسعار تكلفة الحاوية، ولاتشمل تكلفة المواد.';
-    } else if (withMaterials === null && withContainer === null) {
-      summary += ' (يرجى تحديد خيارات المواد والحاوية)';
-    } else if (withMaterials === null) {
-      summary += withContainer ? ' تشمل الأسعار تكلفة الحاوية.' : ' لاتشمل الأسعار تكلفة الحاوية.';
-      summary += ' (يرجى تحديد خيار المواد)';
-    } else if (withContainer === null) {
-      summary += withMaterials ? ' تشمل الأسعار تكلفة المواد.' : ' لاتشمل الأسعار تكلفة المواد.';
-      summary += ' (يرجى تحديد خيار الحاوية)';
+    // بناء عبارات المواد والحاوية
+    const materialsText = withMaterials === 'with' ? 'تشمل المواد' : 
+                         withMaterials === 'without' ? 'لا تشمل المواد' : '';
+    const containerText = withContainer === 'with' ? 'تشمل الحاوية' : 
+                         withContainer === 'without' ? 'لا تشمل الحاوية' : '';
+    
+    if (materialsText && containerText) {
+      summary += ` ${materialsText}، ${containerText}.`;
+    } else if (materialsText) {
+      summary += ` ${materialsText}.`;
+    } else if (containerText) {
+      summary += ` ${containerText}.`;
+    }
+    
+    // إضافة مبالغ الحاوية والمواد إذا وجدت
+    if (options.containerAmount > 0) {
+      summary += ` (تكلفة الحاوية: ${formatNum(options.containerAmount)} ر.س)`;
+    }
+    if (options.materialsAmount > 0) {
+      summary += ` (تكلفة المواد: ${formatNum(options.materialsAmount)} ر.س)`;
+    }
+    
+    // إظهار السعر إذا مفعّل
+    if (options.showPrice) {
+      const finalTotal = getFinalCategoryTotal(catKey, catData.total);
+      summary += ` | السعر الإجمالي: ${formatNum(finalTotal)} ر.س`;
     }
     
     return summary;
+  };
+  
+  // حساب الإجمالي النهائي للفئة مع المبلغ الآخر ونسبة الربح
+  const getFinalCategoryTotal = (catKey, originalTotal) => {
+    const options = getCategoryOptions(catKey);
+    let total = originalTotal;
+    
+    // إضافة مبالغ الحاوية والمواد
+    if (options.containerAmount > 0) {
+      total += options.containerAmount;
+    }
+    if (options.materialsAmount > 0) {
+      total += options.materialsAmount;
+    }
+    
+    // إضافة مبلغ آخر
+    if (options.customAmount > 0) {
+      total += options.customAmount;
+    }
+    
+    // إضافة نسبة الربح
+    if (options.profitPercent > 0) {
+      total += total * (options.profitPercent / 100);
+    }
+    
+    return total;
+  };
+  
+  // الحصول على إجمالي الأمتار حسب المجموعة
+  const getGroupedMeters = (catKey, catData) => {
+    const groupedItems = {};
+    catData.items.forEach(item => {
+      const itemInfo = workItems[catKey]?.items.find(i => i.id === item.id);
+      const group = itemInfo?.group || 'أخرى';
+      if (!groupedItems[group]) {
+        groupedItems[group] = 0;
+      }
+      groupedItems[group] += item.area;
+    });
+    return groupedItems;
   };
 
   // نسخ ملخص الخدمة
@@ -1233,11 +1405,24 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                       // البحث عن البند الأصلي للتحرير
                       const originalItem = workItems[catKey]?.items.find(i => i.id === item.id);
                       const typeInfo = getTypeInfo(item.type);
+                      const itemCode = originalItem?.code || item.code || '—';
                       return (
                         <div key={item.key} style={{ background: t?.bg?.tertiary, borderRadius: 10, padding: 14, marginBottom: 10, border: `1px solid ${typeInfo.color}30` }}>
                           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
                             <div style={{ flex: 1 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                                {/* كود البند */}
+                                <span style={{ 
+                                  fontSize: 10, 
+                                  fontWeight: 700, 
+                                  color: color.main,
+                                  background: `${color.main}15`,
+                                  padding: '3px 8px',
+                                  borderRadius: 4,
+                                  fontFamily: 'monospace'
+                                }}>
+                                  {itemCode}
+                                </span>
                                 <span style={{ fontSize: 14, fontWeight: 700, color: t?.text?.primary }}>{item.name}</span>
                                 <span style={{ fontSize: 10, color: typeInfo.color, background: `${typeInfo.color}15`, padding: '2px 8px', borderRadius: 4, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
                                   {typeInfo.icon} {typeInfo.name}
@@ -1385,7 +1570,7 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                         </div>
 
                         {/* أزرار الخيارات مع علامة إجبارية */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                           {/* زر الحاوية */}
                           <div style={{ position: 'relative' }}>
                             {options.withContainer === null && (
@@ -1399,9 +1584,9 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                                 gap: 4,
                                 padding: '5px 8px',
                                 borderRadius: 6,
-                                border: `1px solid ${options.withContainer === true ? '#f59e0b' : options.withContainer === false ? t?.border?.primary : '#ef4444'}`,
-                                background: options.withContainer === true ? '#f59e0b15' : 'transparent',
-                                color: options.withContainer === true ? '#f59e0b' : options.withContainer === false ? t?.text?.muted : '#ef4444',
+                                border: `1px solid ${options.withContainer === 'with' ? '#f59e0b' : options.withContainer === 'without' ? '#ef4444' : options.withContainer === 'notMentioned' ? t?.border?.primary : '#ef4444'}`,
+                                background: options.withContainer === 'with' ? '#f59e0b15' : options.withContainer === 'without' ? '#ef444415' : 'transparent',
+                                color: options.withContainer === 'with' ? '#f59e0b' : options.withContainer === 'without' ? '#ef4444' : options.withContainer === 'notMentioned' ? t?.text?.muted : '#ef4444',
                                 cursor: 'pointer',
                                 fontSize: 10,
                                 fontWeight: 600,
@@ -1409,7 +1594,7 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                               }}
                             >
                               <Truck size={12} />
-                              {options.withContainer === true ? 'حاوية' : options.withContainer === false ? 'بدون' : 'حاوية؟'}
+                              {options.withContainer === 'with' ? '+ حاوية' : options.withContainer === 'without' ? 'بدون حاوية' : options.withContainer === 'notMentioned' ? '—' : 'حاوية؟'}
                             </button>
                           </div>
                           
@@ -1426,9 +1611,9 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                                 gap: 4,
                                 padding: '5px 8px',
                                 borderRadius: 6,
-                                border: `1px solid ${options.withMaterials === true ? '#10b981' : options.withMaterials === false ? t?.border?.primary : '#ef4444'}`,
-                                background: options.withMaterials === true ? '#10b98115' : 'transparent',
-                                color: options.withMaterials === true ? '#10b981' : options.withMaterials === false ? t?.text?.muted : '#ef4444',
+                                border: `1px solid ${options.withMaterials === 'with' ? '#10b981' : options.withMaterials === 'without' ? '#ef4444' : options.withMaterials === 'notMentioned' ? t?.border?.primary : '#ef4444'}`,
+                                background: options.withMaterials === 'with' ? '#10b98115' : options.withMaterials === 'without' ? '#ef444415' : 'transparent',
+                                color: options.withMaterials === 'with' ? '#10b981' : options.withMaterials === 'without' ? '#ef4444' : options.withMaterials === 'notMentioned' ? t?.text?.muted : '#ef4444',
                                 cursor: 'pointer',
                                 fontSize: 10,
                                 fontWeight: 600,
@@ -1436,9 +1621,61 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                               }}
                             >
                               <Box size={12} />
-                              {options.withMaterials === true ? 'مواد' : options.withMaterials === false ? 'بدون' : 'مواد؟'}
+                              {options.withMaterials === 'with' ? '+ مواد' : options.withMaterials === 'without' ? 'بدون مواد' : options.withMaterials === 'notMentioned' ? '—' : 'مواد؟'}
                             </button>
                           </div>
+
+                          {/* أزرار العرض */}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleDisplayOption(catKey, 'showMeters'); }}
+                            style={{
+                              padding: '5px 8px',
+                              borderRadius: 6,
+                              border: `1px solid ${options.showMeters ? '#3b82f6' : t?.border?.primary}`,
+                              background: options.showMeters ? '#3b82f615' : 'transparent',
+                              color: options.showMeters ? '#3b82f6' : t?.text?.muted,
+                              cursor: 'pointer',
+                              fontSize: 10,
+                              fontWeight: 600,
+                              fontFamily: 'inherit'
+                            }}
+                          >
+                            📐 م²
+                          </button>
+                          
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleDisplayOption(catKey, 'sumMeters'); }}
+                            style={{
+                              padding: '5px 8px',
+                              borderRadius: 6,
+                              border: `1px solid ${options.sumMeters ? '#8b5cf6' : t?.border?.primary}`,
+                              background: options.sumMeters ? '#8b5cf615' : 'transparent',
+                              color: options.sumMeters ? '#8b5cf6' : t?.text?.muted,
+                              cursor: 'pointer',
+                              fontSize: 10,
+                              fontWeight: 600,
+                              fontFamily: 'inherit'
+                            }}
+                          >
+                            Σ جمع
+                          </button>
+                          
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleDisplayOption(catKey, 'showPrice'); }}
+                            style={{
+                              padding: '5px 8px',
+                              borderRadius: 6,
+                              border: `1px solid ${options.showPrice ? '#10b981' : t?.border?.primary}`,
+                              background: options.showPrice ? '#10b98115' : 'transparent',
+                              color: options.showPrice ? '#10b981' : t?.text?.muted,
+                              cursor: 'pointer',
+                              fontSize: 10,
+                              fontWeight: 600,
+                              fontFamily: 'inherit'
+                            }}
+                          >
+                            💰 سعر
+                          </button>
                         </div>
 
                         {/* السعر وزر التوسيع */}
@@ -1494,69 +1731,159 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                             padding: 14,
                             marginBottom: 14
                           }}>
+                            {/* حقول المبالغ للحاوية والمواد */}
+                            {(options.withContainer === 'with' || options.withMaterials === 'with') && (
+                              <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
+                                {options.withContainer === 'with' && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f59e0b10', padding: '6px 10px', borderRadius: 6, border: '1px solid #f59e0b30' }}>
+                                    <Truck size={14} color="#f59e0b" />
+                                    <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>الحاوية:</span>
+                                    <input 
+                                      type="number" 
+                                      value={options.containerAmount || ''} 
+                                      onChange={(e) => updateCategoryAmount(catKey, 'containerAmount', e.target.value)}
+                                      placeholder="0"
+                                      style={{ width: 70, padding: '4px 6px', borderRadius: 4, border: '1px solid #f59e0b50', background: 'transparent', color: '#f59e0b', fontSize: 12, textAlign: 'center', fontFamily: 'inherit' }}
+                                    />
+                                    <span style={{ fontSize: 10, color: '#f59e0b' }}>ر.س</span>
+                                  </div>
+                                )}
+                                {options.withMaterials === 'with' && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#10b98110', padding: '6px 10px', borderRadius: 6, border: '1px solid #10b98130' }}>
+                                    <Box size={14} color="#10b981" />
+                                    <span style={{ fontSize: 11, color: '#10b981', fontWeight: 600 }}>المواد:</span>
+                                    <input 
+                                      type="number" 
+                                      value={options.materialsAmount || ''} 
+                                      onChange={(e) => updateCategoryAmount(catKey, 'materialsAmount', e.target.value)}
+                                      placeholder="0"
+                                      style={{ width: 70, padding: '4px 6px', borderRadius: 4, border: '1px solid #10b98150', background: 'transparent', color: '#10b981', fontSize: 12, textAlign: 'center', fontFamily: 'inherit' }}
+                                    />
+                                    <span style={{ fontSize: 10, color: '#10b981' }}>ر.س</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
                             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
                               <div style={{ flex: 1 }}>
                                 <div style={{ fontSize: 10, color: color.main, marginBottom: 8, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
                                   📋 ملخص الخدمة
                                 </div>
-                                <div style={{ 
-                                  fontSize: 12, 
-                                  color: t?.text?.primary, 
-                                  lineHeight: 1.8, 
-                                  background: t?.bg?.secondary, 
-                                  padding: 10, 
-                                  borderRadius: 6, 
-                                  border: `1px solid ${t?.border?.primary}` 
-                                }}>
-                                  {(() => {
-                                    const summary = getFullServiceSummary(catKey, catData);
-                                    const parts = summary.split('.');
-                                    return parts.map((part, idx) => {
-                                      if (!part.trim()) return null;
-                                      const isOptionsStatement = part.includes('تشمل الأسعار') || part.includes('لاتشمل الأسعار');
-                                      return (
-                                        <span key={idx}>
-                                          {isOptionsStatement ? (
-                                            <strong style={{ color: color.main }}>{part.trim()}.</strong>
-                                          ) : (
-                                            part.trim() + (idx < parts.length - 1 ? '. ' : '')
-                                          )}
-                                        </span>
-                                      );
-                                    });
-                                  })()}
-                                </div>
+                                {options.customSummaryText !== null && options.customSummaryText !== undefined ? (
+                                  <textarea
+                                    value={options.customSummaryText}
+                                    onChange={(e) => updateCustomSummaryText(catKey, e.target.value)}
+                                    style={{ 
+                                      width: '100%',
+                                      minHeight: 80,
+                                      fontSize: 12, 
+                                      color: t?.text?.primary, 
+                                      lineHeight: 1.8, 
+                                      background: t?.bg?.secondary, 
+                                      padding: 10, 
+                                      borderRadius: 6, 
+                                      border: `1px solid ${color.main}50`,
+                                      fontFamily: 'inherit',
+                                      resize: 'vertical'
+                                    }}
+                                  />
+                                ) : (
+                                  <div style={{ 
+                                    fontSize: 12, 
+                                    color: t?.text?.primary, 
+                                    lineHeight: 1.8, 
+                                    background: t?.bg?.secondary, 
+                                    padding: 10, 
+                                    borderRadius: 6, 
+                                    border: `1px solid ${t?.border?.primary}` 
+                                  }}>
+                                    {getFullServiceSummary(catKey, catData)}
+                                  </div>
+                                )}
                               </div>
-                              <button
-                                onClick={() => copyServiceSummary(catKey, catData)}
-                                disabled={!isOptionsComplete(catKey)}
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: 4,
-                                  padding: '8px 12px',
-                                  borderRadius: 6,
-                                  border: `1px solid ${color.main}40`,
-                                  background: copiedCategoryId === catKey ? `${color.main}30` : `${color.main}15`,
-                                  color: copiedCategoryId === catKey ? '#fff' : color.main,
-                                  cursor: isOptionsComplete(catKey) ? 'pointer' : 'not-allowed',
-                                  fontSize: 11,
-                                  fontWeight: 600,
-                                  fontFamily: 'inherit',
-                                  flexShrink: 0,
-                                  opacity: isOptionsComplete(catKey) ? 1 : 0.5
-                                }}
-                              >
-                                {copiedCategoryId === catKey ? <Check size={14} /> : <Copy size={14} />}
-                                {copiedCategoryId === catKey ? 'تم!' : 'نسخ'}
-                              </button>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                {/* زر تحرير */}
+                                <button
+                                  onClick={() => {
+                                    if (options.customSummaryText === null || options.customSummaryText === undefined) {
+                                      updateCustomSummaryText(catKey, getFullServiceSummary(catKey, catData));
+                                    }
+                                  }}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    padding: '8px 12px',
+                                    borderRadius: 6,
+                                    border: `1px solid ${t?.border?.primary}`,
+                                    background: options.customSummaryText ? `${color.main}15` : 'transparent',
+                                    color: options.customSummaryText ? color.main : t?.text?.muted,
+                                    cursor: 'pointer',
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    fontFamily: 'inherit'
+                                  }}
+                                >
+                                  <Edit3 size={14} />
+                                  تحرير
+                                </button>
+                                
+                                {/* زر تراجع */}
+                                {options.customSummaryText && (
+                                  <button
+                                    onClick={() => resetSummaryText(catKey)}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 4,
+                                      padding: '8px 12px',
+                                      borderRadius: 6,
+                                      border: `1px solid ${t?.status?.danger?.text}40`,
+                                      background: 'transparent',
+                                      color: t?.status?.danger?.text,
+                                      cursor: 'pointer',
+                                      fontSize: 11,
+                                      fontWeight: 600,
+                                      fontFamily: 'inherit'
+                                    }}
+                                  >
+                                    <RotateCcw size={14} />
+                                    تراجع
+                                  </button>
+                                )}
+                                
+                                {/* زر نسخ */}
+                                <button
+                                  onClick={() => copyServiceSummary(catKey, catData)}
+                                  disabled={!isOptionsComplete(catKey)}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    padding: '8px 12px',
+                                    borderRadius: 6,
+                                    border: `1px solid ${color.main}40`,
+                                    background: copiedCategoryId === catKey ? `${color.main}30` : `${color.main}15`,
+                                    color: copiedCategoryId === catKey ? '#fff' : color.main,
+                                    cursor: isOptionsComplete(catKey) ? 'pointer' : 'not-allowed',
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    fontFamily: 'inherit',
+                                    opacity: isOptionsComplete(catKey) ? 1 : 0.5
+                                  }}
+                                >
+                                  {copiedCategoryId === catKey ? <Check size={14} /> : <Copy size={14} />}
+                                  {copiedCategoryId === catKey ? 'تم!' : 'نسخ'}
+                                </button>
+                              </div>
                             </div>
                           </div>
 
                           {/* جدول البنود */}
                           <div style={{ 
                             display: 'grid', 
-                            gridTemplateColumns: '2fr 1fr 1fr 1fr', 
+                            gridTemplateColumns: '0.5fr 2fr 1fr 1fr 1fr', 
                             gap: 6, 
                             padding: '6px 10px', 
                             background: t?.bg?.secondary, 
@@ -1566,57 +1893,106 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                             fontWeight: 700, 
                             color: t?.text?.muted 
                           }}>
+                            <span>الكود</span>
                             <span>البند</span>
                             <span style={{ textAlign: 'center' }}>المساحة</span>
                             <span style={{ textAlign: 'center' }}>سعر م²</span>
                             <span style={{ textAlign: 'left' }}>الإجمالي</span>
                           </div>
 
-                          {catData.items.map((item, idx) => (
-                            <div 
-                              key={item.key}
-                              style={{ 
-                                display: 'grid', 
-                                gridTemplateColumns: '2fr 1fr 1fr 1fr', 
-                                gap: 6, 
-                                alignItems: 'center', 
-                                padding: '10px', 
-                                background: idx % 2 === 0 ? `${color.main}05` : 'transparent', 
-                                borderRadius: 6, 
-                                marginBottom: 3,
-                                borderRight: `3px solid ${color.main}40`
-                              }}
-                            >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {catData.items.map((item, idx) => {
+                            const itemInfo = workItems[catKey]?.items.find(i => i.id === item.id);
+                            const itemCode = itemInfo?.code || '—';
+                            return (
+                              <div 
+                                key={item.key}
+                                style={{ 
+                                  display: 'grid', 
+                                  gridTemplateColumns: '0.5fr 2fr 1fr 1fr 1fr', 
+                                  gap: 6, 
+                                  alignItems: 'center', 
+                                  padding: '10px', 
+                                  background: idx % 2 === 0 ? `${color.main}05` : 'transparent', 
+                                  borderRadius: 6, 
+                                  marginBottom: 3,
+                                  borderRight: `3px solid ${color.main}40`
+                                }}
+                              >
                                 <span style={{ 
-                                  width: 18, 
-                                  height: 18, 
-                                  borderRadius: 4, 
-                                  background: `${color.main}20`, 
-                                  color: color.main, 
                                   fontSize: 9, 
                                   fontWeight: 700, 
-                                  display: 'flex', 
-                                  alignItems: 'center', 
-                                  justifyContent: 'center' 
-                                }}>{idx + 1}</span>
-                                <span style={{ fontSize: 12, color: t?.text?.primary, fontWeight: 500 }}>{item.name}</span>
+                                  color: color.main,
+                                  background: `${color.main}15`,
+                                  padding: '3px 6px',
+                                  borderRadius: 4,
+                                  fontFamily: 'monospace'
+                                }}>
+                                  {itemCode}
+                                </span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <span style={{ 
+                                    width: 18, 
+                                    height: 18, 
+                                    borderRadius: 4, 
+                                    background: `${color.main}20`, 
+                                    color: color.main, 
+                                    fontSize: 9, 
+                                    fontWeight: 700, 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center' 
+                                  }}>{idx + 1}</span>
+                                  <span style={{ fontSize: 12, color: t?.text?.primary, fontWeight: 500 }}>{item.name}</span>
+                                </div>
+                                <span style={{ 
+                                  textAlign: 'center', 
+                                  fontSize: 11, 
+                                  color: t?.text?.secondary, 
+                                  background: t?.bg?.secondary, 
+                                  padding: '3px 6px', 
+                                  borderRadius: 4, 
+                                  border: `1px solid ${t?.border?.primary}` 
+                                }}>
+                                  {formatNum(item.area)} م²
+                                </span>
+                                <span style={{ textAlign: 'center', fontSize: 11, color: t?.text?.muted }}>{formatNum(item.exec)} ﷼</span>
+                                <span style={{ textAlign: 'left', fontSize: 12, fontWeight: 700, color: t?.text?.primary }}>{formatNum(item.total)} ﷼</span>
                               </div>
-                              <span style={{ 
-                                textAlign: 'center', 
-                                fontSize: 11, 
-                                color: t?.text?.secondary, 
-                                background: t?.bg?.secondary, 
-                                padding: '3px 6px', 
-                                borderRadius: 4, 
-                                border: `1px solid ${t?.border?.primary}` 
-                              }}>
-                                {formatNum(item.area)} م²
-                              </span>
-                              <span style={{ textAlign: 'center', fontSize: 11, color: t?.text?.muted }}>{formatNum(item.exec)} ﷼</span>
-                              <span style={{ textAlign: 'left', fontSize: 12, fontWeight: 700, color: t?.text?.primary }}>{formatNum(item.total)} ﷼</span>
-                            </div>
-                          ))}
+                            );
+                          })}
+
+                          {/* تجميع الأمتار حسب المجموعة */}
+                          {(() => {
+                            const groupedMeters = getGroupedMeters(catKey, catData);
+                            if (Object.keys(groupedMeters).length > 1) {
+                              return (
+                                <div style={{ 
+                                  marginTop: 10, 
+                                  padding: 10, 
+                                  background: `${color.main}05`, 
+                                  borderRadius: 6, 
+                                  border: `1px dashed ${color.main}30` 
+                                }}>
+                                  <div style={{ fontSize: 10, fontWeight: 700, color: color.main, marginBottom: 8 }}>📊 تجميع الأمتار حسب المجموعة:</div>
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                                    {Object.entries(groupedMeters).map(([group, area]) => (
+                                      <span key={group} style={{ 
+                                        fontSize: 11, 
+                                        color: t?.text?.primary, 
+                                        background: t?.bg?.secondary, 
+                                        padding: '4px 10px', 
+                                        borderRadius: 4, 
+                                        border: `1px solid ${t?.border?.primary}` 
+                                      }}>
+                                        {group}: <strong style={{ color: color.main }}>{formatNum(area)} م²</strong>
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
 
                           {/* إجمالي الفئة */}
                           <div style={{ 
@@ -1633,12 +2009,125 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
                               </div>
                               <span style={{ fontSize: 12, fontWeight: 700, color: color.main, background: `${color.main}20`, padding: '3px 10px', borderRadius: 4 }}>{quantitySummary}</span>
                             </div>
+
+                            {/* مبالغ الحاوية والمواد */}
+                            {(options.containerAmount > 0 || options.materialsAmount > 0) && (
+                              <div style={{ paddingBottom: 10, marginBottom: 10, borderBottom: `1px dashed ${color.main}30` }}>
+                                {options.containerAmount > 0 && (
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                      <Truck size={12} color="#f59e0b" />
+                                      <span style={{ fontSize: 11, color: t?.text?.secondary }}>تكلفة الحاوية:</span>
+                                    </div>
+                                    <span style={{ fontSize: 12, fontWeight: 600, color: '#f59e0b' }}>+ {formatNum(options.containerAmount)} ﷼</span>
+                                  </div>
+                                )}
+                                {options.materialsAmount > 0 && (
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                      <Box size={12} color="#10b981" />
+                                      <span style={{ fontSize: 11, color: t?.text?.secondary }}>تكلفة المواد:</span>
+                                    </div>
+                                    <span style={{ fontSize: 12, fontWeight: 600, color: '#10b981' }}>+ {formatNum(options.materialsAmount)} ﷼</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* مبلغ آخر ونسبة ربح */}
+                            <div style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: 10, 
+                              paddingBottom: 10, 
+                              marginBottom: 10, 
+                              borderBottom: `1px dashed ${color.main}30`,
+                              flexWrap: 'wrap'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span style={{ fontSize: 11, color: t?.text?.muted }}>مبلغ آخر:</span>
+                                <input 
+                                  type="number" 
+                                  value={options.customAmount || ''} 
+                                  onChange={(e) => updateCustomAmount(catKey, 'customAmount', e.target.value)}
+                                  placeholder="0"
+                                  style={{ 
+                                    width: 80, 
+                                    padding: '4px 8px', 
+                                    borderRadius: 4, 
+                                    border: `1px solid ${t?.border?.primary}`, 
+                                    background: t?.bg?.secondary, 
+                                    color: t?.text?.primary, 
+                                    fontSize: 12, 
+                                    textAlign: 'center', 
+                                    fontFamily: 'inherit' 
+                                  }}
+                                />
+                                <span style={{ fontSize: 10, color: t?.text?.muted }}>ر.س</span>
+                              </div>
+                              
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span style={{ fontSize: 11, color: t?.text?.muted }}>نسبة ربح:</span>
+                                <input 
+                                  type="number" 
+                                  value={options.profitPercent || ''} 
+                                  onChange={(e) => updateCustomAmount(catKey, 'profitPercent', e.target.value)}
+                                  placeholder="0"
+                                  style={{ 
+                                    width: 60, 
+                                    padding: '4px 8px', 
+                                    borderRadius: 4, 
+                                    border: `1px solid ${t?.border?.primary}`, 
+                                    background: t?.bg?.secondary, 
+                                    color: t?.text?.primary, 
+                                    fontSize: 12, 
+                                    textAlign: 'center', 
+                                    fontFamily: 'inherit' 
+                                  }}
+                                />
+                                <span style={{ fontSize: 10, color: t?.text?.muted }}>%</span>
+                              </div>
+                              
+                              {(options.customAmount > 0 || options.profitPercent > 0) && (
+                                <button
+                                  onClick={() => resetToOriginalAmount(catKey)}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    padding: '4px 8px',
+                                    borderRadius: 4,
+                                    border: `1px solid ${t?.status?.danger?.text}40`,
+                                    background: 'transparent',
+                                    color: t?.status?.danger?.text,
+                                    cursor: 'pointer',
+                                    fontSize: 10,
+                                    fontWeight: 600,
+                                    fontFamily: 'inherit'
+                                  }}
+                                >
+                                  <RotateCcw size={12} />
+                                  تراجع
+                                </button>
+                              )}
+                            </div>
+
+                            {/* الإجمالي النهائي */}
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                 <Calculator size={14} color={color.main} />
                                 <span style={{ fontSize: 12, fontWeight: 700, color: color.main }}>إجمالي {catData.name}</span>
                               </div>
-                              <span style={{ fontSize: 16, fontWeight: 800, color: color.main }}>{formatNum(catData.total)} ريال</span>
+                              <div style={{ textAlign: 'left' }}>
+                                {getFinalCategoryTotal(catKey, catData.total) !== catData.total && (
+                                  <div style={{ fontSize: 10, color: t?.text?.muted, textDecoration: 'line-through', marginBottom: 2 }}>
+                                    {formatNum(catData.total)} ريال
+                                  </div>
+                                )}
+                                <span style={{ fontSize: 18, fontWeight: 800, color: color.main }}>
+                                  {formatNum(getFinalCategoryTotal(catKey, catData.total))} ريال
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -2192,37 +2681,45 @@ const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
               </div>
             </div>
 
+            {/* الكود والمجموعة */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>كود البند</div>
+                <input 
+                  type="text" 
+                  value={editingItem.item.code || ''} 
+                  onChange={(e) => setEditingItem({ ...editingItem, item: { ...editingItem.item, code: e.target.value.toUpperCase().slice(0, 4) } })} 
+                  onFocus={handleInputFocus} 
+                  placeholder="مثال: TF01"
+                  maxLength={4}
+                  style={{ ...inputStyle, fontFamily: 'monospace', textAlign: 'center', fontSize: 16, fontWeight: 700, letterSpacing: 2 }} 
+                />
+              </div>
+              <div>
+                <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>المجموعة</div>
+                <input 
+                  type="text" 
+                  value={editingItem.item.group || ''} 
+                  onChange={(e) => setEditingItem({ ...editingItem, item: { ...editingItem.item, group: e.target.value } })} 
+                  onFocus={handleInputFocus} 
+                  placeholder="مثال: تبليط"
+                  style={inputStyle} 
+                />
+              </div>
+            </div>
+
             <div style={{ marginBottom: 16 }}><div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>اسم البند</div><input type="text" value={editingItem.item.name} onChange={(e) => setEditingItem({ ...editingItem, item: { ...editingItem.item, name: e.target.value } })} onFocus={handleInputFocus} style={inputStyle} /></div>
             <div style={{ marginBottom: 16 }}><div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>وصف البند</div><input type="text" value={editingItem.item.desc} onChange={(e) => setEditingItem({ ...editingItem, item: { ...editingItem.item, desc: e.target.value } })} onFocus={handleInputFocus} style={inputStyle} /></div>
             
-            {/* نوع البند مع المعادلة */}
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 8, fontWeight: 600 }}>نوع البند (طريقة حساب المساحة)</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-                {Object.entries(typeConfig).map(([typeKey, typeInfo]) => (
-                  <button 
-                    key={typeKey} 
-                    onClick={() => setEditingItem({ ...editingItem, item: { ...editingItem.item, type: typeKey } })} 
-                    style={{ 
-                      padding: '14px 10px', 
-                      borderRadius: 10, 
-                      border: editingItem.item.type === typeKey ? `2px solid ${typeInfo.color}` : `1px solid ${t?.border?.primary}`, 
-                      background: editingItem.item.type === typeKey ? `${typeInfo.color}15` : 'transparent', 
-                      color: editingItem.item.type === typeKey ? typeInfo.color : t?.text?.muted, 
-                      fontSize: 12, 
-                      fontWeight: 600, 
-                      cursor: 'pointer', 
-                      fontFamily: 'inherit',
-                      textAlign: 'center'
-                    }}
-                  >
-                    <div style={{ fontSize: 24, marginBottom: 6 }}>{typeInfo.icon}</div>
-                    <div>{typeInfo.name}</div>
-                    <div style={{ fontSize: 9, marginTop: 4, opacity: 0.7, fontFamily: 'monospace' }}>
-                      {typeKey === 'wall' ? '(ط+ع)×2×ر' : 'ط × ع'}
-                    </div>
-                  </button>
-                ))}
+            {/* نوع البند (للعرض فقط) */}
+            <div style={{ marginBottom: 16, padding: 12, background: t?.bg?.tertiary, borderRadius: 10 }}>
+              <div style={{ fontSize: 11, color: t?.text?.muted, marginBottom: 6 }}>نوع البند</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 20 }}>{typeConfig[editingItem.item.type]?.icon}</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: typeConfig[editingItem.item.type]?.color }}>{typeConfig[editingItem.item.type]?.name}</span>
+                <span style={{ fontSize: 10, color: t?.text?.muted, fontFamily: 'monospace' }}>
+                  ({editingItem.item.type === 'wall' ? '(ط+ع)×2×ر' : 'ط × ع'})
+                </span>
               </div>
             </div>
             
