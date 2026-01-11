@@ -1,7 +1,3 @@
-// ╔═══════════════════════════════════════════════════════════════════════════════════╗
-// ║                         قسم بنود العمل - WorkItemsSection                         ║
-// ╚═══════════════════════════════════════════════════════════════════════════════════╝
-
 import React, { useState } from 'react';
 
 const WorkItemsSection = ({ colors, places, workItems, programming, itemTypes, setWorkItems, setProgramming, formatNumber, getColor, placeTypeColors }) => {
