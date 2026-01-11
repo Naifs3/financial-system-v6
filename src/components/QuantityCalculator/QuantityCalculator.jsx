@@ -3,7 +3,7 @@ import { colors, placeTypeColors, getColor, formatNumber, debounce } from './Col
 import { defaultItemTypes, defaultPlaces, defaultWorkItems, defaultProgramming } from './states';
 import { loadAllData, saveAllData } from './LocalStorage';
 import { useUndoRedo, restoreFromSnapshot } from './UndoRedo';
-import TabBar from './Tabs';
+import TabBar from './tabs';
 import CalculatorSection from './CalculatorSection';
 import PlacesSection from './PlacesSection';
 import WorkItemsSection from './WorkItemsSection';
