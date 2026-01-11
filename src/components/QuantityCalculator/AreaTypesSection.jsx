@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { formulaTemplates } from './ColorsAndConstants';
+import { formulaTemplates } from './colorsandconstants';
 
 const AreaTypesSection = ({ colors, itemTypes, workItems, setItemTypes, formatNumber }) => {
   const [editingType, setEditingType] = useState(null);
