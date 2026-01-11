@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { dimensionOptions } from './ColorsAndConstants';
+import { dimensionOptions } from './colorsandconstants';
 
 const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, categories, setCategories, formatNumber, getColor, placeTypeColors }) => {
   const [expandedCategory, setExpandedCategory] = useState(null);
