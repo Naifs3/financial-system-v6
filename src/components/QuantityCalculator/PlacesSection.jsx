@@ -1,7 +1,3 @@
-// ╔═══════════════════════════════════════════════════════════════════════════════════╗
-// ║                           قسم الأماكن - PlacesSection                             ║
-// ╚═══════════════════════════════════════════════════════════════════════════════════╝
-
 import React, { useState } from 'react';
 
 const PlacesSection = ({ colors, places, setPlaces, placeTypeColors }) => {
@@ -27,17 +23,6 @@ const PlacesSection = ({ colors, places, setPlaces, placeTypeColors }) => {
       ...prev,
       [typeKey]: { ...prev[typeKey], places: prev[typeKey].places.filter((_, i) => i !== index) }
     }));
-  };
-
-  const updatePlace = (typeKey, index, newName) => {
-    setPlaces(prev => ({
-      ...prev,
-      [typeKey]: {
-        ...prev[typeKey],
-        places: prev[typeKey].places.map((p, i) => i === index ? newName : p)
-      }
-    }));
-    setEditingPlace(null);
   };
 
   const ToggleSwitch = ({ enabled, onToggle }) => (
