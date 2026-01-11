@@ -1,7 +1,3 @@
-// ╔═══════════════════════════════════════════════════════════════════════════════════╗
-// ║                       حاسبة الكميات - QuantityCalculator                          ║
-// ╚═══════════════════════════════════════════════════════════════════════════════════╝
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { colors, placeTypeColors, getColor, formatNumber, debounce } from './ColorsAndConstants';
 import { defaultItemTypes, defaultPlaces, defaultWorkItems, defaultProgramming } from './States';
