@@ -1,4 +1,4 @@
-import { STORAGE_KEYS } from './ColorsAndConstants';
+import { STORAGE_KEYS } from './colorsandconstants';
 import { defaultItemTypes, defaultPlaces, defaultWorkItems, defaultProgramming } from './states';
 
 export const saveItemTypes = (data) => {
