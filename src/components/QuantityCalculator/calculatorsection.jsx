@@ -593,15 +593,16 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
                         alert('تم النسخ!');
                       }} style={optionButtonStyle(false, colors.muted)}>
                         <span>📋</span><span>نسخ</span>
-                    </div>
+                      </div>
 
-                    {/* إعادة الضبط */}
-                    <div onClick={() => {
-                      const defaultText = generateDefaultSummary(cat, catTotals);
-                      setCustomSummary({ ...customSummary, [cat.id]: defaultText });
-                      saveCategorySummary(cat.id, '');
-                    }} style={optionButtonStyle(false, colors.danger)}>
-                      <span>↩️</span><span>إعادة ضبط</span>
+                      {/* إعادة الضبط */}
+                      <div onClick={() => {
+                        const defaultText = generateDefaultSummary(cat, catTotals);
+                        setCustomSummary({ ...customSummary, [cat.id]: defaultText });
+                        saveCategorySummary(cat.id, '');
+                      }} style={optionButtonStyle(false, colors.danger)}>
+                        <span>↩️</span><span>إعادة ضبط</span>
+                      </div>
                     </div>
                   </div>
 
