@@ -263,9 +263,13 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
 
   // ستايل القائمة المنسدلة مع سهم صلب
   const selectStyle = {
-    appearance: 'none', paddingLeft: 28, paddingRight: 12,
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E")`,
-    backgroundRepeat: 'no-repeat', backgroundPosition: 'left 12px center',
+    appearance: 'none', 
+    paddingLeft: 28, 
+    paddingRight: 12,
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat', 
+    backgroundPosition: 'left 8px center',
+    backgroundColor: 'transparent',
   };
 
   // العرض
@@ -282,10 +286,10 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
         {phase1Expanded && (
           <div style={{ padding: 16, borderTop: `1px dashed ${colors.primary}40` }}>
             <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-              <select value={selectedPlaceType} onChange={(e) => { setSelectedPlaceType(e.target.value); setSelectedPlace(''); }} style={{ ...selectStyle, flex: 1, height: 40, borderRadius: 8, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: 14 }}>
+              <select value={selectedPlaceType} onChange={(e) => { setSelectedPlaceType(e.target.value); setSelectedPlace(''); }} style={{ ...selectStyle, flex: 1, height: 40, borderRadius: 8, border: `1px solid ${colors.border}`, backgroundColor: colors.bg, color: colors.text, fontSize: 14 }}>
                 {Object.entries(places).filter(([_, pt]) => pt.enabled).map(([key, pt]) => (<option key={key} value={key}>{pt.icon} {pt.name}</option>))}
               </select>
-              <select value={selectedPlace} onChange={(e) => setSelectedPlace(e.target.value)} style={{ ...selectStyle, flex: 2, height: 40, borderRadius: 8, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: 14 }}>
+              <select value={selectedPlace} onChange={(e) => setSelectedPlace(e.target.value)} style={{ ...selectStyle, flex: 2, height: 40, borderRadius: 8, border: `1px solid ${colors.border}`, backgroundColor: colors.bg, color: colors.text, fontSize: 14 }}>
                 <option value="">-- اختر المكان --</option>
                 {placesList.map(place => (<option key={place} value={place}>{place}</option>))}
               </select>
@@ -302,7 +306,7 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
             <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
               {[{ key: 'length', label: 'الطول' }, { key: 'width', label: 'العرض' }, { key: 'height', label: 'الارتفاع' }].map(dim => (
                 <div key={dim.key} style={{ flex: 1 }}><div style={{ fontSize: 10, color: colors.muted, marginBottom: 4, textAlign: 'center' }}>{dim.label}</div>
-                  <select value={dimensions[dim.key]} onChange={(e) => setDimensions({ ...dimensions, [dim.key]: parseFloat(e.target.value) })} style={{ ...selectStyle, width: '100%', height: 36, borderRadius: 8, border: `1px solid ${colors.border}`, background: colors.bg, color: '#fff', fontSize: 14, textAlign: 'center' }}>
+                  <select value={dimensions[dim.key]} onChange={(e) => setDimensions({ ...dimensions, [dim.key]: parseFloat(e.target.value) })} style={{ ...selectStyle, width: '100%', height: 36, borderRadius: 8, border: `1px solid ${colors.border}`, backgroundColor: colors.bg, color: '#fff', fontSize: 14, textAlign: 'center' }}>
                     {(dim.key === 'height' ? heightOptions : (dimensionOptions || [1,2,3,4,5,6,7,8,9,10]).slice(0, 20)).map(n => (<option key={n} value={n}>{n} م</option>))}
                   </select>
                 </div>
@@ -367,7 +371,7 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
                     {pendingPlaces.map(place => (
                       <div key={place.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, padding: 10, background: colors.card, borderRadius: 8 }}>
                         <span style={{ fontSize: 12, color: colors.text }}>{place.name} ({place.area}م²)</span>
-                        <select defaultValue="" onChange={(e) => { if (e.target.value) selectPendingSubItem(cat.id, place.id, e.target.value); }} style={{ ...selectStyle, flex: 1, height: 34, borderRadius: 6, border: `1px solid ${cat.color}50`, background: colors.bg, color: colors.text, fontSize: 12 }}>
+                        <select defaultValue="" onChange={(e) => { if (e.target.value) selectPendingSubItem(cat.id, place.id, e.target.value); }} style={{ ...selectStyle, flex: 1, height: 34, borderRadius: 6, border: `1px solid ${cat.color}50`, backgroundColor: colors.bg, color: colors.text, fontSize: 12 }}>
                           <option value="">-- اختر البند --</option>
                           {(cat.subItems || []).map(s => (<option key={s.code} value={s.code}>{s.name} ({s.price}﷼)</option>))}
                         </select>
@@ -396,7 +400,7 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
 
                         {isEditing && (
                           <div style={{ padding: 14, background: `${colors.primary}08`, borderTop: `1px dashed ${colors.primary}30` }}>
-                            <select value={item.code} onChange={(e) => changeSubItem(cat.id, item.id, e.target.value)} style={{ ...selectStyle, width: '100%', height: 36, marginBottom: 12, borderRadius: 8, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: 12 }}>
+                            <select value={item.code} onChange={(e) => changeSubItem(cat.id, item.id, e.target.value)} style={{ ...selectStyle, width: '100%', height: 36, marginBottom: 12, borderRadius: 8, border: `1px solid ${colors.border}`, backgroundColor: colors.bg, color: colors.text, fontSize: 12 }}>
                               {(cat.subItems || []).map(s => (<option key={s.code} value={s.code}>[{s.code}] {s.name}</option>))}
                             </select>
 
@@ -407,12 +411,12 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
                                 const measureType = place.measureType || 'floor';
                                 return (
                                 <div key={place.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', background: `${colors.primary}08`, borderRadius: 6, border: `1px solid ${colors.primary}20`, flexWrap: 'wrap' }}>
-                                  <select value={place.name} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'name', e.target.value)} style={{ ...selectStyle, flex: 1, minWidth: 70, height: 30, borderRadius: 4, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: 11 }}>
+                                  <select value={place.name} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'name', e.target.value)} style={{ ...selectStyle, flex: 1, minWidth: 70, height: 30, borderRadius: 4, border: `1px solid ${colors.border}`, backgroundColor: colors.bg, color: colors.text, fontSize: 11 }}>
                                     {placesList.map(p => (<option key={p} value={p}>{p}</option>))}
                                   </select>
                                   
                                   {/* نوع المساحة */}
-                                  <select value={measureType} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'measureType', e.target.value)} style={{ ...selectStyle, width: 75, height: 30, borderRadius: 4, border: `1px solid ${colors.cyan}`, background: `${colors.cyan}15`, color: colors.cyan, fontSize: 10, fontWeight: 700 }}>
+                                  <select value={measureType} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'measureType', e.target.value)} style={{ ...selectStyle, width: 75, height: 30, borderRadius: 4, border: `1px solid ${colors.cyan}`, backgroundColor: `${colors.cyan}15`, color: colors.cyan, fontSize: 10, fontWeight: 700 }}>
                                     <option value="floor">أرضي</option>
                                     <option value="ceiling">سقف</option>
                                     <option value="walls">جدران</option>
@@ -424,16 +428,16 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
                                   {measureType === 'manual' ? (
                                     <input type="number" value={place.manualArea || place.area || ''} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'manualArea', e.target.value)} onFocus={(e) => e.target.select()} placeholder="المساحة" style={{ width: 80, height: 30, padding: '0 8px', borderRadius: 4, border: `1px solid ${colors.success}`, background: colors.bg, color: colors.success, fontSize: 12, textAlign: 'center', fontWeight: 700 }} />
                                   ) : measureType === 'linear' ? (
-                                    <select value={place.length} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'length', e.target.value)} style={{ ...selectStyle, width: 75, height: 30, borderRadius: 4, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: 11 }}>
+                                    <select value={place.length} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'length', e.target.value)} style={{ ...selectStyle, width: 75, height: 30, borderRadius: 4, border: `1px solid ${colors.border}`, backgroundColor: colors.bg, color: colors.text, fontSize: 11 }}>
                                       {[1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10,12,14,16,18,20,25,30,40,50].map(n => (<option key={n} value={n}>الطول {n}</option>))}
                                     </select>
                                   ) : (
                                     <>
-                                      <select value={place.length} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'length', e.target.value)} style={{ ...selectStyle, width: 70, height: 30, borderRadius: 4, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: 11 }}>
+                                      <select value={place.length} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'length', e.target.value)} style={{ ...selectStyle, width: 70, height: 30, borderRadius: 4, border: `1px solid ${colors.border}`, backgroundColor: colors.bg, color: colors.text, fontSize: 11 }}>
                                         {[1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10,12,14,16,18,20].map(n => (<option key={n} value={n}>الطول {n}</option>))}
                                       </select>
                                       <span style={{ color: colors.muted, fontSize: 12 }}>×</span>
-                                      <select value={place.width} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'width', e.target.value)} style={{ ...selectStyle, width: 70, height: 30, borderRadius: 4, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: 11 }}>
+                                      <select value={place.width} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'width', e.target.value)} style={{ ...selectStyle, width: 70, height: 30, borderRadius: 4, border: `1px solid ${colors.border}`, backgroundColor: colors.bg, color: colors.text, fontSize: 11 }}>
                                         {[1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10,12,14,16,18,20].map(n => (<option key={n} value={n}>العرض {n}</option>))}
                                       </select>
                                     </>
@@ -441,7 +445,7 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
                                   
                                   {/* الارتفاع - يظهر للجدران والأرضي والسقف */}
                                   {(measureType === 'walls' || measureType === 'floor' || measureType === 'ceiling') && (
-                                    <select value={place.height || 3} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'height', e.target.value)} style={{ ...selectStyle, width: 80, height: 30, borderRadius: 4, border: `1px solid ${colors.purple}`, background: colors.bg, color: colors.purple, fontSize: 11 }}>
+                                    <select value={place.height || 3} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'height', e.target.value)} style={{ ...selectStyle, width: 80, height: 30, borderRadius: 4, border: `1px solid ${colors.purple}`, backgroundColor: colors.bg, color: colors.purple, fontSize: 11 }}>
                                       {[2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6].map(n => (<option key={n} value={n}>الارتفاع {n}</option>))}
                                     </select>
                                   )}
@@ -468,7 +472,7 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
                               ))}
                             </div>
                             <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                              <select onChange={(e) => { if (e.target.value) { addCondition(cat.id, item.id, e.target.value); e.target.value = ''; } }} style={{ ...selectStyle, flex: 1, height: 32, borderRadius: 6, border: `1px solid ${colors.warning}`, background: colors.bg, color: colors.text, fontSize: 11 }}>
+                              <select onChange={(e) => { if (e.target.value) { addCondition(cat.id, item.id, e.target.value); e.target.value = ''; } }} style={{ ...selectStyle, flex: 1, height: 32, borderRadius: 6, border: `1px solid ${colors.warning}`, backgroundColor: colors.bg, color: colors.text, fontSize: 11 }}>
                                 <option value="">+ إضافة شرط</option>
                                 {predefinedConditions.filter(c => !item.conditions?.includes(c)).map((c, i) => (<option key={i} value={c}>{c}</option>))}
                               </select>
@@ -618,7 +622,7 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
                       ))}
                     </div>
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <select onChange={(e) => { if (e.target.value) { addCategoryCondition(cat.id, e.target.value); e.target.value = ''; } }} style={{ ...selectStyle, flex: 1, height: 32, borderRadius: 6, border: `1px solid ${colors.warning}`, background: colors.bg, color: colors.text, fontSize: 11 }}>
+                      <select onChange={(e) => { if (e.target.value) { addCategoryCondition(cat.id, e.target.value); e.target.value = ''; } }} style={{ ...selectStyle, flex: 1, height: 32, borderRadius: 6, border: `1px solid ${colors.warning}`, backgroundColor: colors.bg, color: colors.text, fontSize: 11 }}>
                         <option value="">+ إضافة شرط</option>
                         {predefinedConditions.filter(c => !cat.categoryConditions?.includes(c)).map((c, i) => (<option key={i} value={c}>{c}</option>))}
                       </select>
