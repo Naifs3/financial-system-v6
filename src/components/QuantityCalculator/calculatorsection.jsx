@@ -152,15 +152,36 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
         return { ...item, places: item.places.map(place => {
           if (place.id !== placeId) return place;
           const updated = { ...place, [field]: field === 'name' || field === 'measureType' ? value : parseFloat(value) || 0 };
+          
+          // حساب المساحة حسب نوع القياس
+          const calcArea = (p) => {
+            const type = p.measureType || 'floor';
+            const l = p.length || 4;
+            const w = p.width || 4;
+            const h = p.height || 3;
+            switch(type) {
+              case 'floor': return l * w; // أرضي
+              case 'ceiling': return l * w; // سقف
+              case 'walls': return (l + w) * 2 * h; // جدران
+              case 'linear': return l; // طولي
+              case 'manual': return p.manualArea || p.area || 0; // يدوي
+              default: return l * w;
+            }
+          };
+          
           if (field === 'manualArea') { 
             updated.area = parseFloat(value) || 0; 
             updated.manualArea = parseFloat(value) || 0; 
-          } else if (field === 'measureType' && value === 'auto') {
-            updated.area = updated.length * updated.width;
-            delete updated.manualArea;
-          } else if (field === 'length' || field === 'width') { 
-            updated.area = updated.length * updated.width; 
-            delete updated.manualArea;
+          } else if (field === 'measureType') {
+            if (value !== 'manual') {
+              delete updated.manualArea;
+            }
+            updated.area = calcArea(updated);
+          } else if (field === 'length' || field === 'width' || field === 'height') { 
+            updated.area = calcArea(updated);
+            if (updated.measureType !== 'manual') {
+              delete updated.manualArea;
+            }
           }
           return updated;
         })};
@@ -171,7 +192,7 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
   const addPlace = (catId, itemId) => {
     setCategories(prev => prev.map(cat => {
       if (cat.id !== catId) return cat;
-      return { ...cat, items: cat.items.map(item => item.id !== itemId ? item : { ...item, places: [...item.places, { id: 'p' + Date.now(), name: placesList[0] || 'مكان', length: 4, width: 4, height: 3, area: 16 }] }) };
+      return { ...cat, items: cat.items.map(item => item.id !== itemId ? item : { ...item, places: [...item.places, { id: 'p' + Date.now(), name: placesList[0] || 'مكان', length: 4, width: 4, height: 3, area: 16, measureType: 'floor' }] }) };
     }));
   };
 
@@ -382,17 +403,32 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
                             {/* الأماكن - تحت بعضها */}
                             <div style={{ fontSize: 10, color: colors.muted, marginBottom: 6 }}>📍 الأماكن</div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}>
-                              {(item.places || []).map((place) => (
+                              {(item.places || []).map((place) => {
+                                const measureType = place.measureType || 'floor';
+                                return (
                                 <div key={place.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', background: `${colors.primary}08`, borderRadius: 6, border: `1px solid ${colors.primary}20`, flexWrap: 'wrap' }}>
-                                  <select value={place.name} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'name', e.target.value)} style={{ ...selectStyle, flex: 1, minWidth: 80, height: 30, borderRadius: 4, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: 11 }}>
+                                  <select value={place.name} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'name', e.target.value)} style={{ ...selectStyle, flex: 1, minWidth: 70, height: 30, borderRadius: 4, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: 11 }}>
                                     {placesList.map(p => (<option key={p} value={p}>{p}</option>))}
                                   </select>
-                                  {(place.measureType || 'auto') === 'auto' ? (
+                                  
+                                  {/* نوع المساحة */}
+                                  <select value={measureType} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'measureType', e.target.value)} style={{ ...selectStyle, width: 75, height: 30, borderRadius: 4, border: `1px solid ${colors.cyan}`, background: `${colors.cyan}15`, color: colors.cyan, fontSize: 10, fontWeight: 700 }}>
+                                    <option value="floor">أرضي</option>
+                                    <option value="ceiling">سقف</option>
+                                    <option value="walls">جدران</option>
+                                    <option value="linear">طولي</option>
+                                    <option value="manual">يدوي</option>
+                                  </select>
+                                  
+                                  {/* حقول القياس حسب النوع */}
+                                  {measureType === 'manual' ? (
+                                    <input type="number" value={place.manualArea || place.area || ''} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'manualArea', e.target.value)} onFocus={(e) => e.target.select()} placeholder="المساحة" style={{ width: 80, height: 30, padding: '0 8px', borderRadius: 4, border: `1px solid ${colors.success}`, background: colors.bg, color: colors.success, fontSize: 12, textAlign: 'center', fontWeight: 700 }} />
+                                  ) : measureType === 'linear' ? (
+                                    <select value={place.length} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'length', e.target.value)} style={{ ...selectStyle, width: 75, height: 30, borderRadius: 4, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: 11 }}>
+                                      {[1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10,12,14,16,18,20,25,30,40,50].map(n => (<option key={n} value={n}>الطول {n}</option>))}
+                                    </select>
+                                  ) : (
                                     <>
-                                      <select value="auto" onChange={(e) => updatePlace(cat.id, item.id, place.id, 'measureType', e.target.value)} style={{ ...selectStyle, width: 70, height: 30, borderRadius: 4, border: `1px solid ${colors.cyan}`, background: colors.bg, color: colors.cyan, fontSize: 10, fontWeight: 700 }}>
-                                        <option value="auto">{place.length || 4}×{place.width || 4}</option>
-                                        <option value="manual">يدوي</option>
-                                      </select>
                                       <select value={place.length} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'length', e.target.value)} style={{ ...selectStyle, width: 70, height: 30, borderRadius: 4, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: 11 }}>
                                         {[1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10,12,14,16,18,20].map(n => (<option key={n} value={n}>الطول {n}</option>))}
                                       </select>
@@ -401,22 +437,23 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
                                         {[1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10,12,14,16,18,20].map(n => (<option key={n} value={n}>العرض {n}</option>))}
                                       </select>
                                     </>
-                                  ) : (
-                                    <>
-                                      <select value="manual" onChange={(e) => updatePlace(cat.id, item.id, place.id, 'measureType', e.target.value)} style={{ ...selectStyle, width: 70, height: 30, borderRadius: 4, border: `1px solid ${colors.cyan}`, background: colors.bg, color: colors.cyan, fontSize: 10, fontWeight: 700 }}>
-                                        <option value="auto">{place.length || 4}×{place.width || 4}</option>
-                                        <option value="manual">يدوي</option>
-                                      </select>
-                                      <input type="number" value={place.manualArea || place.area || ''} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'manualArea', e.target.value)} onFocus={(e) => e.target.select()} placeholder="المساحة م²" style={{ width: 100, height: 30, padding: '0 8px', borderRadius: 4, border: `1px solid ${colors.success}`, background: colors.bg, color: colors.success, fontSize: 12, textAlign: 'center', fontWeight: 700 }} />
-                                    </>
                                   )}
-                                  <select value={place.height || 3} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'height', e.target.value)} style={{ ...selectStyle, width: 80, height: 30, borderRadius: 4, border: `1px solid ${colors.purple}`, background: colors.bg, color: colors.purple, fontSize: 11 }}>
-                                    {[2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6].map(n => (<option key={n} value={n}>الارتفاع {n}</option>))}
-                                  </select>
-                                  <span style={{ padding: '4px 8px', borderRadius: 4, background: `${colors.success}20`, color: colors.success, fontSize: 11, fontWeight: 700, minWidth: 50, textAlign: 'center' }}>{place.area}م²</span>
+                                  
+                                  {/* الارتفاع - يظهر للجدران والأرضي والسقف */}
+                                  {(measureType === 'walls' || measureType === 'floor' || measureType === 'ceiling') && (
+                                    <select value={place.height || 3} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'height', e.target.value)} style={{ ...selectStyle, width: 80, height: 30, borderRadius: 4, border: `1px solid ${colors.purple}`, background: colors.bg, color: colors.purple, fontSize: 11 }}>
+                                      {[2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6].map(n => (<option key={n} value={n}>الارتفاع {n}</option>))}
+                                    </select>
+                                  )}
+                                  
+                                  {/* المساحة المحسوبة */}
+                                  <span style={{ padding: '4px 8px', borderRadius: 4, background: `${colors.success}20`, color: colors.success, fontSize: 11, fontWeight: 700, minWidth: 55, textAlign: 'center' }}>
+                                    {place.area}{measureType === 'linear' ? 'م.ط' : 'م²'}
+                                  </span>
+                                  
                                   <button onClick={() => deletePlace(cat.id, item.id, place.id)} style={{ width: 26, height: 26, borderRadius: 4, border: `1px solid ${colors.danger}50`, background: `${colors.danger}10`, color: colors.danger, cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
                                 </div>
-                              ))}
+                              )})}
                             </div>
                             <button onClick={() => addPlace(cat.id, item.id)} style={{ width: '100%', height: 32, marginBottom: 12, borderRadius: 6, border: `1px solid ${colors.success}`, background: `${colors.success}15`, color: colors.success, fontSize: 12, cursor: 'pointer' }}>+ إضافة مكان</button>
 
