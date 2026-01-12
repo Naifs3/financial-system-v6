@@ -261,12 +261,12 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
     color: isActive ? activeColor : colors.muted, transition: 'all 0.2s'
   });
 
-  // ستايل القائمة المنسدلة مع سهم صلب
+  // ستايل القائمة المنسدلة مع سهم خط (Chevron) مقاس 16
   const selectStyle = {
     appearance: 'none', 
     paddingLeft: 28, 
     paddingRight: 12,
-    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E")`,
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
     backgroundRepeat: 'no-repeat', 
     backgroundPosition: 'left 8px center',
     backgroundColor: 'transparent',
