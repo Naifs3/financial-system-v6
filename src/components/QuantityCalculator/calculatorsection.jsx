@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════════════
-// CalculatorSection.jsx - الملف الكامل مع جميع الوظائف
+// CalculatorSection.jsx - النسخة المحدثة الكاملة
 // ═══════════════════════════════════════════════════════════════════════════════════
 
 import React, { useState } from 'react';
@@ -8,7 +8,7 @@ import { dimensionOptions } from './colorsandconstants';
 const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, categories, setCategories, formatNumber, getColor, placeTypeColors }) => {
 
   // ═══════════════════════════════════════════════════════════════════════════════════
-  // أيقونات صلب عصري
+  // أيقونات
   // ═══════════════════════════════════════════════════════════════════════════════════
   const getIcon = (code, color, size = 28) => {
     const icons = {
@@ -22,7 +22,7 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
   };
 
   // ═══════════════════════════════════════════════════════════════════════════════════
-  // قائمة الشروط المعرّفة مسبقاً
+  // قائمة الشروط
   // ═══════════════════════════════════════════════════════════════════════════════════
   const predefinedConditions = [
     'غير شامل الفك أو الإزالة',
@@ -39,7 +39,7 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
   ];
 
   // ═══════════════════════════════════════════════════════════════════════════════════
-  // الحالات (States)
+  // الحالات
   // ═══════════════════════════════════════════════════════════════════════════════════
   const [expandedCategory, setExpandedCategory] = useState(null);
   const [editingItemId, setEditingItemId] = useState(null);
@@ -93,6 +93,28 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
   const getGrandTotal = () => (categories || []).reduce((sum, cat) => sum + calculateCategoryTotals(cat).finalTotal, 0);
   const isContainerPriceDifferent = (cat) => cat.options?.containerAmount !== cat.options?.totalsContainerAmount;
 
+  // دالة توليد النص الأساسي للملخص
+  const generateDefaultSummary = (cat, catTotals) => {
+    let summary = `تشمل الخدمة: ${cat.items?.map(i => {
+      let itemText = cat.options?.showMeters ? `${i.name} (${getItemArea(i)} م²)` : i.name;
+      if (cat.options?.showPlaces) itemText += ` [${i.places?.map(p => p.name).join('، ')}]`;
+      if (i.conditions?.length > 0) itemText += ` (${i.conditions.join('، ')})`;
+      return itemText;
+    }).join('، ')}.`;
+    
+    if (cat.categoryConditions?.length > 0) summary += ` | ملاحظات: ${cat.categoryConditions.join('، ')}.`;
+    if (cat.options?.sumMeters && Object.keys(getGroupedAreas(cat)).length > 1) {
+      summary += ` | التجميع: ${Object.entries(getGroupedAreas(cat)).map(([group, area]) => `${group}: ${area} م²`).join('، ')}.`;
+    }
+    if (cat.options?.containerState === 'with') summary += ` شامل الحاوية (${cat.options?.containerAmount || 0} ﷼).`;
+    if (cat.options?.containerState === 'without') summary += ` غير شامل الحاوية.`;
+    if (cat.options?.materialsState === 'with') summary += ` شامل المواد (${cat.options?.materialsAmount || 0} ﷼).`;
+    if (cat.options?.materialsState === 'without') summary += ` غير شامل المواد.`;
+    if (cat.options?.showPrice) summary += ` | الإجمالي: ${formatNumber(catTotals.finalTotal)} ر.س`;
+    
+    return summary;
+  };
+
   // ═══════════════════════════════════════════════════════════════════════════════════
   // دوال التحديث
   // ═══════════════════════════════════════════════════════════════════════════════════
@@ -123,7 +145,7 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
             id: 'cat' + Date.now() + catKey, code: catConfig.code, name: catConfig.name, color: getColor(Object.keys(workItems).indexOf(catKey)),
             subItems: catConfig.items.map(item => ({ code: `${catConfig.code}${item.num}`, name: item.name, price: item.exec, group: catConfig.name, type: item.typeId })),
             items: [], pendingPlaces: [{ ...newPlace, id: 'p' + Date.now() + catKey }], needsSubItemSelection: true, categoryConditions: [],
-            options: { containerState: 'notMentioned', containerAmount: 0, materialsState: 'notMentioned', materialsAmount: 0, showMeters: true, sumMeters: true, showPrice: false, customAmount: 0, profitPercent: 0, discountPercent: 0, discountAmount: 0, taxPercent: 15, totalsContainerAmount: 0 }
+            options: { containerState: 'notMentioned', containerAmount: 0, materialsState: 'notMentioned', materialsAmount: 0, showMeters: true, sumMeters: true, showPrice: false, showPlaces: false, customAmount: 0, profitPercent: 0, discountPercent: 0, discountAmount: 0, taxPercent: 15, totalsContainerAmount: 0 }
           });
         }
       });
@@ -234,8 +256,37 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
 
   const hasCategories = (categories || []).filter(cat => cat.items?.length > 0 || cat.pendingPlaces?.length > 0).length > 0;
 
+  // ستايل الأزرار الموحد
+  const optionButtonStyle = (isActive, activeColor) => ({
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    height: 32,
+    minWidth: 90,
+    padding: '0 12px',
+    borderRadius: 8,
+    border: `1px solid ${isActive ? activeColor : colors.border}`,
+    background: isActive ? `${activeColor}15` : colors.bg,
+    cursor: 'pointer',
+    fontSize: 11,
+    fontWeight: 600,
+    color: isActive ? activeColor : colors.muted,
+    transition: 'all 0.2s'
+  });
+
+  // ستايل القائمة المنسدلة
+  const selectStyle = {
+    appearance: 'none',
+    paddingLeft: 28,
+    paddingRight: 12,
+    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'left 10px center',
+  };
+
   // ═══════════════════════════════════════════════════════════════════════════════════
-  // العرض (Render)
+  // العرض
   // ═══════════════════════════════════════════════════════════════════════════════════
   return (
     <>
@@ -250,10 +301,10 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
         {phase1Expanded && (
           <div style={{ padding: 16, borderTop: `1px dashed ${colors.primary}40` }}>
             <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-              <select value={selectedPlaceType} onChange={(e) => { setSelectedPlaceType(e.target.value); setSelectedPlace(''); }} style={{ flex: 1, height: 40, borderRadius: 8, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: 14, padding: '0 12px' }}>
+              <select value={selectedPlaceType} onChange={(e) => { setSelectedPlaceType(e.target.value); setSelectedPlace(''); }} style={{ ...selectStyle, flex: 1, height: 40, borderRadius: 8, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: 14 }}>
                 {Object.entries(places).filter(([_, pt]) => pt.enabled).map(([key, pt]) => (<option key={key} value={key}>{pt.icon} {pt.name}</option>))}
               </select>
-              <select value={selectedPlace} onChange={(e) => setSelectedPlace(e.target.value)} style={{ flex: 2, height: 40, borderRadius: 8, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: 14, padding: '0 12px' }}>
+              <select value={selectedPlace} onChange={(e) => setSelectedPlace(e.target.value)} style={{ ...selectStyle, flex: 2, height: 40, borderRadius: 8, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: 14 }}>
                 <option value="">-- اختر المكان --</option>
                 {placesList.map(place => (<option key={place} value={place}>{place}</option>))}
               </select>
@@ -270,7 +321,7 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
             <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
               {[{ key: 'length', label: 'الطول' }, { key: 'width', label: 'العرض' }, { key: 'height', label: 'الارتفاع' }].map(dim => (
                 <div key={dim.key} style={{ flex: 1 }}><div style={{ fontSize: 10, color: colors.muted, marginBottom: 4, textAlign: 'center' }}>{dim.label}</div>
-                  <select value={dimensions[dim.key]} onChange={(e) => setDimensions({ ...dimensions, [dim.key]: parseFloat(e.target.value) })} style={{ width: '100%', height: 36, borderRadius: 8, border: `1px solid ${colors.border}`, background: colors.bg, color: '#fff', fontSize: 14, textAlign: 'center' }}>
+                  <select value={dimensions[dim.key]} onChange={(e) => setDimensions({ ...dimensions, [dim.key]: parseFloat(e.target.value) })} style={{ ...selectStyle, width: '100%', height: 36, borderRadius: 8, border: `1px solid ${colors.border}`, background: colors.bg, color: '#fff', fontSize: 14, textAlign: 'center' }}>
                     {(dim.key === 'height' ? heightOptions : (dimensionOptions || [1,2,3,4,5,6,7,8,9,10]).slice(0, 20)).map(n => (<option key={n} value={n}>{n} م</option>))}
                   </select>
                 </div>
@@ -337,7 +388,7 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
                     {pendingPlaces.map(place => (
                       <div key={place.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, padding: 10, background: colors.card, borderRadius: 8 }}>
                         <span style={{ fontSize: 12, color: colors.text }}>{place.name} ({place.area}م²)</span>
-                        <select defaultValue="" onChange={(e) => { if (e.target.value) selectPendingSubItem(cat.id, place.id, e.target.value); }} style={{ flex: 1, height: 34, borderRadius: 6, border: `1px solid ${cat.color}50`, background: colors.bg, color: colors.text, fontSize: 12, padding: '0 10px' }}>
+                        <select defaultValue="" onChange={(e) => { if (e.target.value) selectPendingSubItem(cat.id, place.id, e.target.value); }} style={{ ...selectStyle, flex: 1, height: 34, borderRadius: 6, border: `1px solid ${cat.color}50`, background: colors.bg, color: colors.text, fontSize: 12 }}>
                           <option value="">-- اختر البند --</option>
                           {(cat.subItems || []).map(s => (<option key={s.code} value={s.code}>{s.name} ({s.price}﷼)</option>))}
                         </select>
@@ -368,18 +419,18 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
                         {/* تحرير البند */}
                         {isEditing && (
                           <div style={{ padding: 14, background: `${colors.primary}08`, borderTop: `1px dashed ${colors.primary}30` }}>
-                            <select value={item.code} onChange={(e) => changeSubItem(cat.id, item.id, e.target.value)} style={{ width: '100%', height: 36, marginBottom: 12, borderRadius: 8, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: 12, padding: '0 12px' }}>
+                            <select value={item.code} onChange={(e) => changeSubItem(cat.id, item.id, e.target.value)} style={{ ...selectStyle, width: '100%', height: 36, marginBottom: 12, borderRadius: 8, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: 12 }}>
                               {(cat.subItems || []).map(s => (<option key={s.code} value={s.code}>[{s.code}] {s.name}</option>))}
                             </select>
 
                             {/* الأماكن */}
                             {(item.places || []).map((place, pIdx) => (
                               <div key={place.id} style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 8, padding: 8, background: pIdx % 2 === 0 ? `${colors.primary}08` : 'transparent', borderRadius: 8, flexWrap: 'wrap' }}>
-                                <select value={place.name} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'name', e.target.value)} style={{ width: 100, height: 32, borderRadius: 6, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: 12 }}>
+                                <select value={place.name} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'name', e.target.value)} style={{ ...selectStyle, width: 100, height: 32, borderRadius: 6, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: 12 }}>
                                   {placesList.map(p => (<option key={p} value={p}>{p}</option>))}
                                 </select>
                                 {['length', 'width'].map(dim => (
-                                  <select key={dim} value={place[dim]} onChange={(e) => updatePlace(cat.id, item.id, place.id, dim, e.target.value)} style={{ width: 55, height: 32, borderRadius: 6, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: 12 }}>
+                                  <select key={dim} value={place[dim]} onChange={(e) => updatePlace(cat.id, item.id, place.id, dim, e.target.value)} style={{ ...selectStyle, width: 55, height: 32, borderRadius: 6, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontSize: 12 }}>
                                     {[1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10,12,14,16,18,20].map(n => (<option key={n} value={n}>{n}م</option>))}
                                   </select>
                                 ))}
@@ -393,7 +444,7 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
                             <div style={{ marginBottom: 12 }}>
                               <div style={{ fontSize: 10, color: colors.warning, marginBottom: 6 }}>📋 الشروط</div>
                               {item.conditions?.map((c, i) => (<div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', marginBottom: 4, background: `${colors.warning}10`, borderRadius: 6 }}><span style={{ flex: 1, fontSize: 11, color: colors.text }}>{c}</span><button onClick={() => deleteCondition(cat.id, item.id, i)} style={{ background: 'none', border: 'none', color: colors.danger, cursor: 'pointer' }}>✕</button></div>))}
-                              <select onChange={(e) => { if (e.target.value) { addCondition(cat.id, item.id, e.target.value); e.target.value = ''; } }} style={{ width: '100%', height: 32, borderRadius: 6, border: `1px solid ${colors.warning}`, background: colors.bg, color: colors.text, fontSize: 11 }}>
+                              <select onChange={(e) => { if (e.target.value) { addCondition(cat.id, item.id, e.target.value); e.target.value = ''; } }} style={{ ...selectStyle, width: '100%', height: 32, borderRadius: 6, border: `1px solid ${colors.warning}`, background: colors.bg, color: colors.text, fontSize: 11 }}>
                                 <option value="">+ إضافة شرط</option>
                                 {predefinedConditions.filter(c => !item.conditions?.includes(c)).map((c, i) => (<option key={i} value={c}>{c}</option>))}
                               </select>
@@ -430,90 +481,101 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
                 {expandedConditions[cat.id] && (
                   <div style={{ padding: 14, background: `${colors.warning}08`, borderRadius: 10, marginBottom: 12, border: `1px solid ${colors.warning}30` }}>
                     
-                    {/* أزرار الخيارات */}
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12, alignItems: 'center' }}>
+                    {/* أزرار الخيارات - صف أول */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 8, marginBottom: 12 }}>
                       
-                      {/* زر الحاوية - 3 حالات */}
+                      {/* زر الحاوية */}
                       <div onClick={() => {
                         const states = ['with', 'notMentioned', 'without'];
                         const currentIndex = states.indexOf(cat.options?.containerState || 'notMentioned');
-                        const nextIndex = (currentIndex + 1) % states.length;
-                        updateCategoryOptions(cat.id, 'containerState', states[nextIndex]);
-                      }} style={{ display: 'flex', alignItems: 'center', gap: 6, height: 30, padding: '0 12px', borderRadius: 8, border: `1px solid ${cat.options?.containerState === 'with' ? colors.warning : cat.options?.containerState === 'without' ? colors.danger : colors.border}`, background: cat.options?.containerState === 'with' ? `${colors.warning}15` : cat.options?.containerState === 'without' ? `${colors.danger}15` : colors.bg, cursor: 'pointer' }}>
-                        <span style={{ color: cat.options?.containerState === 'with' ? colors.warning : cat.options?.containerState === 'without' ? colors.danger : colors.muted, fontSize: 12, fontWeight: 600 }}>
-                          {cat.options?.containerState === 'with' ? '🚛 الحاوية' : cat.options?.containerState === 'without' ? '🚫 بدون حاوية' : '➖ إخفاء الحاوية'}
-                        </span>
-                        {cat.options?.containerState === 'with' && (
-                          <>
-                            <input type="number" value={cat.options?.containerAmount || ''} onChange={(e) => updateCategoryOptions(cat.id, 'containerAmount', parseFloat(e.target.value) || 0)} onClick={(e) => e.stopPropagation()} onFocus={(e) => e.target.select()} placeholder="0" style={{ width: 50, padding: 0, border: 'none', background: 'transparent', color: '#fff', fontSize: 12, fontWeight: 700, textAlign: 'center' }} />
-                            <span style={{ color: colors.warning, fontSize: 11 }}>﷼</span>
-                          </>
-                        )}
+                        updateCategoryOptions(cat.id, 'containerState', states[(currentIndex + 1) % states.length]);
+                      }} style={optionButtonStyle(cat.options?.containerState !== 'notMentioned', cat.options?.containerState === 'with' ? colors.warning : colors.danger)}>
+                        <span>{cat.options?.containerState === 'with' ? '🚛' : cat.options?.containerState === 'without' ? '🚫' : '➖'}</span>
+                        <span>{cat.options?.containerState === 'with' ? 'الحاوية' : cat.options?.containerState === 'without' ? 'بدون حاوية' : 'الحاوية'}</span>
                       </div>
 
-                      {/* زر المواد - 3 حالات */}
+                      {/* زر المواد */}
                       <div onClick={() => {
                         const states = ['with', 'notMentioned', 'without'];
                         const currentIndex = states.indexOf(cat.options?.materialsState || 'notMentioned');
-                        const nextIndex = (currentIndex + 1) % states.length;
-                        updateCategoryOptions(cat.id, 'materialsState', states[nextIndex]);
-                      }} style={{ display: 'flex', alignItems: 'center', gap: 6, height: 30, padding: '0 12px', borderRadius: 8, border: `1px solid ${cat.options?.materialsState === 'with' ? colors.success : cat.options?.materialsState === 'without' ? colors.danger : colors.border}`, background: cat.options?.materialsState === 'with' ? `${colors.success}15` : cat.options?.materialsState === 'without' ? `${colors.danger}15` : colors.bg, cursor: 'pointer' }}>
-                        <span style={{ color: cat.options?.materialsState === 'with' ? colors.success : cat.options?.materialsState === 'without' ? colors.danger : colors.muted, fontSize: 12, fontWeight: 600 }}>
-                          {cat.options?.materialsState === 'with' ? '🧱 المواد' : cat.options?.materialsState === 'without' ? '🚫 بدون مواد' : '➖ إخفاء المواد'}
-                        </span>
-                        {cat.options?.materialsState === 'with' && (
-                          <>
-                            <input type="number" value={cat.options?.materialsAmount || ''} onChange={(e) => updateCategoryOptions(cat.id, 'materialsAmount', parseFloat(e.target.value) || 0)} onClick={(e) => e.stopPropagation()} onFocus={(e) => e.target.select()} placeholder="0" style={{ width: 50, padding: 0, border: 'none', background: 'transparent', color: '#fff', fontSize: 12, fontWeight: 700, textAlign: 'center' }} />
-                            <span style={{ color: colors.success, fontSize: 11 }}>﷼</span>
-                          </>
-                        )}
+                        updateCategoryOptions(cat.id, 'materialsState', states[(currentIndex + 1) % states.length]);
+                      }} style={optionButtonStyle(cat.options?.materialsState !== 'notMentioned', cat.options?.materialsState === 'with' ? colors.success : colors.danger)}>
+                        <span>{cat.options?.materialsState === 'with' ? '🧱' : cat.options?.materialsState === 'without' ? '🚫' : '➖'}</span>
+                        <span>{cat.options?.materialsState === 'with' ? 'المواد' : cat.options?.materialsState === 'without' ? 'بدون مواد' : 'المواد'}</span>
                       </div>
 
                       {/* الأمتار */}
-                      <div onClick={() => updateCategoryOptions(cat.id, 'showMeters', !cat.options?.showMeters)} style={{ display: 'flex', alignItems: 'center', height: 30, padding: '0 12px', borderRadius: 8, border: `1px solid ${cat.options?.showMeters ? colors.cyan : colors.border}`, background: cat.options?.showMeters ? `${colors.cyan}15` : colors.bg, cursor: 'pointer' }}>
-                        <span style={{ color: cat.options?.showMeters ? colors.cyan : colors.muted, fontSize: 12, fontWeight: 600 }}>📏 الأمتار</span>
+                      <div onClick={() => updateCategoryOptions(cat.id, 'showMeters', !cat.options?.showMeters)} style={optionButtonStyle(cat.options?.showMeters, colors.cyan)}>
+                        <span>📏</span><span>الأمتار</span>
+                      </div>
+
+                      {/* الأماكن */}
+                      <div onClick={() => updateCategoryOptions(cat.id, 'showPlaces', !cat.options?.showPlaces)} style={optionButtonStyle(cat.options?.showPlaces, colors.purple)}>
+                        <span>📍</span><span>الأماكن</span>
                       </div>
 
                       {/* المساحات */}
-                      <div onClick={() => updateCategoryOptions(cat.id, 'sumMeters', !cat.options?.sumMeters)} style={{ display: 'flex', alignItems: 'center', height: 30, padding: '0 12px', borderRadius: 8, border: `1px solid ${cat.options?.sumMeters ? colors.purple : colors.border}`, background: cat.options?.sumMeters ? `${colors.purple}15` : colors.bg, cursor: 'pointer' }}>
-                        <span style={{ color: cat.options?.sumMeters ? colors.purple : colors.muted, fontSize: 12, fontWeight: 600 }}>📐 المساحات</span>
+                      <div onClick={() => updateCategoryOptions(cat.id, 'sumMeters', !cat.options?.sumMeters)} style={optionButtonStyle(cat.options?.sumMeters, colors.indigo || '#6366f1')}>
+                        <span>📐</span><span>المساحات</span>
                       </div>
 
                       {/* السعر */}
-                      <div onClick={() => updateCategoryOptions(cat.id, 'showPrice', !cat.options?.showPrice)} style={{ display: 'flex', alignItems: 'center', height: 30, padding: '0 12px', borderRadius: 8, border: `1px solid ${cat.options?.showPrice ? colors.primary : colors.border}`, background: cat.options?.showPrice ? `${colors.primary}15` : colors.bg, cursor: 'pointer' }}>
-                        <span style={{ color: cat.options?.showPrice ? colors.primary : colors.muted, fontSize: 12, fontWeight: 600 }}>💰 السعر</span>
+                      <div onClick={() => updateCategoryOptions(cat.id, 'showPrice', !cat.options?.showPrice)} style={optionButtonStyle(cat.options?.showPrice, colors.primary)}>
+                        <span>💰</span><span>السعر</span>
                       </div>
 
                       {/* تحرير */}
-                      <div onClick={() => setEditingSummary(editingSummary === cat.id ? null : cat.id)} style={{ display: 'flex', alignItems: 'center', height: 30, padding: '0 12px', borderRadius: 8, border: `1px solid ${editingSummary === cat.id ? colors.warning : colors.border}`, background: editingSummary === cat.id ? `${colors.warning}15` : colors.bg, cursor: 'pointer' }}>
-                        <span style={{ color: editingSummary === cat.id ? colors.warning : colors.muted, fontSize: 12, fontWeight: 600 }}>✏️ تحرير</span>
+                      <div onClick={() => {
+                        if (editingSummary !== cat.id) {
+                          setCustomSummary({ ...customSummary, [cat.id]: generateDefaultSummary(cat, catTotals) });
+                        }
+                        setEditingSummary(editingSummary === cat.id ? null : cat.id);
+                      }} style={optionButtonStyle(editingSummary === cat.id, colors.warning)}>
+                        <span>✏️</span><span>تحرير</span>
                       </div>
 
                       {/* نسخ */}
                       <div onClick={() => {
-                        let summary = `تشمل الخدمة: ${cat.items?.map(i => cat.options?.showMeters ? `${i.name} (${getItemArea(i)} م²)` : i.name).join('، ')}.`;
-                        if (cat.categoryConditions?.length > 0) summary += ` | ملاحظات: ${cat.categoryConditions.join('، ')}.`;
-                        if (cat.options?.containerState === 'with') summary += ` شامل الحاوية (${cat.options?.containerAmount || 0} ﷼).`;
-                        if (cat.options?.containerState === 'without') summary += ` غير شامل الحاوية.`;
-                        if (cat.options?.materialsState === 'with') summary += ` شامل المواد (${cat.options?.materialsAmount || 0} ﷼).`;
-                        if (cat.options?.materialsState === 'without') summary += ` غير شامل المواد.`;
-                        if (cat.options?.showPrice) summary += ` | الإجمالي: ${formatNumber(catTotals.finalTotal)} ر.س`;
+                        const summary = customSummary[cat.id] || generateDefaultSummary(cat, catTotals);
                         navigator.clipboard?.writeText(summary);
                         alert('تم النسخ!');
-                      }} style={{ display: 'flex', alignItems: 'center', height: 30, padding: '0 12px', borderRadius: 8, border: `1px solid ${colors.border}`, background: colors.bg, cursor: 'pointer' }}>
-                        <span style={{ color: colors.muted, fontSize: 12, fontWeight: 600 }}>📋 نسخ</span>
+                      }} style={optionButtonStyle(false, colors.muted)}>
+                        <span>📋</span><span>نسخ</span>
                       </div>
+
+                      {/* إعادة الضبط - يظهر فقط عند التحرير */}
+                      {editingSummary === cat.id && (
+                        <div onClick={() => {
+                          setCustomSummary({ ...customSummary, [cat.id]: generateDefaultSummary(cat, catTotals) });
+                        }} style={optionButtonStyle(true, colors.danger)}>
+                          <span>↩️</span><span>إعادة ضبط</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* ملخص الخدمة */}
                     <div style={{ marginBottom: 12 }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: colors.warning, marginBottom: 8 }}>📝 ملخص الخدمة</div>
                       {editingSummary === cat.id ? (
-                        <textarea value={customSummary[cat.id] || ''} onChange={(e) => setCustomSummary({ ...customSummary, [cat.id]: e.target.value })} style={{ width: '100%', minHeight: 80, padding: 12, borderRadius: 8, border: `1px solid ${colors.warning}50`, background: colors.bg, color: colors.text, fontSize: 12, lineHeight: 1.8, resize: 'vertical' }} />
+                        <textarea 
+                          value={customSummary[cat.id] || ''} 
+                          onChange={(e) => setCustomSummary({ ...customSummary, [cat.id]: e.target.value })} 
+                          style={{ width: '100%', minHeight: 100, padding: 12, borderRadius: 8, border: `1px solid ${colors.warning}50`, background: colors.bg, color: colors.text, fontSize: 12, lineHeight: 1.8, resize: 'vertical', fontFamily: 'inherit' }} 
+                        />
                       ) : (
                         <div style={{ fontSize: 12, color: colors.text, lineHeight: 1.8, background: colors.bg, padding: 12, borderRadius: 8 }}>
-                          تشمل الخدمة: {cat.items?.map((i, idx) => (<span key={i.id}>{cat.options?.showMeters ? `${i.name} (${getItemArea(i)} م²)` : i.name}{i.conditions?.length > 0 && <span style={{ color: colors.warning }}> ({i.conditions.join('، ')})</span>}{idx < cat.items.length - 1 ? '، ' : '.'}</span>))}
+                          تشمل الخدمة: {cat.items?.map((i, idx) => (
+                            <span key={i.id}>
+                              {cat.options?.showMeters ? `${i.name} (${getItemArea(i)} م²)` : i.name}
+                              {cat.options?.showPlaces && <span style={{ color: colors.purple }}> [{i.places?.map(p => p.name).join('، ')}]</span>}
+                              {i.conditions?.length > 0 && <span style={{ color: colors.warning }}> ({i.conditions.join('، ')})</span>}
+                              {idx < cat.items.length - 1 ? '، ' : '.'}
+                            </span>
+                          ))}
                           {cat.categoryConditions?.length > 0 && <strong style={{ color: colors.warning }}> | ملاحظات: {cat.categoryConditions.join('، ')}.</strong>}
+                          {cat.options?.sumMeters && Object.keys(groupedAreas).length > 1 && (
+                            <span style={{ color: colors.primary }}> | التجميع: {Object.entries(groupedAreas).map(([group, area]) => `${group}: ${area} م²`).join('، ')}.</span>
+                          )}
                           {cat.options?.containerState === 'with' && <span style={{ color: colors.warning }}> شامل الحاوية ({cat.options?.containerAmount || 0} ﷼).</span>}
                           {cat.options?.containerState === 'without' && <span style={{ color: colors.danger }}> غير شامل الحاوية.</span>}
                           {cat.options?.materialsState === 'with' && <span style={{ color: colors.success }}> شامل المواد ({cat.options?.materialsAmount || 0} ﷼).</span>}
@@ -528,7 +590,7 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
                       <div style={{ fontSize: 10, color: colors.warning, marginBottom: 8 }}>📋 شروط عامة للفئة</div>
                       {cat.categoryConditions?.map((c, i) => (<div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', marginBottom: 4, background: `${colors.warning}10`, borderRadius: 6 }}><span style={{ flex: 1, fontSize: 11, color: colors.text }}>{c}</span><button onClick={() => deleteCategoryCondition(cat.id, i)} style={{ background: 'none', border: 'none', color: colors.danger, cursor: 'pointer' }}>✕</button></div>))}
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <select onChange={(e) => { if (e.target.value) { addCategoryCondition(cat.id, e.target.value); e.target.value = ''; } }} style={{ flex: 1, height: 32, borderRadius: 6, border: `1px solid ${colors.warning}`, background: colors.bg, color: colors.text, fontSize: 11 }}>
+                        <select onChange={(e) => { if (e.target.value) { addCategoryCondition(cat.id, e.target.value); e.target.value = ''; } }} style={{ ...selectStyle, flex: 1, height: 32, borderRadius: 6, border: `1px solid ${colors.warning}`, background: colors.bg, color: colors.text, fontSize: 11 }}>
                           <option value="">+ إضافة شرط</option>
                           {predefinedConditions.filter(c => !cat.categoryConditions?.includes(c)).map((c, i) => (<option key={i} value={c}>{c}</option>))}
                         </select>
@@ -545,103 +607,100 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
                 )}
 
                 {/* ═══════════════════════════════════════════════════════════════════ */}
-                {/* ملخص السعر الكامل */}
+                {/* ملخص السعر - مرتب */}
                 {/* ═══════════════════════════════════════════════════════════════════ */}
                 {expandedPriceSummary[cat.id] && (
                   <div style={{ padding: 16, background: `${colors.primary}10`, borderRadius: 12, border: `1px solid ${colors.primary}30` }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: colors.primary, marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${colors.primary}30` }}>💰 إجمالي البنود والأسعار</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: colors.primary, marginBottom: 16, paddingBottom: 8, borderBottom: `1px solid ${colors.primary}30` }}>💰 إجمالي البنود والأسعار</div>
                     
-                    <div style={{ marginBottom: 12 }}>
+                    {/* جدول الأسعار المرتب */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+                      
                       {/* الأسعار الأساسية */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', borderRadius: 6, background: `${colors.text}06`, marginBottom: 4 }}>
-                        <span style={{ color: colors.text, fontSize: 12, fontWeight: 600 }}>الأسعار الأساسية</span>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: colors.text }}>{formatNumber(catTotals.totalPrice)} ر.س</span>
+                      <div style={{ display: 'flex', alignItems: 'center', padding: '10px 12px', borderRadius: 8, background: `${colors.text}08` }}>
+                        <span style={{ flex: 1, color: colors.text, fontSize: 13, fontWeight: 600 }}>الأسعار الأساسية</span>
+                        <span style={{ width: 120, textAlign: 'left', fontSize: 13, fontWeight: 700, color: colors.text }}>{formatNumber(catTotals.totalPrice)} ر.س</span>
                       </div>
 
                       {/* الحاوية */}
                       {cat.options?.containerState === 'with' && (
-                        <div style={{ padding: '8px 10px', borderRadius: 6, marginBottom: 4 }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ color: colors.warning, fontSize: 12, fontWeight: 600 }}>🚛 الحاوية</span>
-                              <input type="number" value={cat.options?.totalsContainerAmount || ''} onChange={(e) => updateCategoryOptions(cat.id, 'totalsContainerAmount', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} placeholder="0" style={{ width: 60, height: 24, padding: '0 8px', borderRadius: 4, border: `1px solid ${colors.warning}50`, background: colors.bg, color: '#fff', fontSize: 12, fontWeight: 700, textAlign: 'center' }} />
-                              <span style={{ color: colors.warning, fontSize: 11 }}>﷼</span>
-                            </div>
-                            <span style={{ fontSize: 12, fontWeight: 600, color: colors.warning }}>+{formatNumber(cat.options?.totalsContainerAmount || 0)} ر.س</span>
+                        <div style={{ display: 'flex', alignItems: 'center', padding: '10px 12px', borderRadius: 8 }}>
+                          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ color: colors.warning, fontSize: 13, fontWeight: 600 }}>🚛 الحاوية</span>
+                            <input type="number" value={cat.options?.totalsContainerAmount || ''} onChange={(e) => updateCategoryOptions(cat.id, 'totalsContainerAmount', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} placeholder="0" style={{ width: 70, height: 28, padding: '0 8px', borderRadius: 6, border: `1px solid ${colors.warning}50`, background: colors.bg, color: '#fff', fontSize: 13, fontWeight: 700, textAlign: 'center' }} />
+                            <span style={{ color: colors.warning, fontSize: 12 }}>﷼</span>
                           </div>
-                          {isContainerPriceDifferent(cat) && (
-                            <div style={{ fontSize: 10, color: colors.danger, marginTop: 4 }}>⚠️ السعر مختلف عن الأعلى ({cat.options?.containerAmount || 0} ﷼)</div>
-                          )}
+                          <span style={{ width: 120, textAlign: 'left', fontSize: 13, fontWeight: 700, color: colors.warning }}>+{formatNumber(cat.options?.totalsContainerAmount || 0)} ر.س</span>
                         </div>
                       )}
 
                       {/* المواد */}
                       {cat.options?.materialsState === 'with' && (
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', borderRadius: 6, background: `${colors.text}06`, marginBottom: 4 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ color: colors.success, fontSize: 12, fontWeight: 600 }}>🧱 المواد</span>
-                            <input type="number" value={cat.options?.materialsAmount || ''} onChange={(e) => updateCategoryOptions(cat.id, 'materialsAmount', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} placeholder="0" style={{ width: 60, height: 24, padding: '0 8px', borderRadius: 4, border: `1px solid ${colors.success}50`, background: colors.bg, color: '#fff', fontSize: 12, fontWeight: 700, textAlign: 'center' }} />
-                            <span style={{ color: colors.success, fontSize: 11 }}>﷼</span>
+                        <div style={{ display: 'flex', alignItems: 'center', padding: '10px 12px', borderRadius: 8, background: `${colors.text}08` }}>
+                          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ color: colors.success, fontSize: 13, fontWeight: 600 }}>🧱 المواد</span>
+                            <input type="number" value={cat.options?.materialsAmount || ''} onChange={(e) => updateCategoryOptions(cat.id, 'materialsAmount', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} placeholder="0" style={{ width: 70, height: 28, padding: '0 8px', borderRadius: 6, border: `1px solid ${colors.success}50`, background: colors.bg, color: '#fff', fontSize: 13, fontWeight: 700, textAlign: 'center' }} />
+                            <span style={{ color: colors.success, fontSize: 12 }}>﷼</span>
                           </div>
-                          <span style={{ fontSize: 12, fontWeight: 600, color: colors.success }}>+{formatNumber(cat.options?.materialsAmount || 0)} ر.س</span>
+                          <span style={{ width: 120, textAlign: 'left', fontSize: 13, fontWeight: 700, color: colors.success }}>+{formatNumber(cat.options?.materialsAmount || 0)} ر.س</span>
                         </div>
                       )}
 
                       {/* مبلغ إضافي */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', borderRadius: 6, marginBottom: 4 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ color: colors.success, fontSize: 12, fontWeight: 600 }}>➕ مبلغ إضافي</span>
-                          <input type="number" value={cat.options?.customAmount || ''} onChange={(e) => updateCategoryOptions(cat.id, 'customAmount', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} placeholder="0" style={{ width: 60, height: 24, padding: '0 8px', borderRadius: 4, border: `1px solid ${colors.success}50`, background: colors.bg, color: '#fff', fontSize: 12, fontWeight: 700, textAlign: 'center' }} />
-                          <span style={{ color: colors.success, fontSize: 11 }}>﷼</span>
+                      <div style={{ display: 'flex', alignItems: 'center', padding: '10px 12px', borderRadius: 8 }}>
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ color: colors.success, fontSize: 13, fontWeight: 600 }}>➕ مبلغ إضافي</span>
+                          <input type="number" value={cat.options?.customAmount || ''} onChange={(e) => updateCategoryOptions(cat.id, 'customAmount', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} placeholder="0" style={{ width: 70, height: 28, padding: '0 8px', borderRadius: 6, border: `1px solid ${colors.success}50`, background: colors.bg, color: '#fff', fontSize: 13, fontWeight: 700, textAlign: 'center' }} />
+                          <span style={{ color: colors.success, fontSize: 12 }}>﷼</span>
                         </div>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: colors.success }}>{cat.options?.customAmount > 0 ? `+${formatNumber(cat.options?.customAmount)} ر.س` : '—'}</span>
+                        <span style={{ width: 120, textAlign: 'left', fontSize: 13, fontWeight: 700, color: colors.success }}>{(cat.options?.customAmount || 0) > 0 ? `+${formatNumber(cat.options?.customAmount)} ر.س` : '—'}</span>
                       </div>
 
-                      {/* إضافة نسبة (ربح) */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', borderRadius: 6, background: `${colors.text}06`, marginBottom: 4 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ color: colors.success, fontSize: 12, fontWeight: 600 }}>📈 إضافة نسبة</span>
-                          <input type="number" value={cat.options?.profitPercent || ''} onChange={(e) => updateCategoryOptions(cat.id, 'profitPercent', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} placeholder="0" style={{ width: 50, height: 24, padding: '0 8px', borderRadius: 4, border: `1px solid ${colors.success}50`, background: colors.bg, color: '#fff', fontSize: 12, fontWeight: 700, textAlign: 'center' }} />
-                          <span style={{ color: colors.success, fontSize: 11 }}>%</span>
+                      {/* إضافة نسبة */}
+                      <div style={{ display: 'flex', alignItems: 'center', padding: '10px 12px', borderRadius: 8, background: `${colors.text}08` }}>
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ color: colors.success, fontSize: 13, fontWeight: 600 }}>📈 إضافة نسبة</span>
+                          <input type="number" value={cat.options?.profitPercent || ''} onChange={(e) => updateCategoryOptions(cat.id, 'profitPercent', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} placeholder="0" style={{ width: 50, height: 28, padding: '0 8px', borderRadius: 6, border: `1px solid ${colors.success}50`, background: colors.bg, color: '#fff', fontSize: 13, fontWeight: 700, textAlign: 'center' }} />
+                          <span style={{ color: colors.success, fontSize: 12 }}>%</span>
                         </div>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: colors.success }}>{cat.options?.profitPercent > 0 ? `+${formatNumber(catTotals.profitAmount)} ر.س` : '—'}</span>
+                        <span style={{ width: 120, textAlign: 'left', fontSize: 13, fontWeight: 700, color: colors.success }}>{(cat.options?.profitPercent || 0) > 0 ? `+${formatNumber(catTotals.profitAmount)} ر.س` : '—'}</span>
                       </div>
 
                       {/* خصم مبلغ */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', borderRadius: 6, marginBottom: 4 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ color: colors.danger, fontSize: 12, fontWeight: 600 }}>➖ خصم مبلغ</span>
-                          <input type="number" value={cat.options?.discountAmount || ''} onChange={(e) => updateCategoryOptions(cat.id, 'discountAmount', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} placeholder="0" style={{ width: 60, height: 24, padding: '0 8px', borderRadius: 4, border: `1px solid ${colors.danger}50`, background: colors.bg, color: '#fff', fontSize: 12, fontWeight: 700, textAlign: 'center' }} />
-                          <span style={{ color: colors.danger, fontSize: 11 }}>﷼</span>
+                      <div style={{ display: 'flex', alignItems: 'center', padding: '10px 12px', borderRadius: 8 }}>
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ color: colors.danger, fontSize: 13, fontWeight: 600 }}>➖ خصم مبلغ</span>
+                          <input type="number" value={cat.options?.discountAmount || ''} onChange={(e) => updateCategoryOptions(cat.id, 'discountAmount', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} placeholder="0" style={{ width: 70, height: 28, padding: '0 8px', borderRadius: 6, border: `1px solid ${colors.danger}50`, background: colors.bg, color: '#fff', fontSize: 13, fontWeight: 700, textAlign: 'center' }} />
+                          <span style={{ color: colors.danger, fontSize: 12 }}>﷼</span>
                         </div>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: colors.danger }}>{cat.options?.discountAmount > 0 ? `-${formatNumber(cat.options?.discountAmount)} ر.س` : '—'}</span>
+                        <span style={{ width: 120, textAlign: 'left', fontSize: 13, fontWeight: 700, color: colors.danger }}>{(cat.options?.discountAmount || 0) > 0 ? `-${formatNumber(cat.options?.discountAmount)} ر.س` : '—'}</span>
                       </div>
 
                       {/* خصم نسبة */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', borderRadius: 6, background: `${colors.text}06`, marginBottom: 4 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ color: colors.danger, fontSize: 12, fontWeight: 600 }}>📉 خصم نسبة</span>
-                          <input type="number" value={cat.options?.discountPercent || ''} onChange={(e) => updateCategoryOptions(cat.id, 'discountPercent', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} placeholder="0" style={{ width: 50, height: 24, padding: '0 8px', borderRadius: 4, border: `1px solid ${colors.danger}50`, background: colors.bg, color: '#fff', fontSize: 12, fontWeight: 700, textAlign: 'center' }} />
-                          <span style={{ color: colors.danger, fontSize: 11 }}>%</span>
+                      <div style={{ display: 'flex', alignItems: 'center', padding: '10px 12px', borderRadius: 8, background: `${colors.text}08` }}>
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ color: colors.danger, fontSize: 13, fontWeight: 600 }}>📉 خصم نسبة</span>
+                          <input type="number" value={cat.options?.discountPercent || ''} onChange={(e) => updateCategoryOptions(cat.id, 'discountPercent', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} placeholder="0" style={{ width: 50, height: 28, padding: '0 8px', borderRadius: 6, border: `1px solid ${colors.danger}50`, background: colors.bg, color: '#fff', fontSize: 13, fontWeight: 700, textAlign: 'center' }} />
+                          <span style={{ color: colors.danger, fontSize: 12 }}>%</span>
                         </div>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: colors.danger }}>{cat.options?.discountPercent > 0 ? `-${formatNumber(catTotals.discountByPercent)} ر.س` : '—'}</span>
+                        <span style={{ width: 120, textAlign: 'left', fontSize: 13, fontWeight: 700, color: colors.danger }}>{(cat.options?.discountPercent || 0) > 0 ? `-${formatNumber(catTotals.discountByPercent)} ر.س` : '—'}</span>
                       </div>
 
                       {/* الضريبة */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 10px', borderRadius: 6, marginBottom: 4 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ color: colors.primary, fontSize: 12, fontWeight: 600 }}>🏛️ الضريبة</span>
-                          <input type="number" value={cat.options?.taxPercent || ''} onChange={(e) => updateCategoryOptions(cat.id, 'taxPercent', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} placeholder="0" style={{ width: 50, height: 24, padding: '0 8px', borderRadius: 4, border: `1px solid ${colors.primary}50`, background: colors.bg, color: '#fff', fontSize: 12, fontWeight: 700, textAlign: 'center' }} />
-                          <span style={{ color: colors.primary, fontSize: 11 }}>%</span>
+                      <div style={{ display: 'flex', alignItems: 'center', padding: '10px 12px', borderRadius: 8 }}>
+                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ color: colors.primary, fontSize: 13, fontWeight: 600 }}>🏛️ الضريبة</span>
+                          <input type="number" value={cat.options?.taxPercent || ''} onChange={(e) => updateCategoryOptions(cat.id, 'taxPercent', parseFloat(e.target.value) || 0)} onFocus={(e) => e.target.select()} placeholder="0" style={{ width: 50, height: 28, padding: '0 8px', borderRadius: 6, border: `1px solid ${colors.primary}50`, background: colors.bg, color: '#fff', fontSize: 13, fontWeight: 700, textAlign: 'center' }} />
+                          <span style={{ color: colors.primary, fontSize: 12 }}>%</span>
                         </div>
-                        <span style={{ fontSize: 12, fontWeight: 600, color: colors.primary }}>{cat.options?.taxPercent > 0 ? `+${formatNumber(catTotals.taxAmount)} ر.س` : '—'}</span>
+                        <span style={{ width: 120, textAlign: 'left', fontSize: 13, fontWeight: 700, color: colors.primary }}>{(cat.options?.taxPercent || 0) > 0 ? `+${formatNumber(catTotals.taxAmount)} ر.س` : '—'}</span>
                       </div>
                     </div>
 
                     {/* الإجمالي النهائي */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTop: `1px solid ${colors.primary}30` }}>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: colors.primary }}>الإجمالي النهائي</span>
-                      <div style={{ fontSize: 24, fontWeight: 800, color: '#fff' }}>{formatNumber(catTotals.finalTotal)} <span style={{ fontSize: 12, fontWeight: 400 }}>ريال</span></div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 16, borderTop: `2px solid ${colors.primary}50` }}>
+                      <span style={{ fontSize: 16, fontWeight: 700, color: colors.primary }}>الإجمالي النهائي</span>
+                      <div style={{ fontSize: 28, fontWeight: 800, color: '#fff' }}>{formatNumber(catTotals.finalTotal)} <span style={{ fontSize: 14, fontWeight: 400, color: colors.muted }}>ريال</span></div>
                     </div>
                   </div>
                 )}
