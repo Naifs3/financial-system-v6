@@ -41,7 +41,6 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
   const [selectedPlace, setSelectedPlace] = useState('');
   const [dimensions, setDimensions] = useState({ length: 4, width: 4, height: 3 });
   const [activeMainItems, setActiveMainItems] = useState({});
-  const [activeTab, setActiveTab] = useState({}); // للتبويبات: 'conditions' أو 'prices'
 
   const heightOptions = [2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6];
   const placesList = places[selectedPlaceType]?.places || [];
