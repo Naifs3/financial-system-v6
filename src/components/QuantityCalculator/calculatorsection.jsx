@@ -217,21 +217,28 @@ const CalculatorSection = ({ colors, places, workItems, programming, itemTypes, 
     setEditingItemId(null);
   };
 
-  // إضافة بند فرعي إضافي بنفس البند الفرعي ونفس الأماكن
+  // إضافة بند فرعي إضافي (مختلف) لنفس الأماكن
   const duplicateItemWithNewSubItem = (catId, itemId) => {
     setCategories(prev => prev.map(cat => {
       if (cat.id !== catId) return cat;
       const originalItem = cat.items.find(item => item.id === itemId);
       if (!originalItem) return cat;
       
-      // إنشاء بند جديد بنفس البند الفرعي ونفس الأماكن
+      // البحث عن بند فرعي مختلف (التالي في القائمة)
+      const currentSubIndex = cat.subItems?.findIndex(s => s.code === originalItem.code) || 0;
+      const nextSubIndex = (currentSubIndex + 1) % (cat.subItems?.length || 1);
+      const nextSub = cat.subItems?.[nextSubIndex] || cat.subItems?.[0];
+      
+      if (!nextSub) return cat;
+      
+      // إنشاء بند جديد ببند فرعي مختلف ونفس الأماكن
       const newItem = {
         id: Date.now(),
-        code: originalItem.code,
-        name: originalItem.name,
-        price: originalItem.price,
-        group: originalItem.group,
-        type: originalItem.type,
+        code: nextSub.code,
+        name: nextSub.name,
+        price: nextSub.price,
+        group: nextSub.group,
+        type: nextSub.type,
         places: originalItem.places.map(p => ({ ...p, id: 'p' + Date.now() + Math.random().toString(36).substr(2, 9) })),
         conditions: []
       };
