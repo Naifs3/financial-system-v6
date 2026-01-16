@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { db } from '../../config/firebase';
+import { db } from '../config/firebase';
 
 const QuantityCalculator = ({ darkMode, theme }) => {
   const t = theme;
@@ -71,7 +71,6 @@ const QuantityCalculator = ({ darkMode, theme }) => {
     expandedCat: null, showToast: false
   });
 
-  // Firebase listener
   useEffect(() => {
     const unsubscribe = onSnapshot(
       query(collection(db, 'calculator_places'), orderBy('createdAt', 'asc')),
@@ -104,7 +103,7 @@ const QuantityCalculator = ({ darkMode, theme }) => {
   };
 
   const deletePlaceFromList = async (placeId, placeName) => {
-    if (!confirm(`هل تريد حذف "${placeName}" نهائياً؟`)) return;
+    if (!window.confirm(`هل تريد حذف "${placeName}" نهائياً؟`)) return;
     try {
       await deleteDoc(doc(db, 'calculator_places', placeId));
       setCheckedPlaces(prev => prev.filter(p => p !== placeName));
@@ -209,7 +208,6 @@ const QuantityCalculator = ({ darkMode, theme }) => {
 
         {state.quickEntryExpanded && (
           <div style={{ padding: '16px' }}>
-            {/* الخطوة 1 */}
             <div style={{ marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
                 <div style={s.stepNum}>1</div>
@@ -227,7 +225,7 @@ const QuantityCalculator = ({ darkMode, theme }) => {
                   </div>
                   
                   <div style={s.menu}>
-                    <div style={{ padding: '10px 12px', borderBottom: `1px dashed ${t?.button?.primary || '#3b82f6'}`, background: `#10b98110` }}>
+                    <div style={{ padding: '10px 12px', borderBottom: `1px dashed ${t?.button?.primary || '#3b82f6'}`, background: '#10b98110' }}>
                       {!showAddNewInput ? (
                         <button onClick={(e) => { e.stopPropagation(); setShowAddNewInput(true); }} style={{ width: '100%', height: '32px', borderRadius: '6px', border: '1px dashed #10b981', background: 'transparent', color: '#10b981', fontSize: '11px', fontWeight: '600', cursor: 'pointer' }}>➕ إضافة مكان جديد</button>
                       ) : (
@@ -276,7 +274,6 @@ const QuantityCalculator = ({ darkMode, theme }) => {
               )}
             </div>
 
-            {/* الخطوة 2 */}
             <div style={{ marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
                 <div style={s.stepNum}>2</div>
