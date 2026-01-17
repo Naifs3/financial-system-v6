@@ -238,6 +238,8 @@ const QuantityCalculator = ({ darkMode, theme }) => {
     const newPlaces = checkedPlaces.map(name => ({ id: 'p' + Date.now() + Math.random().toString(36).substr(2, 5), name, length: dimensions.length, width: dimensions.width, height: dimensions.height, area: dimensions.length * dimensions.width, measureType: 'floor' }));
     setCategories(prev => {
       let updated = [...prev];
+      let lastAddedCatId = null;
+      
       activeCatKeys.forEach(catKey => {
         const catConfig = workItems[catKey];
         if (!catConfig) return;
@@ -250,15 +252,24 @@ const QuantityCalculator = ({ darkMode, theme }) => {
           } else {
             updated[existingCatIndex] = { ...existingCat, items: existingCat.items.map((item, idx) => idx === 0 ? { ...item, places: [...item.places, ...placesToAdd] } : item) };
           }
+          lastAddedCatId = existingCat.id;
         } else {
+          const newCatId = 'cat' + Date.now() + catKey;
           updated.push({
-            id: 'cat' + Date.now() + catKey, code: catConfig.code, name: catConfig.name, color: catConfig.color,
+            id: newCatId, code: catConfig.code, name: catConfig.name, color: catConfig.color,
             subItems: catConfig.items.map(item => ({ code: `${catConfig.code}${item.num}`, name: item.name, price: item.price, group: catConfig.name })),
             items: [], pendingPlaces: newPlaces.map(p => ({ ...p, id: 'p' + Date.now() + Math.random().toString(36).substr(2, 5) })), needsSubItemSelection: true, categoryConditions: [], customSummary: '',
             options: { containerState: 'notMentioned', containerAmount: 0, totalsContainerAmount: 0, materialsState: 'notMentioned', materialsAmount: 0, showMeters: true, sumMeters: true, showPrice: false, showPlaces: false, customAmount: 0, profitPercent: 0, discountPercent: 0, discountAmount: 0, taxPercent: 15 }
           });
+          lastAddedCatId = newCatId;
         }
       });
+      
+      // فتح آخر فئة تمت إضافتها
+      if (lastAddedCatId) {
+        setTimeout(() => setExpandedCategory(lastAddedCatId), 100);
+      }
+      
       return updated;
     });
     setCheckedPlaces([]); showToastMessage(`تمت إضافة ${newPlaces.length} مكان`);
@@ -270,9 +281,35 @@ const QuantityCalculator = ({ darkMode, theme }) => {
       const subItem = cat.subItems?.find(s => s.code === subItemCode);
       const place = cat.pendingPlaces?.find(p => p.id === placeId);
       if (!subItem || !place) return cat;
-      const newItem = { id: Date.now(), code: subItem.code, name: subItem.name, price: subItem.price, group: subItem.group, places: [{ ...place }], conditions: [] };
+      
+      // التحقق من وجود بند بنفس الكود
+      const existingItemIndex = cat.items.findIndex(item => item.code === subItem.code);
+      
+      let newItems;
+      if (existingItemIndex !== -1) {
+        // إذا البند موجود، أضف المكان له
+        newItems = cat.items.map((item, idx) => {
+          if (idx === existingItemIndex) {
+            return { ...item, places: [...item.places, { ...place, id: 'p' + Date.now() + Math.random().toString(36).substr(2, 5) }] };
+          }
+          return item;
+        });
+      } else {
+        // إذا البند غير موجود، أنشئ بند جديد
+        const newItem = { 
+          id: Date.now() + Math.random(), 
+          code: subItem.code, 
+          name: subItem.name, 
+          price: subItem.price, 
+          group: subItem.group, 
+          places: [{ ...place, id: 'p' + Date.now() + Math.random().toString(36).substr(2, 5) }], 
+          conditions: [] 
+        };
+        newItems = [...cat.items, newItem];
+      }
+      
       const newPendingPlaces = cat.pendingPlaces.filter(p => p.id !== placeId);
-      return { ...cat, items: [...cat.items, newItem], pendingPlaces: newPendingPlaces, needsSubItemSelection: newPendingPlaces.length > 0 };
+      return { ...cat, items: newItems, pendingPlaces: newPendingPlaces, needsSubItemSelection: newPendingPlaces.length > 0 };
     }));
   };
 
