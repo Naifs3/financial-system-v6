@@ -1,348 +1,3127 @@
-// QuantityCalculator.jsx - مكون حاسبة الكميات
-// يمكن استيراده في التطبيق الرئيسي
-
 import React, { useState, useEffect } from 'react';
-import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from 'firebase/firestore';
+import { Calculator, ChevronDown, ChevronUp, Plus, Trash2, Layers, FileText, X, MapPin, RefreshCw, Edit3, Copy, Check, Truck, Box, Ruler, AlertCircle, RotateCcw } from 'lucide-react';
 
-const QuantityCalculator = ({ db, darkMode, currentUser }) => {
-  const colors = {
-    bg: darkMode ? '#0f172a' : '#f8fafc',
-    card: darkMode ? '#1e293b' : '#ffffff',
-    border: darkMode ? '#334155' : '#e2e8f0',
-    text: darkMode ? '#f1f5f9' : '#1e293b',
-    muted: darkMode ? '#94a3b8' : '#64748b',
-    primary: '#3b82f6',
-    success: '#22c55e',
-    warning: '#f59e0b',
-    danger: '#ef4444',
-    cyan: '#06b6d4',
-    purple: '#a855f7',
+// إعدادات أنواع البنود
+const typeConfig = {
+  floor: { name: 'أرضية', icon: '🏠', color: '#10b981', formula: (l, w, h) => l * w, formulaText: (l, w, h) => `${l} × ${w}` },
+  wall: { name: 'جدران', icon: '🧱', color: '#3b82f6', formula: (l, w, h) => (l + w) * 2 * h, formulaText: (l, w, h) => `(${l} + ${w}) × 2 × ${h}` },
+  ceiling: { name: 'سقف', icon: '☁️', color: '#f59e0b', formula: (l, w, h) => l * w, formulaText: (l, w, h) => `${l} × ${w}` }
+};
+
+// البيانات الافتراضية مع الكود والمجموعة
+const defaultWorkItems = {
+  tiles: { name: 'البلاط', icon: '🔲', items: [
+    { id: 't1', code: 'RB01', group: 'إزالة', name: 'إزالة بلاط (كمية متوسطة)', desc: 'إزالة البلاط القديم بدون حاوية', exec: 13, cont: 10, type: 'floor' },
+    { id: 't2', code: 'RB02', group: 'إزالة', name: 'إزالة بلاط (كمية كبيرة)', desc: 'إزالة البلاط القديم بدون حاوية', exec: 20, cont: 15, type: 'floor' },
+    { id: 't3', code: 'SB01', group: 'صبات', name: 'صبة ميزانية (شامل المواد)', desc: 'صبة أرضية بدون سباكة أو كهرباء - شامل المواد', exec: 47, cont: 35, type: 'floor' },
+    { id: 't4', code: 'SB02', group: 'صبات', name: 'صبة ميزانية (بدون مواد)', desc: 'صبة أرضية بدون سباكة أو كهرباء - بدون مواد', exec: 20, cont: 15, type: 'floor' },
+    { id: 't5', code: 'TF01', group: 'تبليط', name: 'تركيب بلاط أرضيات (أكبر من 120سم)', desc: 'تركيب بالغراء أو الخلطة الأسمنتية - بدون مواد', exec: 33, cont: 25, type: 'floor' },
+    { id: 't6', code: 'TF02', group: 'تبليط', name: 'تركيب بلاط أرضيات (أصغر من 120سم)', desc: 'تركيب بالغراء أو الخلطة الأسمنتية - بدون مواد', exec: 25, cont: 19, type: 'floor' },
+    { id: 't10', code: 'TW01', group: 'تبليط', name: 'تركيب بلاط جدران (أكبر من 120سم)', desc: 'تركيب بالغراء أو الخلطة الأسمنتية - بدون مواد', exec: 33, cont: 25, type: 'wall' },
+    { id: 't11', code: 'TW02', group: 'تبليط', name: 'تركيب بلاط جدران (أصغر من 120سم)', desc: 'تركيب بالغراء أو الخلطة الأسمنتية - بدون مواد', exec: 25, cont: 19, type: 'wall' },
+    { id: 't7', code: 'NL01', group: 'نعلات', name: 'تركيب نعلات', desc: 'نعلات داخلية أو خارجية بورسلان أو سيراميك - بدون مواد', exec: 13, cont: 10, type: 'wall' },
+    { id: 't8', code: 'RS01', group: 'رصيف', name: 'تركيب بلدورات الرصيف', desc: 'بدون أعمال الري أو السباكة أو الكهرباء - بدون مواد', exec: 33, cont: 25, type: 'floor' },
+    { id: 't9', code: 'RS02', group: 'رصيف', name: 'تركيب بلاط الرصيف', desc: 'بدون أعمال الري أو السباكة أو الكهرباء - بدون مواد', exec: 33, cont: 25, type: 'floor' }
+  ]},
+  marble: { name: 'الرخام', icon: '🪨', items: [
+    { id: 'm1', code: 'MN01', group: 'نعلات', name: 'تركيب نعلات درج', desc: 'رخام نعلات الدرج - بدون مواد', exec: 13, cont: 10, type: 'wall' },
+    { id: 'm2', code: 'MD01', group: 'درج', name: 'تركيب بسطات درج', desc: 'رخام بسطات الدرج', exec: 33, cont: 25, type: 'floor' },
+    { id: 'm3', code: 'MR01', group: 'رخام', name: 'تركيب رخام (مقاسات كبيرة)', desc: 'تركيب رخام مقاسات كبيرة - بدون مواد', exec: 100, cont: 75, type: 'floor' },
+    { id: 'm4', code: 'MR02', group: 'رخام', name: 'تركيب رخام (مقاسات صغيرة)', desc: 'تركيب رخام مقاسات صغيرة - بدون مواد', exec: 60, cont: 45, type: 'floor' },
+    { id: 'm5', code: 'MD02', group: 'درج', name: 'تركيب رخام درج', desc: 'تركيب رخام الدرج - بدون مواد', exec: 67, cont: 50, type: 'floor' }
+  ]},
+  paint: { name: 'جديد الدهانات', icon: '🎨', items: [
+    { id: 'p1', code: 'PD01', group: 'دهان داخلي', name: 'دهان داخلي (جوتن)', desc: 'مع المواد - طبقتين معجون + طبقتين دهان', exec: 21, cont: 16, type: 'wall' },
+    { id: 'p2', code: 'PD02', group: 'دهان داخلي', name: 'دهان داخلي (الجزيرة)', desc: 'مع المواد - طبقتين معجون + طبقتين دهان', exec: 20, cont: 15, type: 'wall' },
+    { id: 'p3', code: 'PD03', group: 'دهان داخلي', name: 'دهان داخلي (عسيب)', desc: 'مع المواد - طبقتين معجون + طبقتين دهان', exec: 19, cont: 14, type: 'wall' },
+    { id: 'p4', code: 'PD04', group: 'دهان داخلي', name: 'دهان داخلي (بدون مواد)', desc: 'بدون مواد - طبقتين معجون + طبقتين دهان', exec: 12, cont: 9, type: 'wall' },
+    { id: 'p5', code: 'PM01', group: 'معجون', name: 'زيادة طبقة معجون ثالثة', desc: 'طبقة إضافية - بدون مواد', exec: 3, cont: 2, type: 'wall' },
+    { id: 'p6', code: 'PX01', group: 'دهان خارجي', name: 'دهان خارجي رشة (مع مواد)', desc: 'رشة من جميع الشركات - مع المواد', exec: 19, cont: 14, type: 'wall' },
+    { id: 'p7', code: 'PX02', group: 'دهان خارجي', name: 'دهان خارجي بروفايل (جوتن)', desc: 'مع المواد - طبقتين معجون + طبقتين دهان', exec: 33, cont: 25, type: 'wall' },
+    { id: 'p8', code: 'PX03', group: 'دهان خارجي', name: 'دهان خارجي بروفايل (الجزيرة)', desc: 'مع المواد - طبقتين معجون + طبقتين دهان', exec: 33, cont: 25, type: 'wall' },
+    { id: 'p9', code: 'PX04', group: 'دهان خارجي', name: 'دهان خارجي بروفايل (عسيب)', desc: 'مع المواد - طبقتين معجون + طبقتين دهان', exec: 29, cont: 22, type: 'wall' },
+    { id: 'p10', code: 'PX05', group: 'دهان خارجي', name: 'دهان خارجي (بدون مواد)', desc: 'دهان فقط - بدون مواد', exec: 11, cont: 8, type: 'wall' },
+    { id: 'p11', code: 'PX06', group: 'دهان خارجي', name: 'دهان خارجي رشة (بدون مواد)', desc: 'رشة - بدون مواد', exec: 8, cont: 6, type: 'wall' },
+    { id: 'p12', code: 'PX07', group: 'دهان خارجي', name: 'دهان خارجي بروفايل (بدون مواد)', desc: 'بروفايل - بدون مواد', exec: 7, cont: 5, type: 'wall' }
+  ]},
+  paintRenew: { name: 'تجديد الدهانات', icon: '🔄', items: [
+    { id: 'rp1', code: 'RP01', group: 'إزالة', name: 'إزالة الدهانات', desc: 'إزالة الدهانات الداخلية والخارجية', exec: 5, cont: 4, type: 'wall' },
+    { id: 'rp2', code: 'RP02', group: 'تجديد', name: 'تجديد دهان (جوتن)', desc: 'تجديد داخلي أو خارجي - مع المواد', exec: 16, cont: 12, type: 'wall' },
+    { id: 'rp3', code: 'RP03', group: 'تجديد', name: 'تجديد دهان (الجزيرة)', desc: 'تجديد داخلي أو خارجي - مع المواد', exec: 15, cont: 11, type: 'wall' },
+    { id: 'rp4', code: 'RP04', group: 'تجديد', name: 'تجديد دهان (عسيب)', desc: 'تجديد داخلي أو خارجي - مع المواد', exec: 13, cont: 10, type: 'wall' },
+    { id: 'rp5', code: 'RP05', group: 'تجديد', name: 'تجديد دهان (بدون مواد)', desc: 'دهان فقط - بدون مواد', exec: 7, cont: 5, type: 'wall' }
+  ]},
+  gypsumBoardPaint: { name: 'دهانات الجبسمبورد', icon: '✨', items: [
+    { id: 'gb1', code: 'GB01', group: 'دهان جبس', name: 'دهان جبسمبورد (جوتن)', desc: 'مع المواد من شركة جوتن', exec: 21, cont: 16, type: 'ceiling' },
+    { id: 'gb2', code: 'GB02', group: 'دهان جبس', name: 'دهان جبسمبورد (الجزيرة)', desc: 'مع المواد من شركة الجزيرة', exec: 20, cont: 15, type: 'ceiling' },
+    { id: 'gb3', code: 'GB03', group: 'دهان جبس', name: 'دهان جبسمبورد (عسيب)', desc: 'مع المواد من شركة عسيب', exec: 19, cont: 14, type: 'ceiling' },
+    { id: 'gb4', code: 'GB04', group: 'دهان جبس', name: 'دهان جبسمبورد (بدون مواد)', desc: 'بدون مواد', exec: 16, cont: 12, type: 'ceiling' }
+  ]},
+  localGypsumPaint: { name: 'دهانات الجبس البلدي', icon: '🏺', items: [
+    { id: 'gp1', code: 'GL01', group: 'دهان جبس', name: 'دهان جبس بلدي (جوتن)', desc: 'مع المواد من شركة جوتن', exec: 17, cont: 13, type: 'ceiling' },
+    { id: 'gp2', code: 'GL02', group: 'دهان جبس', name: 'دهان جبس بلدي (الجزيرة)', desc: 'مع المواد من شركة الجزيرة', exec: 17, cont: 13, type: 'ceiling' },
+    { id: 'gp3', code: 'GL03', group: 'دهان جبس', name: 'دهان جبس بلدي (عسيب)', desc: 'مع المواد من شركة عسيب', exec: 15, cont: 11, type: 'ceiling' },
+    { id: 'gp4', code: 'GL04', group: 'دهان جبس', name: 'دهان جبس بلدي (بدون مواد)', desc: 'بدون مواد', exec: 9, cont: 7, type: 'ceiling' }
+  ]},
+  gypsum: { name: 'الجبس', icon: '🏗️', items: [
+    { id: 'g1', code: 'GS01', group: 'جبسمبورد', name: 'تركيب جبسمبورد', desc: 'تركيب ألواح جبسمبورد', exec: 60, cont: 45, type: 'ceiling' },
+    { id: 'g2', code: 'GS02', group: 'جبسمبورد', name: 'تركيب واجهات جبسمبورد', desc: 'تركيب واجهات وديكورات جبسمبورد', exec: 120, cont: 90, type: 'wall' },
+    { id: 'g3', code: 'GS03', group: 'جبس بلدي', name: 'تركيب جبس بلدي', desc: 'تركيب جبس بلدي للأسقف', exec: 53, cont: 40, type: 'ceiling' },
+    { id: 'g4', code: 'GS04', group: 'جبس بلدي', name: 'تركيب واجهات جبس بلدي', desc: 'تركيب واجهات وديكورات جبس بلدي', exec: 120, cont: 90, type: 'wall' },
+    { id: 'g5', code: 'GS05', group: 'إزالة', name: 'إزالة الجبس القديم', desc: 'إزالة الجبس القديم - بدون حاوية', exec: 5, cont: 4, type: 'ceiling' }
+  ]},
+  plaster: { name: 'اللياسة', icon: '🧱', items: [
+    { id: 'l1', code: 'LS01', group: 'لياسة', name: 'لياسة قدة وزاوية', desc: 'مع تجهيز السطح وإزالة الأجزاء التالفة - سماكة لا تزيد عن 2 سم - بدون مواد', exec: 13, cont: 10, type: 'wall' },
+    { id: 'l2', code: 'LS02', group: 'لياسة', name: 'لياسة ودع وقدة زاوية', desc: 'مع تجهيز السطح وإزالة الأجزاء التالفة - سماكة لا تزيد عن 2 سم - بدون مواد', exec: 20, cont: 15, type: 'wall' },
+    { id: 'l3', code: 'LS03', group: 'مواد', name: 'مواد اللياسة', desc: 'مواد اللياسة فقط - بدون عمالة', exec: 19, cont: 14, type: 'wall' }
+  ]},
+  structure: { name: 'العظم', icon: '🏛️', items: [
+    { id: 'b1', code: 'ST01', group: 'عظم', name: 'أعمال عظم (بالمواد)', desc: 'أعمال العظم الإنشائية شاملة المواد', exec: 998, cont: 750, type: 'floor' },
+    { id: 'b2', code: 'ST02', group: 'عظم', name: 'أعمال عظم (بدون مواد)', desc: 'أعمال العظم الإنشائية بدون مواد', exec: 665, cont: 500, type: 'floor' },
+    { id: 'b3', code: 'ST03', group: 'متفرقات', name: 'إنشاءات متفرقة', desc: 'أعمال إنشائية متفرقة', exec: 333, cont: 250, type: 'floor' }
+  ]}
+};
+
+const defaultPlaces = { 
+  dry: { name: 'جاف', icon: '🏠', enabled: true, places: ['صالة', 'مجلس', 'غرفة نوم', 'ممر'] }, 
+  wet: { name: 'رطب', icon: '🚿', enabled: true, places: ['مطبخ', 'دورة مياه', 'غسيل'] }, 
+  outdoor: { name: 'خارجي', icon: '🌳', enabled: true, places: ['حوش', 'سطح', 'موقف'] } 
+};
+
+const defaultProgramming = { 
+  dry: { 
+    tiles: { enabled: true, items: ['t1', 't2', 't3', 't4', 't5', 't6', 't10', 't11', 't7'] },
+    marble: { enabled: true, items: ['m1', 'm2', 'm3', 'm4', 'm5'] },
+    paint: { enabled: true, items: ['p1', 'p2', 'p3', 'p4', 'p5'] },
+    paintRenew: { enabled: true, items: ['rp1', 'rp2', 'rp3', 'rp4', 'rp5'] },
+    gypsumBoardPaint: { enabled: true, items: ['gb1', 'gb2', 'gb3', 'gb4'] },
+    localGypsumPaint: { enabled: true, items: ['gp1', 'gp2', 'gp3', 'gp4'] },
+    gypsum: { enabled: true, items: ['g1', 'g2', 'g3', 'g4', 'g5'] },
+    plaster: { enabled: true, items: ['l1', 'l2', 'l3'] },
+    structure: { enabled: true, items: ['b1', 'b2', 'b3'] }
+  }, 
+  wet: { 
+    tiles: { enabled: true, items: ['t1', 't2', 't3', 't4', 't5', 't6', 't10', 't11', 't7'] },
+    marble: { enabled: true, items: ['m1', 'm2', 'm3', 'm4', 'm5'] },
+    paint: { enabled: true, items: ['p1', 'p2', 'p3', 'p4', 'p5'] },
+    paintRenew: { enabled: true, items: ['rp1', 'rp2', 'rp3', 'rp4', 'rp5'] },
+    gypsumBoardPaint: { enabled: true, items: ['gb1', 'gb2', 'gb3', 'gb4'] },
+    localGypsumPaint: { enabled: true, items: ['gp1', 'gp2', 'gp3', 'gp4'] },
+    gypsum: { enabled: true, items: ['g1', 'g2', 'g3', 'g4', 'g5'] },
+    plaster: { enabled: true, items: ['l1', 'l2', 'l3'] },
+    structure: { enabled: true, items: ['b1', 'b2', 'b3'] }
+  }, 
+  outdoor: { 
+    tiles: { enabled: true, items: ['t1', 't2', 't3', 't4', 't5', 't6', 't10', 't11', 't7', 't8', 't9'] },
+    marble: { enabled: true, items: ['m1', 'm2', 'm3', 'm4', 'm5'] },
+    paint: { enabled: true, items: ['p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12'] },
+    paintRenew: { enabled: true, items: ['rp1', 'rp2', 'rp3', 'rp4', 'rp5'] },
+    gypsumBoardPaint: { enabled: false, items: [] },
+    localGypsumPaint: { enabled: false, items: [] },
+    gypsum: { enabled: false, items: [] },
+    plaster: { enabled: true, items: ['l1', 'l2', 'l3'] },
+    structure: { enabled: true, items: ['b1', 'b2', 'b3'] }
+  } 
+};
+
+const QuantityCalculator = ({ theme, darkMode, onRefresh }) => {
+  const t = theme;
+  const colorKeys = t?.colorKeys || Object.keys(t?.colors || {});
+  
+  const [mainTab, setMainTab] = useState('calculator');
+  const [showReport, setShowReport] = useState(false);
+  const [placeMode, setPlaceMode] = useState('single');
+  const [multiPlaces, setMultiPlaces] = useState([]);
+
+  // ═══════════════════════════════════════════════════════════════
+  // نظام المشاريع
+  // ═══════════════════════════════════════════════════════════════
+  const [projects, setProjects] = useState(() => {
+    try {
+      const saved = localStorage.getItem('calc_projects');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  
+  const [currentProjectId, setCurrentProjectId] = useState(null);
+  const [editingProject, setEditingProject] = useState(null);
+
+  // حفظ المشاريع
+  useEffect(() => {
+    localStorage.setItem('calc_projects', JSON.stringify(projects));
+  }, [projects]);
+
+  // الحصول على المشروع الحالي
+  const currentProject = projects.find(p => p.id === currentProjectId);
+
+  // إنشاء مشروع جديد
+  const createNewProject = () => {
+    const newProject = {
+      id: Date.now().toString(),
+      name: 'مشروع جديد',
+      description: '',
+      clientName: '',
+      clientPhone: '',
+      location: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      addedItems: {},
+      categoryOptions: {},
+      reportData: { companyName: 'ركائز الأولى', headerTitle: 'تقدير تكلفة', projectTitle: 'مشروع ترميم', vatRate: 15, footerEmail: 'info@company.com' }
+    };
+    setProjects(prev => [...prev, newProject]);
+    setCurrentProjectId(newProject.id);
+    setEditingProject({ ...newProject, isNew: true });
   };
 
-  const workItems = {
-    BL: { code: 'BL', name: 'البلاط', icon: '🏠', color: '#3b82f6', items: [
-      { num: '01', name: 'بلاط سيراميك 60×60', price: 50 },
-      { num: '02', name: 'بلاط بورسلان 120×120', price: 80 },
-      { num: '03', name: 'إزالة بلاط قديم', price: 15 },
-      { num: '04', name: 'صبة نظافة', price: 20 },
-      { num: '05', name: 'تسوية أرضية', price: 25 }
-    ]},
-    DH: { code: 'DH', name: 'الدهان', icon: '🎨', color: '#8b5cf6', items: [
-      { num: '01', name: 'دهان جدران', price: 25 },
-      { num: '02', name: 'دهان سقف', price: 20 },
-      { num: '03', name: 'معجون', price: 15 },
-      { num: '04', name: 'دهان زيتي', price: 35 }
-    ]},
-    KH: { code: 'KH', name: 'الكهرباء', icon: '⚡', color: '#f59e0b', items: [
-      { num: '01', name: 'نقطة إضاءة', price: 150 },
-      { num: '02', name: 'نقطة بلك', price: 100 },
-      { num: '03', name: 'نقطة تكييف', price: 200 }
-    ]},
-    SB: { code: 'SB', name: 'السباكة', icon: '🚿', color: '#06b6d4', items: [
-      { num: '01', name: 'نقطة ماء', price: 200 },
-      { num: '02', name: 'نقطة صرف', price: 180 },
-      { num: '03', name: 'تمديد خط', price: 120 }
-    ]},
-    JB: { code: 'JB', name: 'الجبس', icon: '🏗️', color: '#10b981', items: [
-      { num: '01', name: 'جبس بورد عادي', price: 45 },
-      { num: '02', name: 'جبس بورد مقاوم', price: 55 },
-      { num: '03', name: 'كرانيش', price: 30 }
-    ]}
+  // حفظ تعديلات المشروع
+  const saveProject = (projectData) => {
+    setProjects(prev => prev.map(p => 
+      p.id === projectData.id 
+        ? { ...projectData, updatedAt: new Date().toISOString() }
+        : p
+    ));
+    setEditingProject(null);
   };
 
-  const defaultPlacesData = ['دورة مياه 1', 'دورة مياه 2', 'مجلس 1', 'مجلس 2', 'غرفة نوم 1', 'غرفة نوم 2', 'مطبخ 1', 'صالة 1', 'صالة 2', 'ممر 1', 'ممر 2', 'مدخل 1', 'مكتب 1', 'بلكونة 1', 'حوش 1', 'ملحق 1', 'مستودع 1'];
-  const predefinedConditions = ['غير شامل الفك أو الإزالة', 'غير شامل نقل الركام', 'غير شامل المواد', 'غير شامل الحاوية', 'غير شامل التنظيف', 'السعر لا يشمل ضريبة القيمة المضافة', 'يتطلب معاينة قبل البدء'];
-  const dimOptions = [1,1.5,2,2.5,3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9,9.5,10,12,14,16,18,20,25,30];
-  const heightOptions = [2,2.5,3,3.5,4,4.5,5,5.5,6];
+  // حذف مشروع
+  const deleteProject = (projectId) => {
+    if (window.confirm('هل تريد حذف هذا المشروع؟')) {
+      setProjects(prev => prev.filter(p => p.id !== projectId));
+      if (currentProjectId === projectId) {
+        setCurrentProjectId(null);
+      }
+    }
+  };
 
-  const [availablePlaces, setAvailablePlaces] = useState([]);
-  const [placesLoading, setPlacesLoading] = useState(true);
-  const [checkedPlaces, setCheckedPlaces] = useState([]);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [showAddNewInput, setShowAddNewInput] = useState(false);
-  const [newPlaceInput, setNewPlaceInput] = useState('');
-  const [categories, setCategories] = useState([]);
-  const [phase1Expanded, setPhase1Expanded] = useState(true);
-  const [expandedCategory, setExpandedCategory] = useState(null);
-  const [editingItemId, setEditingItemId] = useState(null);
-  const [activeTab, setActiveTab] = useState({});
-  const [dimensions, setDimensions] = useState({ length: 4, width: 4, height: 3 });
-  const [activeMainItems, setActiveMainItems] = useState({});
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
+  // تكرار مشروع
+  const duplicateProject = (project) => {
+    const newProject = {
+      ...project,
+      id: Date.now().toString(),
+      name: project.name + ' (نسخة)',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    setProjects(prev => [...prev, newProject]);
+  };
+
+  // تحديث بيانات المشروع الحالي
+  const updateCurrentProject = (updates) => {
+    if (!currentProjectId) return;
+    setProjects(prev => prev.map(p => 
+      p.id === currentProjectId 
+        ? { ...p, ...updates, updatedAt: new Date().toISOString() }
+        : p
+    ));
+  };
+
+  // ═══════════════════════════════════════════════════════════════
+  // تحميل البيانات من localStorage
+  // ═══════════════════════════════════════════════════════════════
+  const [workItems, setWorkItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem('calc_workItems');
+      return saved ? JSON.parse(saved) : defaultWorkItems;
+    } catch { return defaultWorkItems; }
+  });
+
+  const [places, setPlaces] = useState(() => {
+    try {
+      const saved = localStorage.getItem('calc_places');
+      return saved ? JSON.parse(saved) : defaultPlaces;
+    } catch { return defaultPlaces; }
+  });
+  
+  const [programming, setProgramming] = useState(() => {
+    try {
+      const saved = localStorage.getItem('calc_programming');
+      return saved ? JSON.parse(saved) : defaultProgramming;
+    } catch { return defaultProgramming; }
+  });
+  
+  // البنود المضافة والخيارات من المشروع الحالي
+  const addedItems = currentProject?.addedItems || {};
+  const categoryOptions = currentProject?.categoryOptions || {};
+  const reportData = currentProject?.reportData || { companyName: 'ركائز الأولى', headerTitle: 'تقدير تكلفة', projectTitle: 'مشروع ترميم', vatRate: 15, footerEmail: 'info@company.com' };
+
+  // تحديث البنود المضافة
+  const setAddedItems = (newItems) => {
+    const items = typeof newItems === 'function' ? newItems(addedItems) : newItems;
+    updateCurrentProject({ addedItems: items });
+  };
+
+  // تحديث خيارات الفئات
+  const setCategoryOptions = (newOptions) => {
+    const options = typeof newOptions === 'function' ? newOptions(categoryOptions) : newOptions;
+    updateCurrentProject({ categoryOptions: options });
+  };
+
+  // تحديث بيانات التقرير
+  const setReportData = (newData) => {
+    const data = typeof newData === 'function' ? newData(reportData) : newData;
+    updateCurrentProject({ reportData: data });
+  };
+  
+  const [programmingTab, setProgrammingTab] = useState('dry');
+  const [programmingSection, setProgrammingSection] = useState('places');
+  const [editingPlaceType, setEditingPlaceType] = useState(null);
+  const [editingWorkPlace, setEditingWorkPlace] = useState(null); // لتحرير أماكن العمل
+
+  const [selectedPlaceType, setSelectedPlaceType] = useState('');
+  const [selectedPlace, setSelectedPlace] = useState('');
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [length, setLength] = useState(4);
+  const [width, setWidth] = useState(4);
+  const [height, setHeight] = useState(4);
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [editingItem, setEditingItem] = useState(null);
+  const [editingCategory, setEditingCategory] = useState(null);
+
+  // States للملخص العام
+  const [summaryExpanded, setSummaryExpanded] = useState({});
+  const [copiedCategoryId, setCopiedCategoryId] = useState(null);
+
+  // حفظ البيانات في localStorage
+  useEffect(() => {
+    localStorage.setItem('calc_workItems', JSON.stringify(workItems));
+  }, [workItems]);
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(query(collection(db, 'calculator_places'), orderBy('createdAt', 'asc')), (snapshot) => {
-      const places = snapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name }));
-      setAvailablePlaces(places);
-      setPlacesLoading(false);
-      if (places.length === 0) defaultPlacesData.forEach(name => addDoc(collection(db, 'calculator_places'), { name, createdAt: serverTimestamp() }));
-    }, () => setPlacesLoading(false));
-    return () => unsubscribe();
-  }, [db]);
+    localStorage.setItem('calc_places', JSON.stringify(places));
+  }, [places]);
 
-  const toast = (msg) => { setToastMessage(msg); setShowToast(true); setTimeout(() => setShowToast(false), 2000); };
-  const formatNumber = (n) => n?.toLocaleString('en-US') || '0';
-  const placeArea = dimensions.length * dimensions.width;
-  const placesList = availablePlaces.map(p => p.name);
-  const calcArea = (place) => {
-    const type = place.measureType || 'floor';
-    const l = place.length || 4, w = place.width || 4, h = place.height || 3;
-    if (type === 'floor' || type === 'ceiling') return l * w;
-    if (type === 'walls') return (l + w) * 2 * h;
-    if (type === 'linear') return l;
-    if (type === 'manual') return place.manualArea || 0;
-    return l * w;
-  };
-  const getItemArea = (item) => (item.places || []).reduce((sum, p) => sum + (p.area || 0), 0);
-  const getCategoryTotalArea = (cat) => (cat.items || []).reduce((sum, item) => sum + getItemArea(item), 0);
-  const getCategoryItemsTotal = (cat) => (cat.items || []).reduce((sum, item) => sum + getItemArea(item) * item.price, 0);
-  const calculateCategoryTotals = (cat) => {
-    const totalPrice = getCategoryItemsTotal(cat);
-    const containerValue = cat.options?.containerState === 'with' ? (cat.options?.totalsContainerAmount || 0) : 0;
-    const materialsValue = cat.options?.materialsState === 'with' ? (cat.options?.materialsAmount || 0) : 0;
-    const baseTotal = totalPrice + containerValue + materialsValue + (cat.options?.customAmount || 0);
-    const profitAmount = baseTotal * (cat.options?.profitPercent || 0) / 100;
-    const withProfit = baseTotal + profitAmount;
-    const discountByPercent = withProfit * (cat.options?.discountPercent || 0) / 100;
-    const afterDiscount = withProfit - discountByPercent - (cat.options?.discountAmount || 0);
-    const taxAmount = afterDiscount * (cat.options?.taxPercent || 0) / 100;
-    return { totalPrice, containerValue, materialsValue, profitAmount, discountByPercent, taxAmount, finalTotal: afterDiscount + taxAmount };
-  };
-  const getGrandTotal = () => categories.reduce((sum, cat) => sum + calculateCategoryTotals(cat).finalTotal, 0);
-  const toggleCheck = (placeName) => setCheckedPlaces(prev => prev.includes(placeName) ? prev.filter(p => p !== placeName) : [...prev, placeName]);
-  const addNewPlaceToList = async (name) => { if (!name.trim()) return; await addDoc(collection(db, 'calculator_places'), { name: name.trim(), createdAt: serverTimestamp() }); setNewPlaceInput(''); setShowAddNewInput(false); toast('تمت إضافة المكان'); };
-  const deletePlaceFromList = async (placeId, placeName) => { if (!window.confirm(`حذف "${placeName}"؟`)) return; await deleteDoc(doc(db, 'calculator_places', placeId)); setCheckedPlaces(prev => prev.filter(p => p !== placeName)); toast('تم الحذف'); };
+  useEffect(() => {
+    localStorage.setItem('calc_programming', JSON.stringify(programming));
+  }, [programming]);
 
-  const addCheckedPlacesToCategories = () => {
-    if (checkedPlaces.length === 0) { toast('اختر أماكن أولاً'); return; }
-    const activeCatKeys = Object.keys(activeMainItems).filter(k => activeMainItems[k]);
-    if (activeCatKeys.length === 0) { toast('اختر بند رئيسي أولاً'); return; }
-    const newPlaces = checkedPlaces.map((name, i) => ({ id: `place_${Date.now()}_${i}`, name, length: dimensions.length, width: dimensions.width, height: dimensions.height, area: placeArea, measureType: 'floor' }));
-    setCategories(prev => {
-      let updated = [...prev];
-      let lastCatId = null;
-      activeCatKeys.forEach(catKey => {
-        const catConfig = workItems[catKey];
-        if (!catConfig) return;
-        const existingIdx = updated.findIndex(c => c.code === catConfig.code);
-        if (existingIdx !== -1) {
-          updated[existingIdx] = { ...updated[existingIdx], pendingPlaces: [...(updated[existingIdx].pendingPlaces || []), ...newPlaces.map((p, i) => ({ ...p, id: `${p.id}_${catKey}_${i}` }))] };
-          lastCatId = updated[existingIdx].id;
-        } else {
-          const newCatId = `cat_${Date.now()}_${catKey}`;
-          updated.push({
-            id: newCatId, code: catConfig.code, name: catConfig.name, color: catConfig.color,
-            subItems: catConfig.items.map(item => ({ code: `${catConfig.code}${item.num}`, name: item.name, price: item.price, group: catConfig.name })),
-            items: [], pendingPlaces: newPlaces.map((p, i) => ({ ...p, id: `${p.id}_${catKey}_new_${i}` })), categoryConditions: [],
-            options: { containerState: 'notMentioned', totalsContainerAmount: 0, materialsState: 'notMentioned', materialsAmount: 0, showMeters: true, customAmount: 0, profitPercent: 0, discountPercent: 0, discountAmount: 0, taxPercent: 15 }
-          });
-          lastCatId = newCatId;
+  // Toggle فئة في الملخص العام
+  const toggleSummaryCategory = (catKey) => {
+    setSummaryExpanded(prev => ({ ...prev, [catKey]: !prev[catKey] }));
+  };
+
+  // Toggle خيار في الملخص العام (3 حالات: with / notMentioned / without)
+  const toggleCategoryOption = (catKey, option) => {
+    setCategoryOptions(prev => {
+      const currentValue = prev[catKey]?.[option];
+      let newValue;
+      // الدورة: null -> 'with' -> 'notMentioned' -> 'without' -> 'with'
+      if (currentValue === null || currentValue === undefined) {
+        newValue = 'with';
+      } else if (currentValue === 'with') {
+        newValue = 'notMentioned';
+      } else if (currentValue === 'notMentioned') {
+        newValue = 'without';
+      } else {
+        newValue = 'with';
+      }
+      return {
+        ...prev,
+        [catKey]: { 
+          ...prev[catKey], 
+          [option]: newValue 
+        }
+      };
+    });
+  };
+
+  // تحديث مبلغ إضافي (حاوية/مواد)
+  const updateCategoryAmount = (catKey, field, value) => {
+    setCategoryOptions(prev => ({
+      ...prev,
+      [catKey]: { 
+        ...prev[catKey], 
+        [field]: parseFloat(value) || 0 
+      }
+    }));
+  };
+
+  // تحديث خيارات العرض (ذكر الأمتار، جمع الأمتار، إظهار السعر)
+  const toggleDisplayOption = (catKey, option) => {
+    setCategoryOptions(prev => ({
+      ...prev,
+      [catKey]: { 
+        ...prev[catKey], 
+        [option]: !prev[catKey]?.[option]
+      }
+    }));
+  };
+
+  // تحديث مبلغ آخر ونسبة الربح
+  const updateCustomAmount = (catKey, field, value) => {
+    setCategoryOptions(prev => ({
+      ...prev,
+      [catKey]: { 
+        ...prev[catKey], 
+        [field]: parseFloat(value) || 0 
+      }
+    }));
+  };
+
+  // إعادة تعيين المبلغ للأصلي
+  const resetToOriginalAmount = (catKey) => {
+    setCategoryOptions(prev => ({
+      ...prev,
+      [catKey]: { 
+        ...prev[catKey], 
+        customAmount: 0,
+        profitPercent: 0
+      }
+    }));
+  };
+
+  // تحديث نص الملخص المخصص
+  const updateCustomSummaryText = (catKey, text) => {
+    setCategoryOptions(prev => ({
+      ...prev,
+      [catKey]: { 
+        ...prev[catKey], 
+        customSummaryText: text
+      }
+    }));
+  };
+
+  // إعادة تعيين نص الملخص للأصلي
+  const resetSummaryText = (catKey) => {
+    setCategoryOptions(prev => {
+      const newOptions = { ...prev[catKey] };
+      delete newOptions.customSummaryText;
+      return { ...prev, [catKey]: newOptions };
+    });
+  };
+
+  // الحصول على خيارات الفئة
+  const getCategoryOptions = (catKey) => {
+    return {
+      withContainer: categoryOptions[catKey]?.withContainer ?? null,
+      withMaterials: categoryOptions[catKey]?.withMaterials ?? null,
+      containerAmount: categoryOptions[catKey]?.containerAmount ?? 0,
+      materialsAmount: categoryOptions[catKey]?.materialsAmount ?? 0,
+      showMeters: categoryOptions[catKey]?.showMeters ?? false,
+      sumMeters: categoryOptions[catKey]?.sumMeters ?? false,
+      showPrice: categoryOptions[catKey]?.showPrice ?? false,
+      customAmount: categoryOptions[catKey]?.customAmount ?? 0,
+      profitPercent: categoryOptions[catKey]?.profitPercent ?? 0,
+      customSummaryText: categoryOptions[catKey]?.customSummaryText ?? null
+    };
+  };
+
+  // التحقق من اكتمال الخيارات (يجب الضغط على كل زر مرة واحدة على الأقل)
+  const isOptionsComplete = (catKey) => {
+    const options = getCategoryOptions(catKey);
+    return options.withContainer !== null && options.withMaterials !== null;
+  };
+
+  // التحقق من وجود بنود مختارة من فئة معينة
+  const hasSelectedItemsFromCategory = (catKey) => {
+    const catItems = workItems[catKey]?.items || [];
+    return selectedItems.some(id => catItems.some(item => item.id === id));
+  };
+
+  // إنشاء ملخص الخدمة النصي الكامل مع العبارات الجديدة
+  const getFullServiceSummary = (catKey, catData) => {
+    const options = getCategoryOptions(catKey);
+    
+    // إذا يوجد نص مخصص، استخدمه
+    if (options.customSummaryText) {
+      return options.customSummaryText;
+    }
+    
+    // تجميع البنود حسب المجموعة
+    const groupedItems = {};
+    catData.items.forEach(item => {
+      const group = item.group || 'أخرى';
+      if (!groupedItems[group]) {
+        groupedItems[group] = { items: [], totalArea: 0 };
+      }
+      groupedItems[group].items.push(item);
+      groupedItems[group].totalArea += item.area;
+    });
+    
+    let summary = 'تشمل الخدمة: ';
+    
+    // عرض البنود مع الأمتار إذا مفعّل
+    if (options.showMeters) {
+      const itemsWithQty = catData.items.map(item => {
+        const itemInfo = workItems[catKey]?.items.find(i => i.id === item.id);
+        const code = itemInfo?.code || '';
+        return `${code ? `[${code}] ` : ''}${item.name} (${formatNum(item.area)} م²)`;
+      });
+      
+      if (itemsWithQty.length === 1) {
+        summary += itemsWithQty[0];
+      } else {
+        const lastItem = itemsWithQty.pop();
+        summary += itemsWithQty.join('، و') + '، و' + lastItem;
+      }
+    } else {
+      const itemNames = catData.items.map(item => {
+        const itemInfo = workItems[catKey]?.items.find(i => i.id === item.id);
+        const code = itemInfo?.code || '';
+        return `${code ? `[${code}] ` : ''}${item.name}`;
+      });
+      
+      if (itemNames.length === 1) {
+        summary += itemNames[0];
+      } else {
+        const lastItem = itemNames.pop();
+        summary += itemNames.join('، و') + '، و' + lastItem;
+      }
+    }
+    
+    // جمع الأمتار حسب المجموعة إذا مفعّل
+    if (options.sumMeters && Object.keys(groupedItems).length > 0) {
+      summary += ' | الإجمالي: ';
+      const groupSummaries = Object.entries(groupedItems).map(([group, data]) => 
+        `${group}: ${formatNum(data.totalArea)} م²`
+      );
+      summary += groupSummaries.join(' - ');
+    }
+    
+    summary += '.';
+    
+    // تنسيق العبارات حسب الخيارات (3 حالات)
+    const withMaterials = options.withMaterials;
+    const withContainer = options.withContainer;
+    
+    // بناء عبارات المواد والحاوية
+    const materialsText = withMaterials === 'with' ? 'تشمل المواد' : 
+                         withMaterials === 'without' ? 'لا تشمل المواد' : '';
+    const containerText = withContainer === 'with' ? 'تشمل الحاوية' : 
+                         withContainer === 'without' ? 'لا تشمل الحاوية' : '';
+    
+    if (materialsText && containerText) {
+      summary += ` ${materialsText}، ${containerText}.`;
+    } else if (materialsText) {
+      summary += ` ${materialsText}.`;
+    } else if (containerText) {
+      summary += ` ${containerText}.`;
+    }
+    
+    // إضافة مبالغ الحاوية والمواد إذا وجدت
+    if (options.containerAmount > 0) {
+      summary += ` (تكلفة الحاوية: ${formatNum(options.containerAmount)} ر.س)`;
+    }
+    if (options.materialsAmount > 0) {
+      summary += ` (تكلفة المواد: ${formatNum(options.materialsAmount)} ر.س)`;
+    }
+    
+    // إظهار السعر إذا مفعّل
+    if (options.showPrice) {
+      const finalTotal = getFinalCategoryTotal(catKey, catData.total);
+      summary += ` | السعر الإجمالي: ${formatNum(finalTotal)} ر.س`;
+    }
+    
+    return summary;
+  };
+  
+  // حساب الإجمالي النهائي للفئة مع المبلغ الآخر ونسبة الربح
+  const getFinalCategoryTotal = (catKey, originalTotal) => {
+    const options = getCategoryOptions(catKey);
+    let total = originalTotal;
+    
+    // إضافة مبالغ الحاوية والمواد
+    if (options.containerAmount > 0) {
+      total += options.containerAmount;
+    }
+    if (options.materialsAmount > 0) {
+      total += options.materialsAmount;
+    }
+    
+    // إضافة مبلغ آخر
+    if (options.customAmount > 0) {
+      total += options.customAmount;
+    }
+    
+    // إضافة نسبة الربح
+    if (options.profitPercent > 0) {
+      total += total * (options.profitPercent / 100);
+    }
+    
+    return total;
+  };
+  
+  // الحصول على إجمالي الأمتار حسب المجموعة
+  const getGroupedMeters = (catKey, catData) => {
+    const groupedItems = {};
+    catData.items.forEach(item => {
+      const itemInfo = workItems[catKey]?.items.find(i => i.id === item.id);
+      const group = itemInfo?.group || 'أخرى';
+      if (!groupedItems[group]) {
+        groupedItems[group] = 0;
+      }
+      groupedItems[group] += item.area;
+    });
+    return groupedItems;
+  };
+
+  // نسخ ملخص الخدمة
+  const copyServiceSummary = (catKey, catData) => {
+    const summary = getFullServiceSummary(catKey, catData);
+    navigator.clipboard.writeText(summary);
+    setCopiedCategoryId(catKey);
+    setTimeout(() => setCopiedCategoryId(null), 2000);
+  };
+
+  // حساب إجمالي الكميات لفئة
+  const getCategoryQuantitySummary = (catData) => {
+    let totalArea = 0;
+    catData.items.forEach(item => {
+      totalArea += item.area;
+    });
+    return `${formatNum(totalArea)} م²`;
+  };
+
+  // دوال تحرير البنود
+  const deleteWorkItem = (catKey, itemId) => {
+    setWorkItems(prev => ({ ...prev, [catKey]: { ...prev[catKey], items: prev[catKey].items.filter(item => item.id !== itemId) } }));
+    // إزالة البند من البرمجة في جميع أنواع المكان
+    setProgramming(prev => {
+      const updated = { ...prev };
+      Object.keys(updated).forEach(placeType => {
+        if (updated[placeType]?.[catKey]) {
+          updated[placeType] = {
+            ...updated[placeType],
+            [catKey]: {
+              ...updated[placeType][catKey],
+              items: (updated[placeType][catKey]?.items || []).filter(id => id !== itemId)
+            }
+          };
         }
       });
-      if (lastCatId) setTimeout(() => setExpandedCategory(lastCatId), 50);
       return updated;
     });
-    setCheckedPlaces([]);
-    toast(`تمت إضافة ${newPlaces.length} مكان`);
   };
 
-  const selectPendingSubItem = (catId, placeId, subItemCode) => {
-    if (!subItemCode) return;
-    setCategories(prev => prev.map(cat => {
-      if (cat.id !== catId) return cat;
-      const subItem = cat.subItems?.find(s => s.code === subItemCode);
-      const place = cat.pendingPlaces?.find(p => p.id === placeId);
-      if (!subItem || !place) return cat;
-      return { ...cat, items: [...(cat.items || []), { id: `item_${Date.now()}`, code: subItem.code, name: subItem.name, price: subItem.price, places: [{ ...place }], conditions: [] }], pendingPlaces: cat.pendingPlaces.filter(p => p.id !== placeId) };
+  const addNewWorkItem = (catKey) => {
+    const newId = catKey.charAt(0) + Date.now();
+    const newItem = { id: newId, name: 'بند جديد', desc: 'وصف البند', exec: 0, cont: 0, type: 'floor' };
+    setWorkItems(prev => ({ ...prev, [catKey]: { ...prev[catKey], items: [...prev[catKey].items, newItem] } }));
+    // إضافة البند للبرمجة في جميع أنواع المكان التي بها القسم مفعل
+    setProgramming(prev => {
+      const updated = { ...prev };
+      Object.keys(updated).forEach(placeType => {
+        if (updated[placeType]?.[catKey]?.enabled) {
+          updated[placeType] = {
+            ...updated[placeType],
+            [catKey]: {
+              ...updated[placeType][catKey],
+              items: [...(updated[placeType][catKey]?.items || []), newId]
+            }
+          };
+        }
+      });
+      return updated;
+    });
+    setEditingItem({ catKey, item: newItem });
+  };
+
+  const updateCategoryName = (catKey, newName) => {
+    setWorkItems(prev => ({ ...prev, [catKey]: { ...prev[catKey], name: newName } }));
+  };
+
+  const updateCategoryIcon = (catKey, newIcon) => {
+    setWorkItems(prev => ({ ...prev, [catKey]: { ...prev[catKey], icon: newIcon } }));
+  };
+
+  const addNewCategory = () => {
+    const newKey = 'cat_' + Date.now();
+    setWorkItems(prev => ({
+      ...prev,
+      [newKey]: { name: 'قسم جديد', icon: '📦', items: [] }
     }));
-    toast('تم إضافة البند');
+    // إضافة القسم للبرمجة في جميع أنواع المكان
+    setProgramming(prev => {
+      const updated = { ...prev };
+      Object.keys(updated).forEach(placeType => {
+        updated[placeType] = {
+          ...updated[placeType],
+          [newKey]: { enabled: false, items: [] }
+        };
+      });
+      return updated;
+    });
+    // فتح نافذة التحرير للقسم الجديد
+    setEditingCategory({ catKey: newKey, name: 'قسم جديد', icon: '📦', isNew: true });
   };
 
-  const changeSubItem = (catId, itemId, newCode) => setCategories(prev => prev.map(cat => { if (cat.id !== catId) return cat; const sub = cat.subItems?.find(s => s.code === newCode); if (!sub) return cat; return { ...cat, items: cat.items.map(item => item.id === itemId ? { ...item, code: sub.code, name: sub.name, price: sub.price } : item) }; }));
-  const updatePlace = (catId, itemId, placeId, field, value) => setCategories(prev => prev.map(cat => { if (cat.id !== catId) return cat; return { ...cat, items: cat.items.map(item => { if (item.id !== itemId) return item; return { ...item, places: item.places.map(place => { if (place.id !== placeId) return place; const updated = { ...place, [field]: field === 'name' || field === 'measureType' ? value : parseFloat(value) || 0 }; if (field === 'manualArea') updated.area = parseFloat(value) || 0; else if (field !== 'area') updated.area = calcArea(updated); return updated; }) }; }) }; }));
-  const addPlace = (catId, itemId) => setCategories(prev => prev.map(cat => { if (cat.id !== catId) return cat; return { ...cat, items: cat.items.map(item => item.id !== itemId ? item : { ...item, places: [...item.places, { id: `place_${Date.now()}`, name: placesList[0] || 'مكان', length: 4, width: 4, height: 3, area: 16, measureType: 'floor' }] }) }; }));
-  const deletePlace = (catId, itemId, placeId) => setCategories(prev => prev.map(cat => { if (cat.id !== catId) return cat; return { ...cat, items: cat.items.map(item => item.id !== itemId ? item : { ...item, places: item.places.filter(p => p.id !== placeId) }) }; }));
-  const deleteItem = (catId, itemId) => { setCategories(prev => prev.map(cat => cat.id !== catId ? cat : { ...cat, items: cat.items.filter(item => item.id !== itemId) })); setEditingItemId(null); };
-  const duplicateItem = (catId, itemId) => { const newId = `item_${Date.now()}`; setCategories(prev => prev.map(cat => { if (cat.id !== catId) return cat; const original = cat.items.find(item => item.id === itemId); if (!original) return cat; return { ...cat, items: [...cat.items, { ...original, id: newId, places: original.places.map(p => ({ ...p, id: `place_${Date.now()}_${Math.random()}` })) }] }; })); setEditingItemId(newId); };
-  const deleteCategory = (catId) => { setCategories(prev => prev.filter(c => c.id !== catId)); setExpandedCategory(null); };
-  const addCondition = (catId, itemId, text) => { if (!text.trim()) return; setCategories(prev => prev.map(cat => { if (cat.id !== catId) return cat; return { ...cat, items: cat.items.map(item => item.id !== itemId ? item : { ...item, conditions: [...(item.conditions || []), text.trim()] }) }; })); };
-  const deleteCondition = (catId, itemId, idx) => setCategories(prev => prev.map(cat => { if (cat.id !== catId) return cat; return { ...cat, items: cat.items.map(item => item.id !== itemId ? item : { ...item, conditions: item.conditions.filter((_, i) => i !== idx) }) }; }));
-  const addCategoryCondition = (catId, text) => { if (!text.trim()) return; setCategories(prev => prev.map(cat => cat.id !== catId ? cat : { ...cat, categoryConditions: [...(cat.categoryConditions || []), text.trim()] })); };
-  const deleteCategoryCondition = (catId, idx) => setCategories(prev => prev.map(cat => cat.id !== catId ? cat : { ...cat, categoryConditions: cat.categoryConditions.filter((_, i) => i !== idx) }));
-  const updateCategoryOptions = (catId, field, value) => setCategories(prev => prev.map(cat => cat.id === catId ? { ...cat, options: { ...cat.options, [field]: value } } : cat));
-  const newQuote = () => { setCategories([]); setCheckedPlaces([]); setActiveMainItems({}); setExpandedCategory(null); toast('عرض جديد'); };
+  const deleteCategory = (catKey) => {
+    setWorkItems(prev => {
+      const newItems = { ...prev };
+      delete newItems[catKey];
+      return newItems;
+    });
+    // إزالة القسم من البرمجة في جميع أنواع المكان
+    setProgramming(prev => {
+      const updated = { ...prev };
+      Object.keys(updated).forEach(placeType => {
+        if (updated[placeType]?.[catKey]) {
+          const { [catKey]: removed, ...rest } = updated[placeType];
+          updated[placeType] = rest;
+        }
+      });
+      return updated;
+    });
+    setEditingCategory(null);
+  };
 
-  const selectStyle = { appearance: 'none', paddingLeft: 28, paddingRight: 12, backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'left 8px center', backgroundColor: 'transparent' };
+  // دوال التحكم في البرمجة
+  const togglePlaceType = (placeType) => {
+    setPlaces(prev => ({
+      ...prev,
+      [placeType]: { ...prev[placeType], enabled: !prev[placeType].enabled }
+    }));
+  };
 
-  if (placesLoading) return <div style={{ textAlign: 'center', padding: 60 }}><div style={{ fontSize: 50, marginBottom: 16 }}>⏳</div><p style={{ color: colors.muted }}>جاري التحميل...</p></div>;
+  const toggleCategoryInPlace = (placeType, catKey) => {
+    setProgramming(prev => ({
+      ...prev,
+      [placeType]: {
+        ...prev[placeType],
+        [catKey]: { 
+          ...prev[placeType]?.[catKey],
+          enabled: !prev[placeType]?.[catKey]?.enabled 
+        }
+      }
+    }));
+  };
+
+  const toggleItemInPlace = (placeType, catKey, itemId) => {
+    setProgramming(prev => {
+      const currentItems = prev[placeType]?.[catKey]?.items || [];
+      const newItems = currentItems.includes(itemId) 
+        ? currentItems.filter(id => id !== itemId)
+        : [...currentItems, itemId];
+      return {
+        ...prev,
+        [placeType]: {
+          ...prev[placeType],
+          [catKey]: { 
+            ...prev[placeType]?.[catKey],
+            items: newItems 
+          }
+        }
+      };
+    });
+  };
+
+  const isItemEnabledInPlace = (placeType, catKey, itemId) => {
+    return programming[placeType]?.[catKey]?.items?.includes(itemId) || false;
+  };
+
+  const isCategoryEnabledInPlace = (placeType, catKey) => {
+    return programming[placeType]?.[catKey]?.enabled || false;
+  };
+
+  // دوال إدارة أنواع المكان
+  const addNewPlaceType = () => {
+    const newKey = 'place_' + Date.now();
+    setPlaces(prev => ({
+      ...prev,
+      [newKey]: { name: 'نوع جديد', icon: '🏢', enabled: true, places: ['مكان 1'] }
+    }));
+    // إضافة البرمجة للنوع الجديد
+    setProgramming(prev => {
+      const newProgramming = { ...prev, [newKey]: {} };
+      Object.keys(workItems).forEach(catKey => {
+        newProgramming[newKey][catKey] = { enabled: false, items: [] };
+      });
+      return newProgramming;
+    });
+    setEditingPlaceType({ key: newKey, name: 'نوع جديد', icon: '🏢', places: ['مكان 1'], isNew: true });
+  };
+
+  const updatePlaceType = (key, updates) => {
+    setPlaces(prev => ({
+      ...prev,
+      [key]: { ...prev[key], ...updates }
+    }));
+  };
+
+  const deletePlaceType = (key) => {
+    setPlaces(prev => {
+      const newPlaces = { ...prev };
+      delete newPlaces[key];
+      return newPlaces;
+    });
+    setProgramming(prev => {
+      const newProgramming = { ...prev };
+      delete newProgramming[key];
+      return newProgramming;
+    });
+    setEditingPlaceType(null);
+    // إذا كان التبويب المحذوف هو المحدد، انتقل لأول تبويب
+    if (programmingTab === key) {
+      const remainingKeys = Object.keys(places).filter(k => k !== key);
+      if (remainingKeys.length > 0) {
+        setProgrammingTab(remainingKeys[0]);
+      }
+    }
+  };
+
+  const addPlaceToType = (typeKey, placeName) => {
+    setPlaces(prev => ({
+      ...prev,
+      [typeKey]: { 
+        ...prev[typeKey], 
+        places: [...prev[typeKey].places, placeName] 
+      }
+    }));
+  };
+
+  const removePlaceFromType = (typeKey, placeIndex) => {
+    setPlaces(prev => ({
+      ...prev,
+      [typeKey]: { 
+        ...prev[typeKey], 
+        places: prev[typeKey].places.filter((_, i) => i !== placeIndex) 
+      }
+    }));
+  };
+
+  const updatePlaceInType = (typeKey, placeIndex, newName) => {
+    setPlaces(prev => ({
+      ...prev,
+      [typeKey]: { 
+        ...prev[typeKey], 
+        places: prev[typeKey].places.map((p, i) => i === placeIndex ? newName : p) 
+      }
+    }));
+  };
+
+  const formatNum = (n) => Number(n).toLocaleString('en-US');
+  const calcFloorArea = () => length * width;
+  const calcWallArea = () => 2 * (length + width) * height;
+  const calcCeilingArea = () => length * width;
+  const getArea = () => calcFloorArea();
+  const getWallArea = () => calcWallArea();
+  
+  // حساب المساحة حسب نوع البند
+  const getAreaByType = (type) => {
+    switch(type) {
+      case 'wall': return calcWallArea();
+      case 'ceiling': return calcCeilingArea();
+      default: return calcFloorArea();
+    }
+  };
+  
+  // الحصول على نص المعادلة حسب نوع البند
+  const getFormulaByType = (type, l = length, w = width, h = height) => {
+    const area = type === 'wall' ? 2 * (l + w) * h : l * w;
+    switch(type) {
+      case 'wall': return `(${formatNum(l)} + ${formatNum(w)}) × 2 × ${formatNum(h)} = ${formatNum(area)} م²`;
+      case 'ceiling': return `${formatNum(l)} × ${formatNum(w)} = ${formatNum(area)} م²`;
+      default: return `${formatNum(l)} × ${formatNum(w)} = ${formatNum(area)} م²`;
+    }
+  };
+  
+  // الحصول على معلومات نوع البند
+  const getTypeInfo = (type) => typeConfig[type] || typeConfig.floor;
+  
+  const handleInputFocus = (e) => e.target.select();
+  const adjust = (setter, value, delta) => setter(Math.max(0, +(value + delta).toFixed(1)));
+  const toggleItem = (id) => setSelectedItems(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  const toggleCategory = (catKey) => setSelectedCategory(selectedCategory === catKey ? '' : catKey);
+
+  const getCategoryColor = (index) => {
+    const color = t?.colors?.[colorKeys[index % colorKeys.length]] || t?.colors?.[colorKeys[0]];
+    return color || { main: t?.button?.primary, gradient: t?.button?.gradient };
+  };
+
+  const addMultiPlace = () => { 
+    if (!selectedPlace || getArea() <= 0) return; 
+    setMultiPlaces([...multiPlaces, { place: selectedPlace, area: getArea(), wallArea: getWallArea(), length, width, height }]); 
+    setLength(4); setWidth(4); 
+  };
+  
+  const removeMultiPlace = (idx) => setMultiPlaces(multiPlaces.filter((_, i) => i !== idx));
+  
+  const addItems = () => { 
+    if (placeMode === 'single') { 
+      const fa = getArea(), wa = getWallArea(); 
+      if (!selectedPlace || fa <= 0 || selectedItems.length === 0) return; 
+      const nai = { ...addedItems }; 
+      selectedItems.forEach(id => { 
+        let item = null, catKey = null, catName = null;
+        Object.entries(workItems).forEach(([ck, cat]) => {
+          const found = cat.items.find(i => i.id === id);
+          if (found) { item = found; catKey = ck; catName = cat.name; }
+        });
+        if (!item) return; 
+        const isWall = item.type === 'wall' || item.type === 'ceiling'; 
+        const finalArea = isWall ? wa : fa;
+        const key = item.id + '-' + selectedPlace + '-' + Date.now() + '-' + Math.random();
+        nai[key] = { ...item, place: selectedPlace, placeType: selectedPlaceType, area: finalArea, catKey, category: catName, length, width, height,
+          formula: isWall ? `2 × (${formatNum(length)} + ${formatNum(width)}) × ${formatNum(height)} = ${formatNum(wa)} م²` : `${formatNum(length)} × ${formatNum(width)} = ${formatNum(fa)} م²`
+        }; 
+      }); 
+      setAddedItems(nai); setSelectedItems([]); setSelectedCategory(''); setLength(4); setWidth(4);
+    } else { 
+      if (multiPlaces.length === 0 || selectedItems.length === 0) return; 
+      const nai = { ...addedItems }; 
+      selectedItems.forEach(id => { 
+        let item = null, catKey = null, catName = null;
+        Object.entries(workItems).forEach(([ck, cat]) => {
+          const found = cat.items.find(i => i.id === id);
+          if (found) { item = found; catKey = ck; catName = cat.name; }
+        });
+        if (!item) return; 
+        const isWall = item.type === 'wall' || item.type === 'ceiling';
+        let totalArea = 0; const placeNames = []; const formulas = [];
+        multiPlaces.forEach(mp => {
+          const mpArea = isWall ? mp.wallArea : mp.area;
+          totalArea += mpArea; placeNames.push(mp.place);
+          formulas.push(isWall ? `${mp.place}: 2×(${formatNum(mp.length)}+${formatNum(mp.width)})×${formatNum(mp.height)}=${formatNum(mp.wallArea)}` : `${mp.place}: ${formatNum(mp.length)}×${formatNum(mp.width)}=${formatNum(mp.area)}`);
+        });
+        const key = item.id + '-multi-' + Date.now();
+        nai[key] = { ...item, place: placeNames.join(' + '), placeType: selectedPlaceType, area: totalArea, catKey, category: catName, isMulti: true, placesCount: multiPlaces.length, formula: formulas.join(' | '), totalFormula: `المجموع: ${formatNum(totalArea)} م²` }; 
+      }); 
+      setAddedItems(nai); setSelectedItems([]); setSelectedCategory(''); setMultiPlaces([]); 
+    } 
+  };
+  
+  const removeAddedItem = (key) => { const n = { ...addedItems }; delete n[key]; setAddedItems(n); };
+  const updateAddedItemArea = (key, val) => setAddedItems(p => ({ ...p, [key]: { ...p[key], area: parseFloat(val) || 0 } }));
+  
+  const calcTotals = () => { 
+    let totalExec = 0, totalCont = 0, totalArea = 0, itemCount = 0; 
+    const placesList = new Set();
+    Object.values(addedItems).forEach(i => { 
+      totalExec += i.area * i.exec; totalCont += i.area * i.cont; totalArea += i.area; itemCount++;
+      if (i.isMulti) { i.place.split(' + ').forEach(p => placesList.add(p)); } else { placesList.add(i.place); }
+    }); 
+    const profit = totalExec - totalCont; 
+    const profitPercent = totalCont > 0 ? ((profit / totalCont) * 100) : 0; 
+    const vatAmount = totalExec * (reportData.vatRate / 100); 
+    const grandTotal = totalExec + vatAmount; 
+    const avgPricePerMeter = totalArea > 0 ? totalExec / totalArea : 0;
+    return { totalExec, totalCont, profit, profitPercent, vatAmount, grandTotal, totalArea, itemCount, avgPricePerMeter, placesCount: placesList.size }; 
+  };
+  
+  const { totalExec, totalCont, profit, profitPercent, vatAmount, grandTotal, totalArea, itemCount, avgPricePerMeter, placesCount } = calcTotals();
+  const canAdd = placeMode === 'single' ? (selectedPlace && getArea() > 0 && selectedItems.length > 0) : (multiPlaces.length > 0 && selectedItems.length > 0);
+  
+  const getItemsByCategory = () => { 
+    const result = {}; 
+    Object.entries(addedItems).forEach(([key, item]) => { 
+      if (!result[item.catKey]) result[item.catKey] = { name: item.category, items: [], total: 0 }; 
+      const itemTotal = item.area * item.exec; 
+      result[item.catKey].items.push({ ...item, key, total: itemTotal }); 
+      result[item.catKey].total += itemTotal; 
+    }); 
+    return result; 
+  };
+
+  // الأنماط
+  const noSpinner = { MozAppearance: 'textfield', WebkitAppearance: 'none', appearance: 'none' };
+  const cardStyle = { background: t?.bg?.secondary, borderRadius: 12, border: `1px solid ${t?.border?.primary}`, padding: 20, marginBottom: 16 };
+  const btnStyle = (active) => ({ padding: '10px 20px', borderRadius: 10, border: active ? 'none' : `1px solid ${t?.border?.primary}`, background: active ? t?.button?.gradient : 'transparent', color: active ? '#fff' : t?.text?.muted, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontFamily: 'inherit', transition: 'all 0.2s' });
+  const inputStyle = { width: '100%', padding: '10px 14px', borderRadius: 10, border: `1px solid ${t?.border?.primary}`, background: t?.bg?.tertiary, color: t?.text?.primary, fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', ...noSpinner };
+  const selectStyle = { ...inputStyle, appearance: 'none', backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'left 12px center', paddingLeft: 40, cursor: 'pointer' };
+
+  const DimensionInput = ({ label, value, onChange }) => (
+    <div style={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'space-between', 
+      padding: '12px 16px', 
+      background: t?.bg?.secondary, 
+      borderRadius: 10, 
+      border: `1px solid ${t?.border?.primary}` 
+    }}>
+      <div style={{ fontSize: 14, color: t?.text?.primary, fontWeight: 600 }}>{label}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <button 
+          onClick={() => adjust(onChange, value, -0.5)} 
+          style={{ 
+            width: 44, 
+            height: 44, 
+            borderRadius: 10, 
+            border: 'none', 
+            background: t?.button?.gradient, 
+            color: '#fff', 
+            fontSize: 22, 
+            cursor: 'pointer', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            fontFamily: 'inherit',
+            transition: 'all 0.2s',
+            boxShadow: `0 2px 8px ${t?.button?.primary}30`
+          }}
+        >−</button>
+        <div style={{ display: 'flex', alignItems: 'baseline', minWidth: 70, justifyContent: 'center' }}>
+          <input 
+            type="number" 
+            value={value} 
+            onFocus={handleInputFocus} 
+            onChange={(e) => onChange(parseFloat(e.target.value) || 0)} 
+            style={{ 
+              width: 50, 
+              background: 'transparent', 
+              border: 'none', 
+              color: t?.text?.primary, 
+              fontSize: 28, 
+              fontWeight: 700, 
+              textAlign: 'center', 
+              outline: 'none',
+              fontFamily: 'inherit',
+              ...noSpinner 
+            }} 
+          />
+          <span style={{ fontSize: 14, color: t?.text?.muted, marginRight: 2 }}>م</span>
+        </div>
+        <button 
+          onClick={() => adjust(onChange, value, 0.5)} 
+          style={{ 
+            width: 44, 
+            height: 44, 
+            borderRadius: 10, 
+            border: 'none', 
+            background: t?.button?.gradient, 
+            color: '#fff', 
+            fontSize: 22, 
+            cursor: 'pointer', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            fontFamily: 'inherit',
+            transition: 'all 0.2s',
+            boxShadow: `0 2px 8px ${t?.button?.primary}30`
+          }}
+        >+</button>
+      </div>
+    </div>
+  );
+
+  const EditableText = ({ value, onChange, style = {} }) => { 
+    const [focused, setFocused] = useState(false); 
+    return <input type="text" value={value} onChange={(e) => onChange(e.target.value)} onFocus={(e) => { setFocused(true); e.target.select(); }} onBlur={() => setFocused(false)} style={{ ...style, border: 'none', borderBottom: focused ? `2px solid ${t?.button?.primary}` : '1px solid transparent', background: focused ? '#fffef0' : 'transparent', outline: 'none', fontFamily: 'inherit', padding: '2px 4px', borderRadius: 2, minWidth: 50 }} />; 
+  };
 
   return (
-    <div style={{ fontFamily: 'system-ui' }}>
-      {/* نموذج الإدخال السريع */}
-      <div style={{ background: colors.card, borderRadius: 16, border: `2px solid ${colors.primary}`, overflow: 'hidden', marginBottom: 20 }}>
-        <div onClick={() => setPhase1Expanded(!phase1Expanded)} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: 16, background: `${colors.primary}10` }}>
-          <div style={{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.cyan})`, padding: '12px 16px', borderRadius: 10, marginLeft: 12 }}><span style={{ fontSize: 24 }}>📐</span></div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: colors.text }}>نموذج إدخال سريع</div>
-            <div style={{ fontSize: 11, color: colors.muted }}>🏗️ {Object.values(activeMainItems).filter(v => v).length} بنود • 📍 {checkedPlaces.length} أماكن</div>
-          </div>
-          <span style={{ fontSize: 16, color: colors.primary, transform: phase1Expanded ? 'rotate(180deg)' : 'none', transition: '0.3s' }}>▼</span>
+    <div style={{ padding: '24px 0', paddingBottom: 100 }}>
+      <style>{`
+        input, textarea, select { font-family: inherit; } 
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; } 
+        input[type=number] { -moz-appearance: textfield; appearance: none; }
+        .work-items-scroll::-webkit-scrollbar { width: 6px; }
+        .work-items-scroll::-webkit-scrollbar-track { background: ${t?.bg?.tertiary}; border-radius: 10px; }
+        .work-items-scroll::-webkit-scrollbar-thumb { background: ${t?.button?.primary}; border-radius: 10px; }
+        .work-items-scroll { scrollbar-width: thin; scrollbar-color: ${t?.button?.primary} ${t?.bg?.tertiary}; }
+        button { transition: all 0.2s; }
+        button:hover { opacity: 0.9; }
+        button:active { transform: scale(0.97); }
+      `}</style>
+      
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 16 }}>
+        <div>
+          <h2 style={{ fontSize: 24, fontWeight: 700, color: t?.text?.primary, margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Calculator size={28} />
+            حاسبة الكميات
+          </h2>
+          <p style={{ fontSize: 14, color: t?.text?.muted, marginTop: 4 }}>
+            {currentProject ? currentProject.name : 'إدارة المشاريع والحسابات'}
+          </p>
         </div>
-        {phase1Expanded && (
-          <div style={{ padding: 16, borderTop: `1px dashed ${colors.primary}40` }}>
-            {/* الخطوة 1 */}
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-                <div style={{ width: 26, height: 26, borderRadius: 6, background: colors.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff' }}>1</div>
-                <span style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>اختر الأماكن</span>
-                {checkedPlaces.length > 0 && <span style={{ padding: '3px 10px', borderRadius: 6, fontSize: 10, fontWeight: 700, background: colors.success, color: '#fff', marginRight: 'auto' }}>{checkedPlaces.length} مكان</span>}
-              </div>
-              <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                <div style={{ flex: 2, minWidth: 200, position: 'relative' }}>
-                  <div onClick={() => setIsDropdownOpen(!isDropdownOpen)} style={{ width: '100%', height: 36, padding: '0 30px 0 12px', borderRadius: isDropdownOpen ? '6px 6px 0 0' : '6px', border: `1px solid ${isDropdownOpen ? colors.primary : colors.border}`, background: colors.card, color: colors.text, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {checkedPlaces.length === 0 ? <span style={{ color: colors.muted }}>اختر أماكن...</span> : <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', overflow: 'hidden' }}>{checkedPlaces.slice(0, 3).map(p => <span key={p} style={{ background: colors.primary, color: '#fff', padding: '2px 8px', borderRadius: 4, fontSize: 10 }}>{p}</span>)}{checkedPlaces.length > 3 && <span style={{ background: '#64748b', color: '#fff', padding: '2px 6px', borderRadius: 4, fontSize: 10 }}>+{checkedPlaces.length - 3}</span>}</div>}
-                    <span style={{ position: 'absolute', left: 12, color: colors.muted, fontSize: 10 }}>▼</span>
-                  </div>
-                  {isDropdownOpen && (
-                    <div style={{ position: 'absolute', top: '100%', right: 0, left: 0, background: colors.card, border: `1px solid ${colors.primary}`, borderTop: 'none', borderRadius: '0 0 6px 6px', maxHeight: 280, overflowY: 'auto', zIndex: 100 }}>
-                      <div style={{ padding: '10px 12px', borderBottom: `1px dashed ${colors.primary}`, background: `${colors.success}10` }}>
-                        {!showAddNewInput ? <button onClick={(e) => { e.stopPropagation(); setShowAddNewInput(true); }} style={{ width: '100%', height: 32, borderRadius: 6, border: `1px dashed ${colors.success}`, background: 'transparent', color: colors.success, fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>➕ إضافة مكان جديد</button> : <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}><input type="text" value={newPlaceInput} onChange={e => setNewPlaceInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') addNewPlaceToList(newPlaceInput); }} placeholder="اسم المكان..." autoFocus style={{ flex: 1, height: 32, padding: '0 10px', borderRadius: 6, border: `1px solid ${colors.success}`, background: colors.bg, color: colors.text, fontSize: 11 }} /><button onClick={() => addNewPlaceToList(newPlaceInput)} style={{ height: 32, padding: '0 12px', borderRadius: 6, border: 'none', background: colors.success, color: '#fff', fontSize: 11, cursor: 'pointer' }}>إضافة</button><button onClick={() => { setShowAddNewInput(false); setNewPlaceInput(''); }} style={{ height: 32, padding: '0 10px', borderRadius: 6, border: `1px solid ${colors.danger}`, background: 'transparent', color: colors.danger, fontSize: 11, cursor: 'pointer' }}>✕</button></div>}
-                      </div>
-                      {availablePlaces.map(place => {
-                        const isChecked = checkedPlaces.includes(place.name);
-                        return <div key={place.id} onClick={(e) => { e.stopPropagation(); toggleCheck(place.name); }} style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', borderBottom: `1px solid ${colors.border}`, background: isChecked ? `${colors.primary}15` : 'transparent' }}><div style={{ width: 18, height: 18, borderRadius: 4, border: `2px solid ${isChecked ? colors.primary : colors.border}`, background: isChecked ? colors.primary : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#fff' }}>{isChecked && '✓'}</div><span style={{ flex: 1, fontSize: 12, color: isChecked ? colors.primary : colors.text, fontWeight: isChecked ? 600 : 400 }}>{place.name}</span><button onClick={(e) => { e.stopPropagation(); deletePlaceFromList(place.id, place.name); }} style={{ width: 22, height: 22, borderRadius: 4, border: `1px solid ${colors.danger}30`, background: `${colors.danger}10`, color: colors.danger, fontSize: 10, cursor: 'pointer', opacity: 0.6 }}>✕</button></div>;
-                      })}
-                    </div>
-                  )}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: colors.bg, padding: '0 8px', borderRadius: 6, border: `1px solid ${colors.border}`, height: 36 }}><span style={{ fontSize: 10, color: colors.muted }}>ط:</span><select style={{ ...selectStyle, border: 'none', color: colors.text, fontSize: 12, fontWeight: 600, width: 40 }} value={dimensions.length} onChange={e => setDimensions({ ...dimensions, length: parseFloat(e.target.value) })}>{dimOptions.map(n => <option key={n} value={n}>{n}</option>)}</select></div>
-                <span style={{ color: colors.muted }}>×</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: colors.bg, padding: '0 8px', borderRadius: 6, border: `1px solid ${colors.border}`, height: 36 }}><span style={{ fontSize: 10, color: colors.muted }}>ع:</span><select style={{ ...selectStyle, border: 'none', color: colors.text, fontSize: 12, fontWeight: 600, width: 40 }} value={dimensions.width} onChange={e => setDimensions({ ...dimensions, width: parseFloat(e.target.value) })}>{dimOptions.map(n => <option key={n} value={n}>{n}</option>)}</select></div>
-                <span style={{ color: colors.muted }}>=</span>
-                <div style={{ background: `${colors.success}15`, padding: '0 10px', borderRadius: 6, height: 36, display: 'flex', alignItems: 'center', border: `1px solid ${colors.success}30` }}><span style={{ fontSize: 13, fontWeight: 700, color: colors.success }}>{placeArea} م²</span></div>
-              </div>
-              {checkedPlaces.length > 0 && (
-                <div style={{ background: `${colors.primary}10`, border: `1px solid ${colors.primary}30`, borderRadius: 6, padding: 12 }}>
-                  <div style={{ fontSize: 11, color: colors.primary, fontWeight: 600, marginBottom: 10 }}>📍 الأماكن المحددة ({checkedPlaces.length})</div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>{checkedPlaces.map(p => <span key={p} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 6, background: colors.primary, color: '#fff', fontSize: 11, fontWeight: 600 }}>{p} <span style={{ background: 'rgba(255,255,255,0.2)', padding: '2px 5px', borderRadius: 4, fontSize: 9 }}>{placeArea} م²</span><span style={{ cursor: 'pointer', color: '#fca5a5' }} onClick={() => toggleCheck(p)}>✕</span></span>)}</div>
-                  <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px dashed ${colors.primary}30`, display: 'flex', justifyContent: 'space-between' }}><span style={{ fontSize: 11, color: colors.muted }}>إجمالي المساحة:</span><span style={{ fontSize: 15, fontWeight: 700, color: colors.success }}>{checkedPlaces.length * placeArea} م²</span></div>
-                </div>
-              )}
-            </div>
-            {/* الخطوة 2 */}
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}><div style={{ width: 26, height: 26, borderRadius: 6, background: colors.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff' }}>2</div><span style={{ fontSize: 13, fontWeight: 600, color: colors.text }}>اختر بنود الأعمال</span></div>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{Object.entries(workItems).map(([key, cat]) => { const isActive = activeMainItems[key]; return <button key={key} onClick={() => setActiveMainItems(prev => ({ ...prev, [key]: !prev[key] }))} style={{ height: 36, padding: '0 12px', borderRadius: 6, border: `1px solid ${isActive ? cat.color : colors.border}`, background: isActive ? `${cat.color}20` : 'transparent', color: isActive ? cat.color : colors.muted, fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}><span>{cat.icon}</span><span>{cat.name}</span>{isActive && <span>✓</span>}</button>; })}</div>
-            </div>
-            <button onClick={addCheckedPlacesToCategories} disabled={checkedPlaces.length === 0 || !Object.values(activeMainItems).some(v => v)} style={{ width: '100%', height: 50, borderRadius: 8, border: 'none', background: (checkedPlaces.length > 0 && Object.values(activeMainItems).some(v => v)) ? `linear-gradient(135deg, ${colors.success}, #059669)` : colors.bg, color: (checkedPlaces.length > 0 && Object.values(activeMainItems).some(v => v)) ? '#fff' : colors.muted, fontSize: 14, fontWeight: 700, cursor: (checkedPlaces.length > 0 && Object.values(activeMainItems).some(v => v)) ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}><span style={{ fontSize: 20 }}>➕</span><span>إضافة الأماكن للبنود المحددة</span></button>
-          </div>
-        )}
+        <div style={{ display: 'flex', gap: 10 }}>
+          {currentProject && (
+            <button 
+              onClick={() => setCurrentProjectId(null)} 
+              style={{ padding: '10px 16px', borderRadius: 10, border: `1px solid ${t?.border?.primary}`, background: t?.bg?.secondary, color: t?.text?.muted, cursor: 'pointer', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}
+            >
+              ← المشاريع
+            </button>
+          )}
+          {onRefresh && <button onClick={onRefresh} style={{ width: 40, height: 40, borderRadius: 10, border: `1px solid ${t?.border?.primary}`, background: t?.bg?.secondary, color: t?.text?.muted, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><RefreshCw size={18} /></button>}
+        </div>
       </div>
 
-      {/* حالة فارغة */}
-      {categories.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: colors.muted, background: colors.card, borderRadius: 16, border: `1px solid ${colors.border}` }}><div style={{ fontSize: 50, marginBottom: 16, opacity: 0.3 }}>📦</div><div style={{ fontWeight: 600, marginBottom: 8 }}>لا توجد فئات</div><p style={{ fontSize: 12 }}>استخدم النموذج أعلاه لإضافة بنود</p></div>}
-
-      {/* الفئات */}
-      {categories.map(cat => {
-        const isExpanded = expandedCategory === cat.id;
-        const catTotals = calculateCategoryTotals(cat);
-        const catTotalArea = getCategoryTotalArea(cat);
-        const pendingPlaces = cat.pendingPlaces || [];
-        const items = cat.items || [];
-        return (
-          <div key={cat.id} style={{ background: colors.card, borderRadius: 16, overflow: 'hidden', marginBottom: 12, border: `2px solid ${isExpanded ? cat.color : colors.border}` }}>
-            <div onClick={() => setExpandedCategory(isExpanded ? null : cat.id)} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', padding: 16, background: isExpanded ? `${cat.color}10` : 'transparent' }}>
-              <div style={{ width: 50, display: 'flex', flexDirection: 'column', alignItems: 'center', marginLeft: 12 }}><span style={{ fontSize: 28 }}>{workItems[cat.code]?.icon || '📦'}</span><span style={{ fontSize: 10, fontWeight: 700, color: cat.color }}>{cat.code}</span></div>
-              <div style={{ flex: 1 }}><div style={{ fontSize: 17, fontWeight: 700, color: colors.text }}>{cat.name}</div>{pendingPlaces.length > 0 && <div style={{ background: `${colors.warning}20`, border: `1px solid ${colors.warning}`, borderRadius: 6, padding: '4px 8px', marginTop: 6, fontSize: 11, color: colors.warning, display: 'inline-block' }}>⚠️ {pendingPlaces.length} مكان معلق</div>}<div style={{ fontSize: 11, color: colors.muted, marginTop: 4 }}>📦 {items.length} بنود • 📐 {catTotalArea} م²</div></div>
-              <div style={{ textAlign: 'center', marginLeft: 12 }}><div style={{ fontSize: 9, color: colors.muted }}>الإجمالي</div><div style={{ fontSize: 20, fontWeight: 700, color: colors.success }}>{formatNumber(catTotals.finalTotal)}</div></div>
-              <span style={{ fontSize: 16, color: cat.color, marginRight: 12, transform: isExpanded ? 'rotate(180deg)' : 'none', transition: '0.3s' }}>▼</span>
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {/* قائمة المشاريع - تظهر إذا لم يكن هناك مشروع مفتوح */}
+      {/* ═══════════════════════════════════════════════════════════════ */}
+      {!currentProjectId ? (
+        <div>
+          {/* زر إضافة مشروع جديد */}
+          <div style={cardStyle}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: t?.text?.primary }}>📁 المشاريع ({projects.length})</div>
+              <button 
+                onClick={createNewProject}
+                style={{ padding: '12px 24px', borderRadius: 10, border: 'none', background: t?.button?.gradient, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit', boxShadow: `0 4px 12px ${t?.button?.primary}30` }}
+              >
+                <Plus size={20} />
+                مشروع جديد
+              </button>
             </div>
-            {isExpanded && (
-              <div style={{ padding: 16, borderTop: `1px dashed ${cat.color}40` }}>
-                {pendingPlaces.length > 0 && (
-                  <div style={{ marginBottom: 16, background: `${colors.warning}15`, borderRadius: 12, padding: 14, border: `2px solid ${colors.warning}` }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: colors.warning, marginBottom: 12 }}>⚠️ أماكن تحتاج اختيار البند الفرعي ({pendingPlaces.length})</div>
-                    {pendingPlaces.map(place => <div key={place.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, padding: 12, background: colors.card, borderRadius: 8, border: `1px solid ${colors.border}` }}><div style={{ minWidth: 120 }}><div style={{ fontWeight: 600, color: colors.text, fontSize: 14 }}>{place.name}</div><div style={{ fontSize: 12, color: colors.muted }}>{place.area} م²</div></div><select defaultValue="" onChange={(e) => selectPendingSubItem(cat.id, place.id, e.target.value)} style={{ ...selectStyle, flex: 1, padding: 12, borderRadius: 8, border: `2px solid ${cat.color}`, background: colors.bg, color: colors.text, fontSize: 14, cursor: 'pointer' }}><option value="">-- اختر البند الفرعي --</option>{(cat.subItems || []).map(s => <option key={s.code} value={s.code}>[{s.code}] {s.name} - {s.price} ﷼/م²</option>)}</select></div>)}
+
+            {/* قائمة المشاريع */}
+            {projects.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 40, background: t?.bg?.tertiary, borderRadius: 12 }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>📂</div>
+                <div style={{ fontSize: 16, color: t?.text?.muted, marginBottom: 8 }}>لا توجد مشاريع بعد</div>
+                <div style={{ fontSize: 13, color: t?.text?.muted }}>اضغط على "مشروع جديد" للبدء</div>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gap: 12 }}>
+                {projects.map((project, idx) => {
+                  const color = getCategoryColor(idx);
+                  const projectItems = Object.keys(project.addedItems || {}).length;
+                  const projectTotal = Object.values(project.addedItems || {}).reduce((sum, item) => sum + (item.area * item.exec), 0);
+                  
+                  return (
+                    <div 
+                      key={project.id}
+                      style={{ 
+                        background: t?.bg?.tertiary, 
+                        borderRadius: 12, 
+                        border: `1px solid ${t?.border?.primary}`,
+                        overflow: 'hidden'
+                      }}
+                    >
+                      <div 
+                        onClick={() => setCurrentProjectId(project.id)}
+                        style={{ 
+                          padding: 16, 
+                          cursor: 'pointer',
+                          borderRight: `4px solid ${color.main}`
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 16, fontWeight: 700, color: t?.text?.primary, marginBottom: 6 }}>
+                              {project.name}
+                            </div>
+                            {project.clientName && (
+                              <div style={{ fontSize: 12, color: t?.text?.muted, marginBottom: 4 }}>
+                                👤 {project.clientName}
+                              </div>
+                            )}
+                            {project.location && (
+                              <div style={{ fontSize: 12, color: t?.text?.muted, marginBottom: 4 }}>
+                                📍 {project.location}
+                              </div>
+                            )}
+                            <div style={{ display: 'flex', gap: 12, marginTop: 8, flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: 11, color: t?.text?.muted, background: t?.bg?.secondary, padding: '4px 8px', borderRadius: 6 }}>
+                                📋 {projectItems} بند
+                              </span>
+                              <span style={{ fontSize: 11, color: color.main, background: `${color.main}15`, padding: '4px 8px', borderRadius: 6, fontWeight: 600 }}>
+                                💰 {formatNum(projectTotal)} ر.س
+                              </span>
+                              <span style={{ fontSize: 10, color: t?.text?.muted }}>
+                                📅 {new Date(project.updatedAt).toLocaleDateString('ar-SA')}
+                              </span>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
+                            <button 
+                              onClick={() => setEditingProject({ ...project })}
+                              style={{ width: 36, height: 36, borderRadius: 8, border: 'none', background: `${t?.button?.primary}15`, color: t?.button?.primary, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            >
+                              <Edit3 size={16} />
+                            </button>
+                            <button 
+                              onClick={() => duplicateProject(project)}
+                              style={{ width: 36, height: 36, borderRadius: 8, border: 'none', background: `${t?.status?.info?.text}15`, color: t?.status?.info?.text, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            >
+                              <Copy size={16} />
+                            </button>
+                            <button 
+                              onClick={() => deleteProject(project.id)}
+                              style={{ width: 36, height: 36, borderRadius: 8, border: 'none', background: t?.status?.danger?.bg, color: t?.status?.danger?.text, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* زر البرمجة */}
+          <div style={cardStyle}>
+            <button 
+              onClick={() => setMainTab('items')} 
+              style={{ 
+                width: '100%', 
+                padding: 16, 
+                borderRadius: 10, 
+                border: `1px solid ${t?.border?.primary}`, 
+                background: t?.bg?.tertiary, 
+                color: t?.text?.primary, 
+                fontSize: 14, 
+                fontWeight: 600, 
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: 10,
+                fontFamily: 'inherit'
+              }}
+            >
+              <Layers size={20} />
+              إعدادات البنود والبرمجة
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* الحاسبة - تظهر عند فتح مشروع */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+
+          {/* Tabs */}
+          <div style={cardStyle}>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setMainTab('calculator')} style={{ ...btnStyle(mainTab === 'calculator'), flex: 1 }}><Calculator size={18} /> الحاسبة</button>
+              <button onClick={() => setMainTab('items')} style={{ ...btnStyle(mainTab === 'items'), flex: 1 }}><Layers size={18} /> البنود والبرمجة</button>
+            </div>
+          </div>
+
+      {mainTab === 'calculator' && (
+        <div>
+          <div style={cardStyle}>
+            {/* نوع المكان */}
+            <div style={{ fontSize: 14, marginBottom: 12, fontWeight: 600, color: t?.text?.secondary }}>📍 نوع المكان</div>
+            <div style={{ background: t?.bg?.tertiary, borderRadius: 10, border: `1px solid ${t?.border?.primary}`, padding: 12, marginBottom: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                {Object.entries(places).filter(([_, p]) => p.enabled).map(([key, place], idx) => {
+                  const color = getCategoryColor(idx);
+                  const isSelected = selectedPlaceType === key;
+                  return (
+                    <div key={key} onClick={() => { setSelectedPlaceType(key); setSelectedPlace(''); setSelectedItems([]); setSelectedCategory(''); }} 
+                      style={{ padding: '14px 10px', borderRadius: 10, border: isSelected ? `2px solid ${color.main}` : `1px solid ${t?.border?.primary}`, background: isSelected ? `${color.main}15` : t?.bg?.secondary, cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s' }}>
+                      <div style={{ fontSize: 26, marginBottom: 6 }}>{place.icon}</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: isSelected ? color.main : t?.text?.primary }}>{place.name}</div>
+                      <div style={{ fontSize: 11, color: t?.text?.muted, marginTop: 4 }}>{place.places.length} مكان</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {selectedPlaceType && (
+              <>
+                {/* وضع الإضافة */}
+                <div style={{ fontSize: 14, marginBottom: 12, fontWeight: 600, color: t?.text?.secondary }}>🏷️ وضع الإضافة</div>
+                <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+                  <button onClick={() => { setPlaceMode('single'); setMultiPlaces([]); }} style={{ ...btnStyle(placeMode === 'single'), flex: 1 }}>مكان منفرد</button>
+                  <button onClick={() => { setPlaceMode('multi'); setSelectedPlace(''); }} style={{ ...btnStyle(placeMode === 'multi'), flex: 1 }}>أماكن متعددة</button>
+                </div>
+
+                {/* المكان */}
+                <div style={{ fontSize: 14, marginBottom: 12, fontWeight: 600, color: t?.text?.secondary }}>🏠 المكان</div>
+                <div style={{ background: t?.bg?.tertiary, borderRadius: 10, padding: 16, marginBottom: 20, border: `1px solid ${t?.border?.primary}` }}>
+                  <select value={selectedPlace} onChange={(e) => setSelectedPlace(e.target.value)} style={{ ...selectStyle, marginBottom: selectedPlace ? 16 : 0 }}>
+                    <option value="">اختر المكان</option>
+                    {places[selectedPlaceType]?.places.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                  
+                  {selectedPlace && (
+                    <>
+                      <div style={{ fontSize: 13, marginBottom: 12, fontWeight: 600, color: t?.text?.muted }}>📐 الأبعاد</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+                        <DimensionInput label="الطول" value={length} onChange={setLength} />
+                        <DimensionInput label="العرض" value={width} onChange={setWidth} />
+                        <DimensionInput label="الارتفاع" value={height} onChange={setHeight} />
+                      </div>
+                      
+                      {/* عرض المعادلات والمساحات */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                        {/* مساحة الأرضية */}
+                        <div style={{ textAlign: 'center', padding: 14, background: `${typeConfig.floor.color}10`, borderRadius: 10, border: `1px solid ${typeConfig.floor.color}30` }}>
+                          <div style={{ fontSize: 20, marginBottom: 4 }}>{typeConfig.floor.icon}</div>
+                          <div style={{ fontSize: 12, color: typeConfig.floor.color, marginBottom: 4, fontWeight: 600 }}>{typeConfig.floor.name}</div>
+                          <div style={{ fontSize: 10, color: t?.text?.muted, marginBottom: 6, fontFamily: 'monospace', background: t?.bg?.secondary, padding: '3px 6px', borderRadius: 4, display: 'inline-block' }}>
+                            {formatNum(length)} × {formatNum(width)}
+                          </div>
+                          <div style={{ fontSize: 22, fontWeight: 700, color: typeConfig.floor.color }}>
+                            {formatNum(calcFloorArea())} <span style={{ fontSize: 11, fontWeight: 400 }}>م²</span>
+                          </div>
+                        </div>
+                        
+                        {/* مساحة الجدران */}
+                        <div style={{ textAlign: 'center', padding: 14, background: `${typeConfig.wall.color}10`, borderRadius: 10, border: `1px solid ${typeConfig.wall.color}30` }}>
+                          <div style={{ fontSize: 20, marginBottom: 4 }}>{typeConfig.wall.icon}</div>
+                          <div style={{ fontSize: 12, color: typeConfig.wall.color, marginBottom: 4, fontWeight: 600 }}>{typeConfig.wall.name}</div>
+                          <div style={{ fontSize: 10, color: t?.text?.muted, marginBottom: 6, fontFamily: 'monospace', background: t?.bg?.secondary, padding: '3px 6px', borderRadius: 4, display: 'inline-block' }}>
+                            ({formatNum(length)}+{formatNum(width)})×2×{formatNum(height)}
+                          </div>
+                          <div style={{ fontSize: 22, fontWeight: 700, color: typeConfig.wall.color }}>
+                            {formatNum(calcWallArea())} <span style={{ fontSize: 11, fontWeight: 400 }}>م²</span>
+                          </div>
+                        </div>
+                        
+                        {/* مساحة السقف */}
+                        <div style={{ textAlign: 'center', padding: 14, background: `${typeConfig.ceiling.color}10`, borderRadius: 10, border: `1px solid ${typeConfig.ceiling.color}30` }}>
+                          <div style={{ fontSize: 20, marginBottom: 4 }}>{typeConfig.ceiling.icon}</div>
+                          <div style={{ fontSize: 12, color: typeConfig.ceiling.color, marginBottom: 4, fontWeight: 600 }}>{typeConfig.ceiling.name}</div>
+                          <div style={{ fontSize: 10, color: t?.text?.muted, marginBottom: 6, fontFamily: 'monospace', background: t?.bg?.secondary, padding: '3px 6px', borderRadius: 4, display: 'inline-block' }}>
+                            {formatNum(length)} × {formatNum(width)}
+                          </div>
+                          <div style={{ fontSize: 22, fontWeight: 700, color: typeConfig.ceiling.color }}>
+                            {formatNum(calcFloorArea())} <span style={{ fontSize: 11, fontWeight: 400 }}>م²</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {placeMode === 'multi' && (
+                        <button onClick={addMultiPlace} disabled={!selectedPlace || getArea() <= 0} style={{ width: '100%', padding: 12, borderRadius: 10, border: 'none', marginTop: 16, background: selectedPlace && getArea() > 0 ? t?.status?.success?.text : t?.bg?.tertiary, color: selectedPlace && getArea() > 0 ? '#fff' : t?.text?.muted, fontWeight: 600, fontSize: 14, cursor: selectedPlace && getArea() > 0 ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>➕ إضافة للقائمة</button>
+                      )}
+                    </>
+                  )}
+                </div>
+                
+                {placeMode === 'multi' && multiPlaces.length > 0 && (
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ fontSize: 14, marginBottom: 12, fontWeight: 600, color: t?.text?.secondary }}>📍 الأماكن المختارة ({multiPlaces.length})</div>
+                    {multiPlaces.map((mp, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, background: t?.bg?.tertiary, borderRadius: 10, marginBottom: 8, border: `1px solid ${t?.border?.primary}` }}>
+                        <MapPin size={18} color={t?.button?.primary} />
+                        <div style={{ flex: 1 }}>
+                          <span style={{ fontWeight: 600, color: t?.text?.primary }}>{mp.place}</span>
+                          <div style={{ fontSize: 11, color: t?.text?.muted }}>{formatNum(mp.length)}×{formatNum(mp.width)} = {formatNum(mp.area)} م²</div>
+                        </div>
+                        <button onClick={() => removeMultiPlace(idx)} style={{ background: t?.status?.danger?.bg, border: 'none', color: t?.status?.danger?.text, padding: '6px', borderRadius: 6, cursor: 'pointer' }}><X size={14} /></button>
+                      </div>
+                    ))}
+                    <div style={{ padding: 10, background: `${t?.button?.primary}15`, borderRadius: 8, textAlign: 'center', marginTop: 8 }}>
+                      <span style={{ color: t?.button?.primary, fontWeight: 600 }}>المجموع: {formatNum(multiPlaces.reduce((sum, mp) => sum + mp.area, 0))} م²</span>
+                    </div>
                   </div>
                 )}
-                {items.length > 0 && (
-                  <div style={{ marginBottom: 16 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: colors.text, marginBottom: 10 }}>📦 البنود ({items.length})</div>
-                    {items.map(item => {
-                      const isEditing = editingItemId === item.id;
-                      const itemArea = getItemArea(item);
-                      const itemTotal = itemArea * item.price;
-                      return (
-                        <div key={item.id} style={{ background: colors.bg, borderRadius: 10, marginBottom: 8, border: isEditing ? `2px solid ${colors.primary}` : `1px solid ${colors.border}`, overflow: 'hidden' }}>
-                          <div onClick={() => setEditingItemId(isEditing ? null : item.id)} style={{ display: 'flex', alignItems: 'center', padding: 12, cursor: 'pointer', background: isEditing ? `${colors.primary}10` : 'transparent' }}>
-                            <div style={{ background: cat.color, padding: '6px 10px', borderRadius: 6, marginLeft: 10 }}><span style={{ fontSize: 11, fontWeight: 600, color: '#fff' }}>{item.code}</span></div>
-                            <div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>{item.name}</div><div style={{ fontSize: 11, color: colors.muted }}>📍 {item.places?.map(p => p.name).join('، ')} • {itemArea} م² • {item.price} ﷼/م²</div></div>
-                            <div style={{ fontSize: 16, fontWeight: 700, color: colors.success }}>{formatNumber(itemTotal)} ﷼</div>
-                            <span style={{ marginRight: 10, color: isEditing ? colors.primary : colors.muted }}>⚙️</span>
-                          </div>
-                          {isEditing && (
-                            <div style={{ padding: 12, borderTop: `1px dashed ${colors.primary}30`, background: `${colors.primary}05` }}>
-                              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}><select value={item.code} onChange={(e) => changeSubItem(cat.id, item.id, e.target.value)} style={{ ...selectStyle, flex: 1, height: 32, borderRadius: 6, border: `1px solid ${colors.border}`, backgroundColor: colors.bg, color: colors.text, fontSize: 12 }}>{(cat.subItems || []).map(s => <option key={s.code} value={s.code}>[{s.code}] {s.name} - {s.price} ﷼</option>)}</select><button onClick={() => duplicateItem(cat.id, item.id)} style={{ height: 32, padding: '0 10px', borderRadius: 6, border: `1px solid ${colors.success}`, background: `${colors.success}15`, color: colors.success, fontSize: 11, cursor: 'pointer' }}>+ نسخ</button></div>
-                              <div style={{ fontSize: 11, color: colors.muted, marginBottom: 6 }}>📍 الأماكن:</div>
-                              {(item.places || []).map(place => <div key={place.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: 8, marginBottom: 6, background: `${colors.primary}08`, borderRadius: 6, flexWrap: 'wrap' }}><select value={place.name} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'name', e.target.value)} style={{ ...selectStyle, minWidth: 80, height: 28, borderRadius: 4, border: `1px solid ${colors.border}`, backgroundColor: colors.bg, color: colors.text, fontSize: 11 }}>{placesList.map(p => <option key={p} value={p}>{p}</option>)}</select><select value={place.measureType || 'floor'} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'measureType', e.target.value)} style={{ ...selectStyle, width: 65, height: 28, borderRadius: 4, border: `1px solid ${colors.cyan}`, backgroundColor: '#0c4a6e', color: '#7dd3fc', fontSize: 11 }}><option value="floor">أرضي</option><option value="ceiling">سقف</option><option value="walls">جدران</option><option value="linear">طولي</option><option value="manual">يدوي</option></select>{place.measureType === 'manual' ? <input type="number" value={place.area || ''} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'manualArea', e.target.value)} style={{ width: 50, height: 28, borderRadius: 4, border: `1px solid ${colors.success}`, background: colors.bg, color: colors.success, fontSize: 11, textAlign: 'center' }} /> : <><select value={place.length} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'length', e.target.value)} style={{ ...selectStyle, width: 50, height: 28, borderRadius: 4, border: `1px solid ${colors.border}`, backgroundColor: colors.bg, color: colors.text, fontSize: 11 }}>{dimOptions.map(n => <option key={n} value={n}>{n}</option>)}</select><span style={{ color: colors.muted }}>×</span><select value={place.width} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'width', e.target.value)} style={{ ...selectStyle, width: 50, height: 28, borderRadius: 4, border: `1px solid ${colors.border}`, backgroundColor: colors.bg, color: colors.text, fontSize: 11 }}>{dimOptions.map(n => <option key={n} value={n}>{n}</option>)}</select></>}{place.measureType === 'walls' && <select value={place.height || 3} onChange={(e) => updatePlace(cat.id, item.id, place.id, 'height', e.target.value)} style={{ ...selectStyle, width: 50, height: 28, borderRadius: 4, border: `1px solid ${colors.purple}`, backgroundColor: colors.bg, color: colors.purple, fontSize: 11 }}>{heightOptions.map(n => <option key={n} value={n}>{n}</option>)}</select>}<span style={{ padding: '4px 8px', borderRadius: 4, background: `${colors.success}20`, color: colors.success, fontSize: 11, fontWeight: 600 }}>{place.area} م²</span><button onClick={() => deletePlace(cat.id, item.id, place.id)} style={{ width: 24, height: 24, borderRadius: 4, border: `1px solid ${colors.danger}50`, background: `${colors.danger}10`, color: colors.danger, fontSize: 11, cursor: 'pointer' }}>✕</button></div>)}
-                              <button onClick={() => addPlace(cat.id, item.id)} style={{ width: '100%', height: 28, borderRadius: 6, border: `1px solid ${colors.success}`, background: `${colors.success}10`, color: colors.success, fontSize: 11, cursor: 'pointer', marginBottom: 12 }}>+ إضافة مكان</button>
-                              <div style={{ fontSize: 11, color: colors.warning, marginBottom: 6 }}>📋 الشروط:</div>
-                              {(item.conditions || []).map((c, i) => <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', marginBottom: 4, background: `${colors.warning}10`, borderRadius: 4, fontSize: 11, color: colors.text }}><span style={{ flex: 1 }}>{c}</span><button onClick={() => deleteCondition(cat.id, item.id, i)} style={{ width: 20, height: 20, borderRadius: 4, border: 'none', background: `${colors.danger}20`, color: colors.danger, fontSize: 10, cursor: 'pointer' }}>✕</button></div>)}
-                              <select onChange={(e) => { if (e.target.value) { addCondition(cat.id, item.id, e.target.value); e.target.value = ''; } }} style={{ ...selectStyle, width: '100%', height: 28, borderRadius: 4, border: `1px solid ${colors.warning}`, backgroundColor: colors.bg, color: colors.text, fontSize: 11, marginBottom: 12 }}><option value="">+ إضافة شرط...</option>{predefinedConditions.filter(c => !(item.conditions || []).includes(c)).map((c, i) => <option key={i} value={c}>{c}</option>)}</select>
-                              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}><button onClick={() => deleteItem(cat.id, item.id)} style={{ height: 28, padding: '0 12px', borderRadius: 6, border: `1px solid ${colors.danger}`, background: `${colors.danger}10`, color: colors.danger, fontSize: 11, cursor: 'pointer' }}>🗑️ حذف</button><button onClick={() => setEditingItemId(null)} style={{ height: 28, padding: '0 12px', borderRadius: 6, border: `1px solid ${colors.success}`, background: `${colors.success}10`, color: colors.success, fontSize: 11, cursor: 'pointer' }}>✓ تم</button></div>
+
+                {/* بنود العمل */}
+                {((placeMode === 'single' && selectedPlace && getArea() > 0) || (placeMode === 'multi' && multiPlaces.length > 0)) && (
+                  <>
+                    <div style={{ fontSize: 14, marginBottom: 12, fontWeight: 600, color: t?.text?.secondary }}>🔧 بنود العمل</div>
+                    <div style={{ background: t?.bg?.tertiary, borderRadius: 10, border: `1px solid ${t?.border?.primary}`, padding: 12, marginBottom: 16 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                        {Object.entries(workItems).filter(([ck]) => isCategoryEnabledInPlace(selectedPlaceType, ck)).map(([key, cat], idx) => {
+                          const color = getCategoryColor(idx);
+                          const isSelected = selectedCategory === key;
+                          const hasItems = hasSelectedItemsFromCategory(key);
+                          const isHighlighted = isSelected || hasItems;
+                          const enabledItemsCount = cat.items.filter(i => isItemEnabledInPlace(selectedPlaceType, key, i.id)).length;
+                          return (
+                            <div key={key} onClick={() => toggleCategory(key)}
+                              style={{ padding: '14px 10px', borderRadius: 10, border: isHighlighted ? `2px solid ${color.main}` : `1px solid ${t?.border?.primary}`, background: isHighlighted ? `${color.main}15` : t?.bg?.secondary, cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s' }}>
+                              <div style={{ fontSize: 26, marginBottom: 6 }}>{cat.icon}</div>
+                              <div style={{ fontSize: 13, fontWeight: 600, color: isHighlighted ? color.main : t?.text?.primary }}>{cat.name}</div>
+                              <div style={{ fontSize: 11, color: t?.text?.muted, marginTop: 4 }}>{enabledItemsCount} بند</div>
                             </div>
-                          )}
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* تفاصيل البند */}
+                    {selectedCategory && workItems[selectedCategory] && (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: t?.text?.secondary }}>📋 تفاصيل {workItems[selectedCategory].name}</div>
+                          <button 
+                            onClick={() => setEditingCategory({ catKey: selectedCategory, name: workItems[selectedCategory].name, icon: workItems[selectedCategory].icon })}
+                            style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: `${t?.button?.primary}15`, color: t?.button?.primary, fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'inherit' }}
+                          >
+                            <Edit3 size={14} />
+                            تحرير القسم
+                          </button>
+                        </div>
+                        <div style={{ background: t?.bg?.tertiary, borderRadius: 10, border: `1px solid ${t?.border?.primary}`, padding: 12, marginBottom: 16 }}>
+                          <div className="work-items-scroll" style={{ display: 'grid', gap: 8, maxHeight: 280, overflowY: 'auto', paddingLeft: 8 }}>
+                            {workItems[selectedCategory].items.filter(i => isItemEnabledInPlace(selectedPlaceType, selectedCategory, i.id)).map(item => {
+                              const isSelected = selectedItems.includes(item.id);
+                              const typeInfo = getTypeInfo(item.type);
+                              const itemArea = getAreaByType(item.type);
+                              return (
+                                <div key={item.id} style={{ padding: '12px 14px', borderRadius: 10, border: isSelected ? `2px solid ${typeInfo.color}` : `1px solid ${t?.border?.primary}`, background: isSelected ? `${typeInfo.color}10` : t?.bg?.secondary, display: 'flex', alignItems: 'center', gap: 10 }}>
+                                  <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => toggleItem(item.id)}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                        <span style={{ fontSize: 14, fontWeight: 600, color: t?.text?.primary }}>{item.name}</span>
+                                        <span style={{ fontSize: 10, color: typeInfo.color, background: `${typeInfo.color}15`, padding: '2px 8px', borderRadius: 4, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                          {typeInfo.icon} {typeInfo.name}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div style={{ fontSize: 11, color: t?.text?.muted, marginBottom: 6 }}>{item.desc}</div>
+                                    {/* المعادلة والسعر */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                      <span style={{ fontSize: 10, color: t?.text?.muted, fontFamily: 'monospace', background: t?.bg?.tertiary, padding: '3px 8px', borderRadius: 4 }}>
+                                        {getFormulaByType(item.type)}
+                                      </span>
+                                      <span style={{ fontSize: 12, color: typeInfo.color, fontWeight: 600 }}>
+                                        {formatNum(item.exec)} ر.س/م²
+                                      </span>
+                                      <span style={{ fontSize: 12, color: t?.status?.success?.text, fontWeight: 700, marginRight: 'auto' }}>
+                                        = {formatNum(itemArea * item.exec)} ر.س
+                                      </span>
+                                    </div>
+                                  </div>
+                                  {/* زر التحرير */}
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); setEditingItem({ catKey: selectedCategory, item: { ...item } }); }}
+                                    style={{ width: 36, height: 36, borderRadius: 8, border: 'none', background: `${typeInfo.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+                                  >
+                                    <Edit3 size={16} color={typeInfo.color} />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    <button onClick={addItems} disabled={!canAdd} style={{ width: '100%', padding: 14, borderRadius: 10, border: 'none', background: canAdd ? t?.button?.gradient : t?.bg?.tertiary, color: canAdd ? '#fff' : t?.text?.muted, fontSize: 14, fontWeight: 700, cursor: canAdd ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
+                      {selectedItems.length > 0 ? `➕ إضافة ${selectedItems.length} بند` : 'اختر بنود'}
+                    </button>
+                  </>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* البنود المضافة */}
+          {Object.keys(addedItems).length > 0 && (
+            <div style={cardStyle}>
+              <div style={{ fontSize: 14, marginBottom: 16, fontWeight: 600, color: t?.text?.secondary }}>📋 البنود المضافة ({itemCount})</div>
+              {Object.entries(getItemsByCategory()).map(([catKey, cat], catIdx) => {
+                const color = getCategoryColor(catIdx);
+                return (
+                  <div key={catKey} style={{ marginBottom: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <span style={{ fontWeight: 600, color: t?.text?.primary }}>{cat.name}</span>
+                      <span style={{ marginRight: 'auto', fontWeight: 700, color: color.main }}>{formatNum(cat.total)} ر.س</span>
+                    </div>
+                    {cat.items.map(item => {
+                      // البحث عن البند الأصلي للتحرير
+                      const originalItem = workItems[catKey]?.items.find(i => i.id === item.id);
+                      const typeInfo = getTypeInfo(item.type);
+                      const itemCode = originalItem?.code || item.code || '—';
+                      return (
+                        <div key={item.key} style={{ background: t?.bg?.tertiary, borderRadius: 10, padding: 14, marginBottom: 10, border: `1px solid ${typeInfo.color}30` }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                                {/* كود البند */}
+                                <span style={{ 
+                                  fontSize: 10, 
+                                  fontWeight: 700, 
+                                  color: color.main,
+                                  background: `${color.main}15`,
+                                  padding: '3px 8px',
+                                  borderRadius: 4,
+                                  fontFamily: 'monospace'
+                                }}>
+                                  {itemCode}
+                                </span>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: t?.text?.primary }}>{item.name}</span>
+                                <span style={{ fontSize: 10, color: typeInfo.color, background: `${typeInfo.color}15`, padding: '2px 8px', borderRadius: 4, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  {typeInfo.icon} {typeInfo.name}
+                                </span>
+                              </div>
+                              <div style={{ fontSize: 12, color: t?.text?.muted }}>{item.desc}</div>
+                            </div>
+                            <div style={{ display: 'flex', gap: 6 }}>
+                              {originalItem && (
+                                <button 
+                                  onClick={() => setEditingItem({ catKey, item: { ...originalItem } })}
+                                  style={{ background: `${typeInfo.color}15`, border: 'none', color: typeInfo.color, padding: '6px', borderRadius: 6, cursor: 'pointer' }}
+                                >
+                                  <Edit3 size={14} />
+                                </button>
+                              )}
+                              <button onClick={() => removeAddedItem(item.key)} style={{ background: t?.status?.danger?.bg, border: 'none', color: t?.status?.danger?.text, padding: '6px', borderRadius: 6, cursor: 'pointer' }}><Trash2 size={14} /></button>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+                            <MapPin size={14} color={t?.button?.primary} />
+                            <span style={{ fontSize: 13, color: t?.button?.primary, fontWeight: 600 }}>{item.place}</span>
+                            {item.isMulti && <span style={{ fontSize: 11, background: t?.status?.success?.bg, color: t?.status?.success?.text, padding: '2px 8px', borderRadius: 6 }}>{item.placesCount} أماكن</span>}
+                          </div>
+                          <div style={{ background: `${typeInfo.color}08`, borderRadius: 8, padding: 10, marginBottom: 10, border: `1px solid ${typeInfo.color}20` }}>
+                            <div style={{ fontSize: 11, color: t?.text?.muted, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <Ruler size={12} />
+                              المعادلة ({typeInfo.name}):
+                            </div>
+                            <div style={{ fontSize: 12, color: typeInfo.color, fontFamily: 'monospace', fontWeight: 600 }}>{item.formula}</div>
+                            {item.isMulti && <div style={{ fontSize: 12, color: t?.status?.success?.text, fontWeight: 600, marginTop: 6 }}>{item.totalFormula}</div>}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <input type="number" value={item.area} onFocus={handleInputFocus} onChange={(e) => updateAddedItemArea(item.key, e.target.value)} style={{ width: 70, padding: '6px 8px', borderRadius: 6, border: `1px solid ${typeInfo.color}50`, background: `${typeInfo.color}08`, color: typeInfo.color, fontSize: 14, textAlign: 'center', fontFamily: 'inherit', fontWeight: 600, ...noSpinner }} />
+                              <span style={{ fontSize: 12, color: t?.text?.muted }}>م²</span>
+                            </div>
+                            <span style={{ fontSize: 14, color: t?.text?.muted }}>×</span>
+                            <span style={{ fontSize: 14, color: t?.status?.warning?.text }}>{formatNum(item.exec)} ر.س</span>
+                            <span style={{ fontSize: 14, color: t?.text?.muted }}>=</span>
+                            <span style={{ fontSize: 16, fontWeight: 700, color: color.main }}>{formatNum(item.total)} ر.س</span>
+                          </div>
                         </div>
                       );
                     })}
                   </div>
-                )}
-                {/* تبويبات */}
-                <div style={{ background: darkMode ? '#1e293b' : '#f1f5f9', borderRadius: 10, overflow: 'hidden', border: `1px solid ${colors.border}` }}>
-                  <div style={{ display: 'flex', borderBottom: `1px solid ${colors.border}` }}><button onClick={() => setActiveTab({ ...activeTab, [cat.id]: 'conditions' })} style={{ flex: 1, padding: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: (activeTab[cat.id] || 'conditions') === 'conditions' ? `${colors.warning}15` : 'transparent', color: (activeTab[cat.id] || 'conditions') === 'conditions' ? colors.warning : colors.muted, border: 'none' }}>📋 الشروط</button><button onClick={() => setActiveTab({ ...activeTab, [cat.id]: 'price' })} style={{ flex: 1, padding: 10, fontSize: 12, fontWeight: 600, cursor: 'pointer', background: activeTab[cat.id] === 'price' ? `${colors.primary}15` : 'transparent', color: activeTab[cat.id] === 'price' ? colors.primary : colors.muted, border: 'none' }}>💰 السعر</button></div>
-                  {(activeTab[cat.id] || 'conditions') === 'conditions' && (
-                    <div style={{ padding: 12 }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6, marginBottom: 12 }}><div onClick={() => { const s = ['with', 'notMentioned', 'without']; const i = s.indexOf(cat.options?.containerState || 'notMentioned'); updateCategoryOptions(cat.id, 'containerState', s[(i + 1) % 3]); }} style={{ height: 32, borderRadius: 6, border: `1px solid ${cat.options?.containerState === 'with' ? colors.warning : colors.border}`, background: cat.options?.containerState === 'with' ? `${colors.warning}20` : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, color: colors.text, fontSize: 11, fontWeight: 600 }}>🚛 {cat.options?.containerState === 'with' ? 'شامل' : cat.options?.containerState === 'without' ? 'بدون' : 'الحاوية'}</div><div onClick={() => { const s = ['with', 'notMentioned', 'without']; const i = s.indexOf(cat.options?.materialsState || 'notMentioned'); updateCategoryOptions(cat.id, 'materialsState', s[(i + 1) % 3]); }} style={{ height: 32, borderRadius: 6, border: `1px solid ${cat.options?.materialsState === 'with' ? colors.success : colors.border}`, background: cat.options?.materialsState === 'with' ? `${colors.success}20` : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, color: colors.text, fontSize: 11, fontWeight: 600 }}>🧱 {cat.options?.materialsState === 'with' ? 'شامل' : cat.options?.materialsState === 'without' ? 'بدون' : 'المواد'}</div><div onClick={() => updateCategoryOptions(cat.id, 'showMeters', !cat.options?.showMeters)} style={{ height: 32, borderRadius: 6, border: `1px solid ${cat.options?.showMeters ? colors.cyan : colors.border}`, background: cat.options?.showMeters ? `${colors.cyan}20` : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, color: colors.text, fontSize: 11, fontWeight: 600 }}>📏 الأمتار</div></div>
-                      {cat.options?.containerState === 'with' && <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}><span style={{ fontSize: 11, color: colors.warning }}>مبلغ الحاوية:</span><input type="number" value={cat.options?.totalsContainerAmount || ''} onChange={(e) => updateCategoryOptions(cat.id, 'totalsContainerAmount', parseFloat(e.target.value) || 0)} style={{ width: 80, height: 28, borderRadius: 4, border: `1px solid ${colors.warning}`, background: colors.bg, color: colors.text, fontSize: 11, textAlign: 'center' }} /><span style={{ fontSize: 11, color: colors.muted }}>﷼</span></div>}
-                      {cat.options?.materialsState === 'with' && <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}><span style={{ fontSize: 11, color: colors.success }}>مبلغ المواد:</span><input type="number" value={cat.options?.materialsAmount || ''} onChange={(e) => updateCategoryOptions(cat.id, 'materialsAmount', parseFloat(e.target.value) || 0)} style={{ width: 80, height: 28, borderRadius: 4, border: `1px solid ${colors.success}`, background: colors.bg, color: colors.text, fontSize: 11, textAlign: 'center' }} /><span style={{ fontSize: 11, color: colors.muted }}>﷼</span></div>}
-                      {(cat.categoryConditions || []).length > 0 && <div style={{ marginBottom: 8 }}>{cat.categoryConditions.map((c, i) => <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', marginBottom: 4, background: `${colors.warning}10`, borderRadius: 4, fontSize: 11, color: colors.text }}><span style={{ flex: 1 }}>{c}</span><button onClick={() => deleteCategoryCondition(cat.id, i)} style={{ width: 20, height: 20, borderRadius: 4, border: 'none', background: `${colors.danger}20`, color: colors.danger, fontSize: 10, cursor: 'pointer' }}>✕</button></div>)}</div>}
-                      <select onChange={(e) => { if (e.target.value) { addCategoryCondition(cat.id, e.target.value); e.target.value = ''; } }} style={{ ...selectStyle, width: '100%', height: 28, borderRadius: 4, border: `1px solid ${colors.warning}`, backgroundColor: colors.bg, color: colors.text, fontSize: 11 }}><option value="">+ إضافة شرط للفئة...</option>{predefinedConditions.filter(c => !(cat.categoryConditions || []).includes(c)).map((c, i) => <option key={i} value={c}>{c}</option>)}</select>
-                    </div>
-                  )}
-                  {activeTab[cat.id] === 'price' && (
-                    <div style={{ padding: 12 }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: colors.muted }}><span>الأسعار الأساسية</span><span>{formatNumber(catTotals.totalPrice)} ﷼</span></div>
-                        {cat.options?.containerState === 'with' && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: colors.warning }}><span>🚛 الحاوية</span><span>+{formatNumber(catTotals.containerValue)} ﷼</span></div>}
-                        {cat.options?.materialsState === 'with' && <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: colors.success }}><span>🧱 المواد</span><span>+{formatNumber(catTotals.materialsValue)} ﷼</span></div>}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}><span style={{ color: colors.success }}>إضافة %</span><input type="number" value={cat.options?.profitPercent || ''} onChange={(e) => updateCategoryOptions(cat.id, 'profitPercent', parseFloat(e.target.value) || 0)} style={{ width: 50, height: 24, borderRadius: 4, border: `1px solid ${colors.success}`, background: colors.bg, color: colors.text, fontSize: 11, textAlign: 'center' }} /><span style={{ marginRight: 'auto', color: catTotals.profitAmount > 0 ? colors.success : colors.muted }}>+{formatNumber(catTotals.profitAmount)} ﷼</span></div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}><span style={{ color: colors.danger }}>خصم %</span><input type="number" value={cat.options?.discountPercent || ''} onChange={(e) => updateCategoryOptions(cat.id, 'discountPercent', parseFloat(e.target.value) || 0)} style={{ width: 50, height: 24, borderRadius: 4, border: `1px solid ${colors.danger}`, background: colors.bg, color: colors.text, fontSize: 11, textAlign: 'center' }} /><span style={{ marginRight: 'auto', color: catTotals.discountByPercent > 0 ? colors.danger : colors.muted }}>-{formatNumber(catTotals.discountByPercent)} ﷼</span></div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}><span style={{ color: colors.primary }}>الضريبة %</span><input type="number" value={cat.options?.taxPercent || ''} onChange={(e) => updateCategoryOptions(cat.id, 'taxPercent', parseFloat(e.target.value) || 0)} style={{ width: 50, height: 24, borderRadius: 4, border: `1px solid ${colors.primary}`, background: colors.bg, color: colors.text, fontSize: 11, textAlign: 'center' }} /><span style={{ marginRight: 'auto', color: catTotals.taxAmount > 0 ? colors.primary : colors.muted }}>+{formatNumber(catTotals.taxAmount)} ﷼</span></div>
-                        <div style={{ borderTop: `1px dashed ${colors.border}`, paddingTop: 8, marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}><span style={{ fontSize: 14, color: colors.muted }}>الإجمالي</span><span style={{ fontSize: 24, fontWeight: 800, color: colors.text }}>{formatNumber(catTotals.finalTotal)} ﷼</span></div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                <button onClick={() => deleteCategory(cat.id)} style={{ marginTop: 12, padding: '8px 16px', borderRadius: 6, border: `1px solid ${colors.danger}`, background: `${colors.danger}10`, color: colors.danger, fontSize: 11, cursor: 'pointer' }}>🗑️ حذف الفئة</button>
-              </div>
-            )}
-          </div>
-        );
-      })}
+                );
+              })}
+            </div>
+          )}
 
-      {/* الإجمالي */}
-      {categories.length > 0 && (
-        <div style={{ background: `linear-gradient(135deg, ${colors.success}20, ${colors.primary}20)`, borderRadius: 16, padding: 24, textAlign: 'center', marginTop: 20, border: `2px solid ${colors.success}` }}>
-          <div style={{ color: colors.muted, marginBottom: 8 }}>💰 الإجمالي الكلي</div>
-          <div style={{ fontSize: 36, fontWeight: 800, color: colors.text }}>{formatNumber(getGrandTotal())}</div>
-          <div style={{ color: colors.success, fontWeight: 600 }}>ريال سعودي</div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 20, marginTop: 16, paddingTop: 16, borderTop: `1px dashed ${colors.border}` }}><span style={{ fontSize: 12, color: colors.muted }}>الفئات: <b style={{ color: colors.text }}>{categories.length}</b></span><span style={{ fontSize: 12, color: colors.muted }}>البنود: <b style={{ color: colors.text }}>{categories.reduce((s, c) => s + (c.items?.length || 0), 0)}</b></span><span style={{ fontSize: 12, color: colors.muted }}>المساحة: <b style={{ color: colors.text }}>{categories.reduce((s, c) => s + getCategoryTotalArea(c), 0)} م²</b></span></div>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 16 }}><button onClick={newQuote} style={{ padding: '12px 24px', borderRadius: 8, border: `1px solid ${colors.border}`, background: 'transparent', color: colors.text, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>📄 عرض جديد</button></div>
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* الملخص العام - قسم جديد */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {Object.keys(addedItems).length > 0 && (
+            <div style={cardStyle}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Layers size={20} color={t?.button?.primary} />
+                  <span style={{ fontSize: 16, fontWeight: 700, color: t?.text?.primary }}>الملخص العام</span>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button 
+                    onClick={() => {
+                      const all = {};
+                      Object.keys(getItemsByCategory()).forEach(k => all[k] = true);
+                      setSummaryExpanded(all);
+                    }}
+                    style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${t?.border?.primary}`, background: 'transparent', color: t?.text?.muted, cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: 'inherit' }}
+                  >
+                    عرض الكل
+                  </button>
+                  <button 
+                    onClick={() => setSummaryExpanded({})}
+                    style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${t?.border?.primary}`, background: 'transparent', color: t?.text?.muted, cursor: 'pointer', fontSize: 11, fontWeight: 600, fontFamily: 'inherit' }}
+                  >
+                    إخفاء الكل
+                  </button>
+                </div>
+              </div>
+
+              {/* الفئات */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {Object.entries(getItemsByCategory()).map(([catKey, catData], catIdx) => {
+                  const color = getCategoryColor(catIdx);
+                  const isExpanded = summaryExpanded[catKey];
+                  const options = getCategoryOptions(catKey);
+                  const quantitySummary = getCategoryQuantitySummary(catData);
+                  const catIcon = workItems[catKey]?.icon || '📦';
+
+                  return (
+                    <div key={catKey} style={{ background: t?.bg?.tertiary, borderRadius: 14, border: `1px solid ${t?.border?.primary}`, overflow: 'hidden' }}>
+                      {/* رأس الفئة */}
+                      <div style={{ 
+                        padding: '14px 16px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between', 
+                        background: isExpanded ? `${color.main}10` : 'transparent', 
+                        borderBottom: isExpanded ? `1px solid ${t?.border?.primary}` : 'none',
+                        flexWrap: 'wrap',
+                        gap: 10
+                      }}>
+                        {/* الأيقونة والاسم */}
+                        <div 
+                          style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', flex: 1, minWidth: 180 }} 
+                          onClick={() => toggleSummaryCategory(catKey)}
+                        >
+                          <div style={{ 
+                            width: 44, 
+                            height: 44, 
+                            borderRadius: 10, 
+                            background: `linear-gradient(135deg, ${color.main}20 0%, ${color.main}40 100%)`, 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            border: `1px solid ${color.main}30`,
+                            position: 'relative',
+                            flexShrink: 0
+                          }}>
+                            <span style={{ fontSize: 22 }}>{catIcon}</span>
+                            <span style={{ 
+                              position: 'absolute', 
+                              top: -5, 
+                              right: -5, 
+                              width: 18, 
+                              height: 18, 
+                              borderRadius: '50%', 
+                              background: color.main, 
+                              color: '#fff', 
+                              fontSize: 10, 
+                              fontWeight: 700, 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center' 
+                            }}>{catIdx + 1}</span>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: t?.text?.primary }}>{catData.name}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: 10, color: t?.text?.muted, background: t?.bg?.secondary, padding: '2px 6px', borderRadius: 4 }}>{catData.items.length} بند</span>
+                              <span style={{ fontSize: 10, color: color.main, background: `${color.main}15`, padding: '2px 6px', borderRadius: 4, fontWeight: 600 }}>{quantitySummary}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* أزرار الخيارات مع علامة إجبارية */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          {/* زر الحاوية */}
+                          <div style={{ position: 'relative' }}>
+                            {options.withContainer === null && (
+                              <div style={{ position: 'absolute', top: -4, right: -4, width: 8, height: 8, borderRadius: '50%', background: '#ef4444', zIndex: 1 }} />
+                            )}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleCategoryOption(catKey, 'withContainer'); }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                padding: '5px 8px',
+                                borderRadius: 6,
+                                border: `1px solid ${options.withContainer === 'with' ? '#f59e0b' : options.withContainer === 'without' ? '#ef4444' : options.withContainer === 'notMentioned' ? t?.border?.primary : '#ef4444'}`,
+                                background: options.withContainer === 'with' ? '#f59e0b15' : options.withContainer === 'without' ? '#ef444415' : 'transparent',
+                                color: options.withContainer === 'with' ? '#f59e0b' : options.withContainer === 'without' ? '#ef4444' : options.withContainer === 'notMentioned' ? t?.text?.muted : '#ef4444',
+                                cursor: 'pointer',
+                                fontSize: 10,
+                                fontWeight: 600,
+                                fontFamily: 'inherit'
+                              }}
+                            >
+                              <Truck size={12} />
+                              {options.withContainer === 'with' ? '+ حاوية' : options.withContainer === 'without' ? 'بدون حاوية' : options.withContainer === 'notMentioned' ? '—' : 'حاوية؟'}
+                            </button>
+                          </div>
+                          
+                          {/* زر المواد */}
+                          <div style={{ position: 'relative' }}>
+                            {options.withMaterials === null && (
+                              <div style={{ position: 'absolute', top: -4, right: -4, width: 8, height: 8, borderRadius: '50%', background: '#ef4444', zIndex: 1 }} />
+                            )}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleCategoryOption(catKey, 'withMaterials'); }}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                padding: '5px 8px',
+                                borderRadius: 6,
+                                border: `1px solid ${options.withMaterials === 'with' ? '#10b981' : options.withMaterials === 'without' ? '#ef4444' : options.withMaterials === 'notMentioned' ? t?.border?.primary : '#ef4444'}`,
+                                background: options.withMaterials === 'with' ? '#10b98115' : options.withMaterials === 'without' ? '#ef444415' : 'transparent',
+                                color: options.withMaterials === 'with' ? '#10b981' : options.withMaterials === 'without' ? '#ef4444' : options.withMaterials === 'notMentioned' ? t?.text?.muted : '#ef4444',
+                                cursor: 'pointer',
+                                fontSize: 10,
+                                fontWeight: 600,
+                                fontFamily: 'inherit'
+                              }}
+                            >
+                              <Box size={12} />
+                              {options.withMaterials === 'with' ? '+ مواد' : options.withMaterials === 'without' ? 'بدون مواد' : options.withMaterials === 'notMentioned' ? '—' : 'مواد؟'}
+                            </button>
+                          </div>
+
+                          {/* أزرار العرض */}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleDisplayOption(catKey, 'showMeters'); }}
+                            style={{
+                              padding: '5px 8px',
+                              borderRadius: 6,
+                              border: `1px solid ${options.showMeters ? '#3b82f6' : t?.border?.primary}`,
+                              background: options.showMeters ? '#3b82f615' : 'transparent',
+                              color: options.showMeters ? '#3b82f6' : t?.text?.muted,
+                              cursor: 'pointer',
+                              fontSize: 10,
+                              fontWeight: 600,
+                              fontFamily: 'inherit'
+                            }}
+                          >
+                            📐 م²
+                          </button>
+                          
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleDisplayOption(catKey, 'sumMeters'); }}
+                            style={{
+                              padding: '5px 8px',
+                              borderRadius: 6,
+                              border: `1px solid ${options.sumMeters ? '#8b5cf6' : t?.border?.primary}`,
+                              background: options.sumMeters ? '#8b5cf615' : 'transparent',
+                              color: options.sumMeters ? '#8b5cf6' : t?.text?.muted,
+                              cursor: 'pointer',
+                              fontSize: 10,
+                              fontWeight: 600,
+                              fontFamily: 'inherit'
+                            }}
+                          >
+                            Σ جمع
+                          </button>
+                          
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleDisplayOption(catKey, 'showPrice'); }}
+                            style={{
+                              padding: '5px 8px',
+                              borderRadius: 6,
+                              border: `1px solid ${options.showPrice ? '#10b981' : t?.border?.primary}`,
+                              background: options.showPrice ? '#10b98115' : 'transparent',
+                              color: options.showPrice ? '#10b981' : t?.text?.muted,
+                              cursor: 'pointer',
+                              fontSize: 10,
+                              fontWeight: 600,
+                              fontFamily: 'inherit'
+                            }}
+                          >
+                            💰 سعر
+                          </button>
+                        </div>
+
+                        {/* السعر وزر التوسيع */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }} onClick={() => toggleSummaryCategory(catKey)}>
+                          <div style={{ textAlign: 'left' }}>
+                            <div style={{ fontSize: 18, fontWeight: 800, color: color.main }}>{formatNum(catData.total)}</div>
+                            <div style={{ fontSize: 10, color: t?.text?.muted }}>ريال</div>
+                          </div>
+                          <div style={{ 
+                            width: 28, 
+                            height: 28, 
+                            borderRadius: 6, 
+                            background: t?.bg?.secondary, 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center',
+                            transition: 'transform 0.2s',
+                            transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)'
+                          }}>
+                            <ChevronDown size={16} color={t?.text?.muted} />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* تفاصيل الفئة */}
+                      {isExpanded && (
+                        <div style={{ padding: '12px 14px 14px' }}>
+                          
+                          {/* تحذير عدم اكتمال الخيارات */}
+                          {!isOptionsComplete(catKey) && (
+                            <div style={{
+                              background: t?.status?.danger?.bg,
+                              border: `1px solid ${t?.status?.danger?.text}40`,
+                              borderRadius: 8,
+                              padding: 12,
+                              marginBottom: 14,
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8
+                            }}>
+                              <AlertCircle size={16} color={t?.status?.danger?.text} />
+                              <span style={{ fontSize: 12, color: t?.status?.danger?.text, fontWeight: 600 }}>
+                                يرجى تحديد خيارات المواد والحاوية لإكمال الملخص
+                              </span>
+                            </div>
+                          )}
+
+                          {/* ملخص الخدمة */}
+                          <div style={{
+                            background: `${color.main}08`,
+                            border: `1px solid ${color.main}30`,
+                            borderRadius: 10,
+                            padding: 14,
+                            marginBottom: 14
+                          }}>
+                            {/* حقول المبالغ للحاوية والمواد */}
+                            {(options.withContainer === 'with' || options.withMaterials === 'with') && (
+                              <div style={{ display: 'flex', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
+                                {options.withContainer === 'with' && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f59e0b10', padding: '6px 10px', borderRadius: 6, border: '1px solid #f59e0b30' }}>
+                                    <Truck size={14} color="#f59e0b" />
+                                    <span style={{ fontSize: 11, color: '#f59e0b', fontWeight: 600 }}>الحاوية:</span>
+                                    <input 
+                                      type="number" 
+                                      value={options.containerAmount || ''} 
+                                      onChange={(e) => updateCategoryAmount(catKey, 'containerAmount', e.target.value)}
+                                      placeholder="0"
+                                      style={{ width: 70, padding: '4px 6px', borderRadius: 4, border: '1px solid #f59e0b50', background: 'transparent', color: '#f59e0b', fontSize: 12, textAlign: 'center', fontFamily: 'inherit' }}
+                                    />
+                                    <span style={{ fontSize: 10, color: '#f59e0b' }}>ر.س</span>
+                                  </div>
+                                )}
+                                {options.withMaterials === 'with' && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#10b98110', padding: '6px 10px', borderRadius: 6, border: '1px solid #10b98130' }}>
+                                    <Box size={14} color="#10b981" />
+                                    <span style={{ fontSize: 11, color: '#10b981', fontWeight: 600 }}>المواد:</span>
+                                    <input 
+                                      type="number" 
+                                      value={options.materialsAmount || ''} 
+                                      onChange={(e) => updateCategoryAmount(catKey, 'materialsAmount', e.target.value)}
+                                      placeholder="0"
+                                      style={{ width: 70, padding: '4px 6px', borderRadius: 4, border: '1px solid #10b98150', background: 'transparent', color: '#10b981', fontSize: 12, textAlign: 'center', fontFamily: 'inherit' }}
+                                    />
+                                    <span style={{ fontSize: 10, color: '#10b981' }}>ر.س</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: 10, color: color.main, marginBottom: 8, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  📋 ملخص الخدمة
+                                </div>
+                                {options.customSummaryText !== null && options.customSummaryText !== undefined ? (
+                                  <textarea
+                                    value={options.customSummaryText}
+                                    onChange={(e) => updateCustomSummaryText(catKey, e.target.value)}
+                                    style={{ 
+                                      width: '100%',
+                                      minHeight: 80,
+                                      fontSize: 12, 
+                                      color: t?.text?.primary, 
+                                      lineHeight: 1.8, 
+                                      background: t?.bg?.secondary, 
+                                      padding: 10, 
+                                      borderRadius: 6, 
+                                      border: `1px solid ${color.main}50`,
+                                      fontFamily: 'inherit',
+                                      resize: 'vertical'
+                                    }}
+                                  />
+                                ) : (
+                                  <div style={{ 
+                                    fontSize: 12, 
+                                    color: t?.text?.primary, 
+                                    lineHeight: 1.8, 
+                                    background: t?.bg?.secondary, 
+                                    padding: 10, 
+                                    borderRadius: 6, 
+                                    border: `1px solid ${t?.border?.primary}` 
+                                  }}>
+                                    {getFullServiceSummary(catKey, catData)}
+                                  </div>
+                                )}
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                {/* زر تحرير */}
+                                <button
+                                  onClick={() => {
+                                    if (options.customSummaryText === null || options.customSummaryText === undefined) {
+                                      updateCustomSummaryText(catKey, getFullServiceSummary(catKey, catData));
+                                    }
+                                  }}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    padding: '8px 12px',
+                                    borderRadius: 6,
+                                    border: `1px solid ${t?.border?.primary}`,
+                                    background: options.customSummaryText ? `${color.main}15` : 'transparent',
+                                    color: options.customSummaryText ? color.main : t?.text?.muted,
+                                    cursor: 'pointer',
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    fontFamily: 'inherit'
+                                  }}
+                                >
+                                  <Edit3 size={14} />
+                                  تحرير
+                                </button>
+                                
+                                {/* زر تراجع */}
+                                {options.customSummaryText && (
+                                  <button
+                                    onClick={() => resetSummaryText(catKey)}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 4,
+                                      padding: '8px 12px',
+                                      borderRadius: 6,
+                                      border: `1px solid ${t?.status?.danger?.text}40`,
+                                      background: 'transparent',
+                                      color: t?.status?.danger?.text,
+                                      cursor: 'pointer',
+                                      fontSize: 11,
+                                      fontWeight: 600,
+                                      fontFamily: 'inherit'
+                                    }}
+                                  >
+                                    <RotateCcw size={14} />
+                                    تراجع
+                                  </button>
+                                )}
+                                
+                                {/* زر نسخ */}
+                                <button
+                                  onClick={() => copyServiceSummary(catKey, catData)}
+                                  disabled={!isOptionsComplete(catKey)}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    padding: '8px 12px',
+                                    borderRadius: 6,
+                                    border: `1px solid ${color.main}40`,
+                                    background: copiedCategoryId === catKey ? `${color.main}30` : `${color.main}15`,
+                                    color: copiedCategoryId === catKey ? '#fff' : color.main,
+                                    cursor: isOptionsComplete(catKey) ? 'pointer' : 'not-allowed',
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                    fontFamily: 'inherit',
+                                    opacity: isOptionsComplete(catKey) ? 1 : 0.5
+                                  }}
+                                >
+                                  {copiedCategoryId === catKey ? <Check size={14} /> : <Copy size={14} />}
+                                  {copiedCategoryId === catKey ? 'تم!' : 'نسخ'}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* جدول البنود */}
+                          <div style={{ 
+                            display: 'grid', 
+                            gridTemplateColumns: '0.5fr 2fr 1fr 1fr 1fr', 
+                            gap: 6, 
+                            padding: '6px 10px', 
+                            background: t?.bg?.secondary, 
+                            borderRadius: 6, 
+                            marginBottom: 6, 
+                            fontSize: 10, 
+                            fontWeight: 700, 
+                            color: t?.text?.muted 
+                          }}>
+                            <span>الكود</span>
+                            <span>البند</span>
+                            <span style={{ textAlign: 'center' }}>المساحة</span>
+                            <span style={{ textAlign: 'center' }}>سعر م²</span>
+                            <span style={{ textAlign: 'left' }}>الإجمالي</span>
+                          </div>
+
+                          {catData.items.map((item, idx) => {
+                            const itemInfo = workItems[catKey]?.items.find(i => i.id === item.id);
+                            const itemCode = itemInfo?.code || '—';
+                            return (
+                              <div 
+                                key={item.key}
+                                style={{ 
+                                  display: 'grid', 
+                                  gridTemplateColumns: '0.5fr 2fr 1fr 1fr 1fr', 
+                                  gap: 6, 
+                                  alignItems: 'center', 
+                                  padding: '10px', 
+                                  background: idx % 2 === 0 ? `${color.main}05` : 'transparent', 
+                                  borderRadius: 6, 
+                                  marginBottom: 3,
+                                  borderRight: `3px solid ${color.main}40`
+                                }}
+                              >
+                                <span style={{ 
+                                  fontSize: 9, 
+                                  fontWeight: 700, 
+                                  color: color.main,
+                                  background: `${color.main}15`,
+                                  padding: '3px 6px',
+                                  borderRadius: 4,
+                                  fontFamily: 'monospace'
+                                }}>
+                                  {itemCode}
+                                </span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <span style={{ 
+                                    width: 18, 
+                                    height: 18, 
+                                    borderRadius: 4, 
+                                    background: `${color.main}20`, 
+                                    color: color.main, 
+                                    fontSize: 9, 
+                                    fontWeight: 700, 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center' 
+                                  }}>{idx + 1}</span>
+                                  <span style={{ fontSize: 12, color: t?.text?.primary, fontWeight: 500 }}>{item.name}</span>
+                                </div>
+                                <span style={{ 
+                                  textAlign: 'center', 
+                                  fontSize: 11, 
+                                  color: t?.text?.secondary, 
+                                  background: t?.bg?.secondary, 
+                                  padding: '3px 6px', 
+                                  borderRadius: 4, 
+                                  border: `1px solid ${t?.border?.primary}` 
+                                }}>
+                                  {formatNum(item.area)} م²
+                                </span>
+                                <span style={{ textAlign: 'center', fontSize: 11, color: t?.text?.muted }}>{formatNum(item.exec)} ﷼</span>
+                                <span style={{ textAlign: 'left', fontSize: 12, fontWeight: 700, color: t?.text?.primary }}>{formatNum(item.total)} ﷼</span>
+                              </div>
+                            );
+                          })}
+
+                          {/* تجميع الأمتار حسب المجموعة */}
+                          {(() => {
+                            const groupedMeters = getGroupedMeters(catKey, catData);
+                            if (Object.keys(groupedMeters).length > 1) {
+                              return (
+                                <div style={{ 
+                                  marginTop: 10, 
+                                  padding: 10, 
+                                  background: `${color.main}05`, 
+                                  borderRadius: 6, 
+                                  border: `1px dashed ${color.main}30` 
+                                }}>
+                                  <div style={{ fontSize: 10, fontWeight: 700, color: color.main, marginBottom: 8 }}>📊 تجميع الأمتار حسب المجموعة:</div>
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                                    {Object.entries(groupedMeters).map(([group, area]) => (
+                                      <span key={group} style={{ 
+                                        fontSize: 11, 
+                                        color: t?.text?.primary, 
+                                        background: t?.bg?.secondary, 
+                                        padding: '4px 10px', 
+                                        borderRadius: 4, 
+                                        border: `1px solid ${t?.border?.primary}` 
+                                      }}>
+                                        {group}: <strong style={{ color: color.main }}>{formatNum(area)} م²</strong>
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return null;
+                          })()}
+
+                          {/* إجمالي الفئة */}
+                          <div style={{ 
+                            marginTop: 12, 
+                            padding: 12, 
+                            background: `${color.main}10`, 
+                            borderRadius: 8, 
+                            border: `1px solid ${color.main}30` 
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 10, marginBottom: 10, borderBottom: `1px dashed ${color.main}30` }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <Ruler size={14} color={color.main} />
+                                <span style={{ fontSize: 11, color: t?.text?.secondary }}>إجمالي المساحة:</span>
+                              </div>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: color.main, background: `${color.main}20`, padding: '3px 10px', borderRadius: 4 }}>{quantitySummary}</span>
+                            </div>
+
+                            {/* مبالغ الحاوية والمواد */}
+                            {(options.containerAmount > 0 || options.materialsAmount > 0) && (
+                              <div style={{ paddingBottom: 10, marginBottom: 10, borderBottom: `1px dashed ${color.main}30` }}>
+                                {options.containerAmount > 0 && (
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                      <Truck size={12} color="#f59e0b" />
+                                      <span style={{ fontSize: 11, color: t?.text?.secondary }}>تكلفة الحاوية:</span>
+                                    </div>
+                                    <span style={{ fontSize: 12, fontWeight: 600, color: '#f59e0b' }}>+ {formatNum(options.containerAmount)} ﷼</span>
+                                  </div>
+                                )}
+                                {options.materialsAmount > 0 && (
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                      <Box size={12} color="#10b981" />
+                                      <span style={{ fontSize: 11, color: t?.text?.secondary }}>تكلفة المواد:</span>
+                                    </div>
+                                    <span style={{ fontSize: 12, fontWeight: 600, color: '#10b981' }}>+ {formatNum(options.materialsAmount)} ﷼</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* مبلغ آخر ونسبة ربح */}
+                            <div style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: 10, 
+                              paddingBottom: 10, 
+                              marginBottom: 10, 
+                              borderBottom: `1px dashed ${color.main}30`,
+                              flexWrap: 'wrap'
+                            }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span style={{ fontSize: 11, color: t?.text?.muted }}>مبلغ آخر:</span>
+                                <input 
+                                  type="number" 
+                                  value={options.customAmount || ''} 
+                                  onChange={(e) => updateCustomAmount(catKey, 'customAmount', e.target.value)}
+                                  placeholder="0"
+                                  style={{ 
+                                    width: 80, 
+                                    padding: '4px 8px', 
+                                    borderRadius: 4, 
+                                    border: `1px solid ${t?.border?.primary}`, 
+                                    background: t?.bg?.secondary, 
+                                    color: t?.text?.primary, 
+                                    fontSize: 12, 
+                                    textAlign: 'center', 
+                                    fontFamily: 'inherit' 
+                                  }}
+                                />
+                                <span style={{ fontSize: 10, color: t?.text?.muted }}>ر.س</span>
+                              </div>
+                              
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span style={{ fontSize: 11, color: t?.text?.muted }}>نسبة ربح:</span>
+                                <input 
+                                  type="number" 
+                                  value={options.profitPercent || ''} 
+                                  onChange={(e) => updateCustomAmount(catKey, 'profitPercent', e.target.value)}
+                                  placeholder="0"
+                                  style={{ 
+                                    width: 60, 
+                                    padding: '4px 8px', 
+                                    borderRadius: 4, 
+                                    border: `1px solid ${t?.border?.primary}`, 
+                                    background: t?.bg?.secondary, 
+                                    color: t?.text?.primary, 
+                                    fontSize: 12, 
+                                    textAlign: 'center', 
+                                    fontFamily: 'inherit' 
+                                  }}
+                                />
+                                <span style={{ fontSize: 10, color: t?.text?.muted }}>%</span>
+                              </div>
+                              
+                              {(options.customAmount > 0 || options.profitPercent > 0) && (
+                                <button
+                                  onClick={() => resetToOriginalAmount(catKey)}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                    padding: '4px 8px',
+                                    borderRadius: 4,
+                                    border: `1px solid ${t?.status?.danger?.text}40`,
+                                    background: 'transparent',
+                                    color: t?.status?.danger?.text,
+                                    cursor: 'pointer',
+                                    fontSize: 10,
+                                    fontWeight: 600,
+                                    fontFamily: 'inherit'
+                                  }}
+                                >
+                                  <RotateCcw size={12} />
+                                  تراجع
+                                </button>
+                              )}
+                            </div>
+
+                            {/* الإجمالي النهائي */}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <Calculator size={14} color={color.main} />
+                                <span style={{ fontSize: 12, fontWeight: 700, color: color.main }}>إجمالي {catData.name}</span>
+                              </div>
+                              <div style={{ textAlign: 'left' }}>
+                                {getFinalCategoryTotal(catKey, catData.total) !== catData.total && (
+                                  <div style={{ fontSize: 10, color: t?.text?.muted, textDecoration: 'line-through', marginBottom: 2 }}>
+                                    {formatNum(catData.total)} ريال
+                                  </div>
+                                )}
+                                <span style={{ fontSize: 18, fontWeight: 800, color: color.main }}>
+                                  {formatNum(getFinalCategoryTotal(catKey, catData.total))} ريال
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* الإجمالي النهائي للملخص العام */}
+              <div style={{
+                marginTop: 16,
+                background: t?.bg?.secondary,
+                borderRadius: 14,
+                border: `2px solid ${t?.status?.success?.text}`,
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  background: `${t?.status?.success?.text}15`,
+                  padding: '12px 16px',
+                  borderBottom: `1px solid ${t?.border?.primary}`
+                }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: t?.status?.success?.text, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Calculator size={18} />
+                    ملخص جميع الأقسام
+                  </div>
+                </div>
+
+                <div style={{ padding: '12px 16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {Object.entries(getItemsByCategory()).map(([catKey, catData], catIdx) => {
+                      const color = getCategoryColor(catIdx);
+                      const options = getCategoryOptions(catKey);
+                      const catIcon = workItems[catKey]?.icon || '📦';
+                      const qSummary = getCategoryQuantitySummary(catData);
+
+                      return (
+                        <div key={catKey} style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '10px 12px',
+                          background: t?.bg?.tertiary,
+                          borderRadius: 8,
+                          borderRight: `4px solid ${color.main}`,
+                          flexWrap: 'wrap',
+                          gap: 6
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 150 }}>
+                            <span style={{ fontSize: 16 }}>{catIcon}</span>
+                            <span style={{ fontSize: 12, color: t?.text?.primary, fontWeight: 500 }}>{catData.name}</span>
+                            <span style={{ fontSize: 9, color: color.main, background: `${color.main}15`, padding: '1px 5px', borderRadius: 3, fontWeight: 600 }}>{qSummary}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ 
+                              fontSize: 9, 
+                              padding: '2px 6px', 
+                              borderRadius: 3, 
+                              background: options.withContainer === true ? '#f59e0b20' : options.withContainer === null ? '#ef444420' : t?.bg?.secondary,
+                              color: options.withContainer === true ? '#f59e0b' : options.withContainer === null ? '#ef4444' : t?.text?.muted,
+                              border: `1px solid ${options.withContainer === true ? '#f59e0b40' : options.withContainer === null ? '#ef444440' : t?.border?.primary}`,
+                              fontWeight: 600
+                            }}>
+                              {options.withContainer === true ? '🚛' : options.withContainer === false ? '—' : '❓'}
+                            </span>
+                            <span style={{ 
+                              fontSize: 9, 
+                              padding: '2px 6px', 
+                              borderRadius: 3, 
+                              background: options.withMaterials === true ? '#10b98120' : options.withMaterials === null ? '#ef444420' : t?.bg?.secondary,
+                              color: options.withMaterials === true ? '#10b981' : options.withMaterials === null ? '#ef4444' : t?.text?.muted,
+                              border: `1px solid ${options.withMaterials === true ? '#10b98140' : options.withMaterials === null ? '#ef444440' : t?.border?.primary}`,
+                              fontWeight: 600
+                            }}>
+                              {options.withMaterials === true ? '📦' : options.withMaterials === false ? '—' : '❓'}
+                            </span>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: color.main, minWidth: 70, textAlign: 'left' }}>{formatNum(catData.total)} ﷼</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div style={{
+                  padding: '14px 16px',
+                  background: t?.bg?.tertiary,
+                  borderTop: `1px solid ${t?.border?.primary}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <div>
+                    <div style={{ fontSize: 12, color: t?.text?.secondary }}>إجمالي الملخص العام</div>
+                    <div style={{ fontSize: 10, color: t?.text?.muted, marginTop: 2 }}>
+                      {Object.keys(getItemsByCategory()).length} أقسام • {itemCount} بند
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: t?.status?.success?.text }}>{formatNum(totalExec)}</div>
+                    <div style={{ fontSize: 10, color: t?.text?.muted }}>ريال سعودي</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* الملخص */}
+          {Object.keys(addedItems).length > 0 && (
+            <div style={cardStyle}>
+              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 14, color: t?.text?.secondary }}>💰 الملخص التفصيلي</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 10, marginBottom: 12 }}>
+                {[{ label: 'عدد البنود', value: formatNum(itemCount), color: t?.button?.primary }, { label: 'عدد الأماكن', value: formatNum(placesCount), color: t?.status?.info?.text }, { label: 'م² إجمالي', value: formatNum(totalArea), color: t?.status?.warning?.text }, { label: 'نسبة الربح', value: `${formatNum(profitPercent.toFixed(1))}%`, color: t?.status?.success?.text }].map((stat, i) => (
+                  <div key={i} style={{ padding: 12, borderRadius: 10, background: t?.bg?.tertiary, textAlign: 'center' }}>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: stat.color }}>{stat.value}</div>
+                    <div style={{ fontSize: 10, color: t?.text?.muted }}>{stat.label}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+                <div style={{ padding: 14, borderRadius: 10, background: `${t?.status?.warning?.text}12`, textAlign: 'center' }}><div style={{ fontSize: 18, fontWeight: 700, color: t?.status?.warning?.text }}>{formatNum(totalExec)}</div><div style={{ fontSize: 11, color: t?.text?.muted }}>سعر التنفيذ</div></div>
+                <div style={{ padding: 14, borderRadius: 10, background: `${t?.status?.info?.text}12`, textAlign: 'center' }}><div style={{ fontSize: 18, fontWeight: 700, color: t?.status?.info?.text }}>{formatNum(totalCont)}</div><div style={{ fontSize: 11, color: t?.text?.muted }}>تكلفة المقاول</div></div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginBottom: 12 }}>
+                <div style={{ padding: 12, borderRadius: 10, background: t?.status?.success?.bg, textAlign: 'center' }}><div style={{ fontSize: 16, fontWeight: 700, color: t?.status?.success?.text }}>{formatNum(profit)}</div><div style={{ fontSize: 10, color: t?.text?.muted }}>صافي الربح</div></div>
+                <div style={{ padding: 12, borderRadius: 10, background: t?.status?.danger?.bg, textAlign: 'center' }}><div style={{ fontSize: 16, fontWeight: 700, color: t?.status?.danger?.text }}>{formatNum(vatAmount)}</div><div style={{ fontSize: 10, color: t?.text?.muted }}>الضريبة</div></div>
+                <div style={{ padding: 12, borderRadius: 10, background: `${t?.button?.primary}15`, textAlign: 'center' }}><div style={{ fontSize: 16, fontWeight: 700, color: t?.button?.primary }}>{formatNum(avgPricePerMeter.toFixed(0))}</div><div style={{ fontSize: 10, color: t?.text?.muted }}>سعر المتر</div></div>
+              </div>
+              <div style={{ padding: 16, borderRadius: 10, background: `${t?.button?.primary}15`, textAlign: 'center', border: `1px solid ${t?.button?.primary}40` }}>
+                <div style={{ fontSize: 26, fontWeight: 700, color: t?.button?.primary }}>{formatNum(grandTotal)} ر.س</div>
+                <div style={{ fontSize: 12, color: t?.text?.muted }}>الإجمالي شامل الضريبة</div>
+              </div>
+            </div>
+          )}
+
+          {/* زر التقرير */}
+          {Object.keys(addedItems).length > 0 && !showReport && (
+            <button onClick={() => setShowReport(true)} style={{ width: '100%', padding: 16, borderRadius: 10, border: 'none', background: t?.button?.gradient, color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, fontFamily: 'inherit' }}><FileText size={20} /> عرض التقرير وطباعته</button>
+          )}
+
+          {/* التقرير */}
+          {showReport && Object.keys(addedItems).length > 0 && (
+            <>
+              <div style={{ ...cardStyle, display: 'flex', gap: 8 }}>
+                <button onClick={() => setShowReport(false)} style={{ padding: '10px 16px', borderRadius: 8, border: `1px solid ${t?.status?.danger?.border}`, background: 'transparent', color: t?.status?.danger?.text, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}><X size={16} /> إغلاق</button>
+              </div>
+              <div style={{ background: '#fff', borderRadius: 12, overflow: 'hidden', border: '1px solid #e0e0e0', color: '#333' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid #e0e0e0' }}>
+                  <EditableText value={reportData.companyName} onChange={(v) => setReportData({...reportData, companyName: v})} style={{ fontSize: 20, fontWeight: 700, color: '#2d5a3d' }} />
+                  <div style={{ background: '#6b7b3d', color: '#fff', padding: '12px 30px', borderRadius: 25 }}><span style={{ fontSize: 18, fontWeight: 700 }}>{reportData.headerTitle}</span></div>
+                </div>
+                <div style={{ background: '#5a6a3a', padding: '14px 24px' }}><EditableText value={reportData.projectTitle} onChange={(v) => setReportData({...reportData, projectTitle: v})} style={{ fontSize: 18, fontWeight: 700, color: '#fff', background: 'transparent' }} /></div>
+                <div>{Object.entries(getItemsByCategory()).map(([catKey, cat]) => (<React.Fragment key={catKey}>{cat.items.map((item, idx) => (<div key={item.key} style={{ display: 'flex', borderBottom: '1px solid #eee', background: idx % 2 === 0 ? '#fff' : '#fafafa' }}><div style={{ flex: 1, padding: '14px' }}><div style={{ fontSize: 14, fontWeight: 700, color: '#333', marginBottom: 4 }}>{item.name}</div><div style={{ fontSize: 11, color: '#666', marginBottom: 4 }}>{item.desc}</div><div style={{ fontSize: 10, color: '#888' }}>📍 {item.place} | {formatNum(item.area)} م²</div></div><div style={{ width: 110, padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}><div style={{ fontSize: 15, fontWeight: 700, color: '#333' }}>{formatNum(item.total)} ريال</div></div></div>))}</React.Fragment>))}</div>
+                <div style={{ padding: '20px 24px', borderTop: '3px solid #5a6a3a', background: '#f8f8f8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, fontSize: 15 }}><span style={{ fontWeight: 600, color: '#333' }}>{formatNum(totalExec)} ريال</span><span style={{ color: '#666' }}>المبلغ</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, fontSize: 15 }}><span style={{ fontWeight: 600, color: '#333' }}>{formatNum(vatAmount)} ريال</span><span style={{ color: '#666' }}>الضريبة 15%</span></div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 12, borderTop: '2px solid #5a6a3a', fontSize: 20 }}><span style={{ fontWeight: 700, color: '#5a6a3a' }}>{formatNum(grandTotal)} ريال</span><span style={{ fontWeight: 700, color: '#333' }}>الإجمالي</span></div>
+                </div>
+                <div style={{ background: '#5a6a3a', padding: '12px 24px', textAlign: 'center' }}><span style={{ fontSize: 12, color: '#fff' }}>{reportData.footerEmail}</span></div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
-      {showToast && <div style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', background: colors.success, color: '#fff', padding: '12px 24px', borderRadius: 8, fontSize: 14, fontWeight: 600, zIndex: 1000, boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>{toastMessage}</div>}
+      {mainTab === 'items' && (
+        <div style={cardStyle}>
+          {/* العنوان الرئيسي */}
+          <div style={{ fontSize: 18, fontWeight: 700, color: t?.text?.primary, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span>⚙️</span>
+            <span>البنود والبرمجة</span>
+          </div>
+
+          {/* تبويبات القسم الرئيسية */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 24 }}>
+            <button 
+              onClick={() => setProgrammingSection('places')}
+              style={{ 
+                padding: '16px', 
+                borderRadius: 12, 
+                border: programmingSection === 'places' ? `2px solid ${t?.button?.primary}` : `1px solid ${t?.border?.primary}`, 
+                background: programmingSection === 'places' ? `${t?.button?.primary}15` : t?.bg?.tertiary, 
+                cursor: 'pointer', 
+                fontFamily: 'inherit',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 8
+              }}
+            >
+              <span style={{ fontSize: 28 }}>📍</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: programmingSection === 'places' ? t?.button?.primary : t?.text?.primary }}>أنواع المكان</span>
+              <span style={{ fontSize: 11, color: t?.text?.muted }}>{Object.keys(places).length} نوع</span>
+            </button>
+            <button 
+              onClick={() => setProgrammingSection('items')}
+              style={{ 
+                padding: '16px', 
+                borderRadius: 12, 
+                border: programmingSection === 'items' ? `2px solid ${t?.button?.primary}` : `1px solid ${t?.border?.primary}`, 
+                background: programmingSection === 'items' ? `${t?.button?.primary}15` : t?.bg?.tertiary, 
+                cursor: 'pointer', 
+                fontFamily: 'inherit',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 8
+              }}
+            >
+              <span style={{ fontSize: 28 }}>🔧</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: programmingSection === 'items' ? t?.button?.primary : t?.text?.primary }}>بنود العمل</span>
+              <span style={{ fontSize: 11, color: t?.text?.muted }}>{Object.keys(workItems).length} قسم</span>
+            </button>
+          </div>
+
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* قسم أنواع المكان */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {programmingSection === 'places' && (
+            <div style={{ background: t?.bg?.tertiary, borderRadius: 12, padding: 16, border: `1px solid ${t?.border?.primary}` }}>
+              {/* العنوان وزر الإضافة */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, paddingBottom: 12, borderBottom: `1px solid ${t?.border?.primary}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 16 }}>📍</span>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: t?.text?.primary }}>أنواع المكان</span>
+                  <span style={{ fontSize: 12, color: t?.text?.muted, background: t?.bg?.secondary, padding: '2px 8px', borderRadius: 6 }}>{Object.keys(places).length}</span>
+                </div>
+                <button 
+                  onClick={addNewPlaceType}
+                  style={{ padding: '10px 18px', borderRadius: 10, border: 'none', background: t?.button?.gradient, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit', boxShadow: `0 2px 8px ${t?.button?.primary}30` }}
+                >
+                  <Plus size={18} />
+                  <span>إضافة نوع</span>
+                </button>
+              </div>
+              
+              {/* قائمة أنواع المكان */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {Object.entries(places).map(([key, place], idx) => {
+                  const color = getCategoryColor(idx);
+                  return (
+                    <div key={key} style={{ background: t?.bg?.secondary, borderRadius: 10, border: `1px solid ${t?.border?.primary}`, overflow: 'hidden' }}>
+                      {/* رأس نوع المكان */}
+                      <div style={{ display: 'flex', alignItems: 'center', padding: 16, gap: 16 }}>
+                        {/* الأيقونة والاسم */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
+                          <div style={{ width: 48, height: 48, borderRadius: 10, background: `${color.main}15`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span style={{ fontSize: 26 }}>{place.icon}</span>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 15, fontWeight: 600, color: t?.text?.primary, marginBottom: 2 }}>{place.name}</div>
+                            <div style={{ fontSize: 12, color: t?.text?.muted }}>{place.places.length} مكان</div>
+                          </div>
+                        </div>
+                        
+                        {/* الأزرار */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          {/* زر تشغيل/إطفاء */}
+                          <div 
+                            onClick={() => togglePlaceType(key)}
+                            style={{ 
+                              width: 50, 
+                              height: 28, 
+                              borderRadius: 14, 
+                              background: place.enabled ? t?.status?.success?.text : t?.bg?.tertiary, 
+                              position: 'relative',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              border: `1px solid ${place.enabled ? t?.status?.success?.text : t?.border?.primary}`
+                            }}
+                          >
+                            <div style={{ 
+                              width: 22, 
+                              height: 22, 
+                              borderRadius: '50%', 
+                              background: '#fff', 
+                              position: 'absolute', 
+                              top: 2, 
+                              right: place.enabled ? 2 : 24,
+                              transition: 'all 0.2s',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                            }} />
+                          </div>
+                          
+                          {/* زر التحرير */}
+                          <button 
+                            onClick={() => setEditingPlaceType({ key, name: place.name, icon: place.icon, places: [...place.places] })}
+                            style={{ width: 40, height: 40, borderRadius: 10, border: 'none', background: t?.button?.gradient, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: `0 2px 8px ${t?.button?.primary}30` }}
+                          >
+                            <Edit3 size={18} />
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* قائمة الأماكن */}
+                      <div style={{ padding: '0 16px 16px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {place.places.map((p, i) => (
+                          <span key={i} style={{ padding: '8px 14px', borderRadius: 8, background: `${color.main}12`, color: color.main, fontSize: 13, fontWeight: 500, border: `1px solid ${color.main}30` }}>
+                            {p}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {/* قسم بنود العمل */}
+          {/* ═══════════════════════════════════════════════════════════════ */}
+          {programmingSection === 'items' && (
+            <div style={{ background: t?.bg?.tertiary, borderRadius: 12, padding: 16, border: `1px solid ${t?.border?.primary}` }}>
+              {/* تبويبات نوع المكان */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 16, paddingBottom: 16, borderBottom: `1px solid ${t?.border?.primary}`, overflowX: 'auto' }}>
+                {Object.entries(places).map(([key, place], idx) => {
+                  const color = getCategoryColor(idx);
+                  const isActive = programmingTab === key;
+                  return (
+                    <button 
+                      key={key}
+                      onClick={() => setProgrammingTab(key)}
+                      style={{ 
+                        padding: '10px 20px', 
+                        borderRadius: 10, 
+                        border: isActive ? `2px solid ${color.main}` : `1px solid ${t?.border?.primary}`, 
+                        background: isActive ? `${color.main}15` : t?.bg?.secondary, 
+                        cursor: 'pointer', 
+                        fontFamily: 'inherit',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        whiteSpace: 'nowrap',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <span style={{ fontSize: 18 }}>{place.icon}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: isActive ? color.main : t?.text?.primary }}>{place.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* العنوان وزر الإضافة */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 16 }}>🔧</span>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: t?.text?.primary }}>بنود {places[programmingTab]?.name}</span>
+                  <span style={{ fontSize: 12, color: t?.text?.muted, background: t?.bg?.secondary, padding: '2px 8px', borderRadius: 6 }}>{Object.keys(workItems).length}</span>
+                </div>
+                <button 
+                  onClick={addNewCategory} 
+                  style={{ padding: '10px 18px', borderRadius: 10, border: 'none', background: t?.button?.gradient, color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'inherit', boxShadow: `0 2px 8px ${t?.button?.primary}30` }}
+                >
+                  <Plus size={18} />
+                  <span>إضافة قسم</span>
+                </button>
+              </div>
+
+              {/* قائمة الأقسام */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {Object.entries(workItems).map(([catKey, cat], catIdx) => {
+                  const color = getCategoryColor(catIdx);
+                  const isCatEnabled = isCategoryEnabledInPlace(programmingTab, catKey);
+                  const isExpanded = selectedCategory === catKey;
+                  
+                  return (
+                    <div key={catKey} style={{ background: t?.bg?.secondary, borderRadius: 10, border: isExpanded ? `2px solid ${color.main}` : `1px solid ${t?.border?.primary}`, overflow: 'hidden', transition: 'all 0.2s' }}>
+                      {/* رأس القسم */}
+                      <div 
+                        style={{ display: 'flex', alignItems: 'center', padding: 16, gap: 12, cursor: 'pointer', opacity: isCatEnabled ? 1 : 0.6 }}
+                        onClick={() => toggleCategory(catKey)}
+                      >
+                        {/* الأيقونة والاسم */}
+                        <div style={{ width: 44, height: 44, borderRadius: 10, background: `${color.main}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <span style={{ fontSize: 24 }}>{cat.icon}</span>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 15, fontWeight: 600, color: t?.text?.primary, marginBottom: 2 }}>{cat.name}</div>
+                          <div style={{ fontSize: 12, color: t?.text?.muted }}>{cat.items.length} بند</div>
+                        </div>
+                        
+                        {/* الأزرار */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }} onClick={e => e.stopPropagation()}>
+                          {/* زر تشغيل/إطفاء */}
+                          <div 
+                            onClick={() => toggleCategoryInPlace(programmingTab, catKey)}
+                            style={{ 
+                              width: 50, 
+                              height: 28, 
+                              borderRadius: 14, 
+                              background: isCatEnabled ? t?.status?.success?.text : t?.bg?.tertiary, 
+                              position: 'relative',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              border: `1px solid ${isCatEnabled ? t?.status?.success?.text : t?.border?.primary}`
+                            }}
+                          >
+                            <div style={{ 
+                              width: 22, 
+                              height: 22, 
+                              borderRadius: '50%', 
+                              background: '#fff', 
+                              position: 'absolute', 
+                              top: 2, 
+                              right: isCatEnabled ? 2 : 24,
+                              transition: 'all 0.2s',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                            }} />
+                          </div>
+                          
+                          {/* زر التحرير */}
+                          <button 
+                            onClick={() => setEditingCategory({ catKey, name: cat.name, icon: cat.icon })}
+                            style={{ width: 36, height: 36, borderRadius: 8, border: 'none', background: `${t?.button?.primary}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                          >
+                            <Edit3 size={16} color={t?.button?.primary} />
+                          </button>
+                          
+                          {/* السهم */}
+                          <div style={{ width: 36, height: 36, borderRadius: 8, background: isExpanded ? `${color.main}15` : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {isExpanded ? <ChevronUp size={20} color={color.main} /> : <ChevronDown size={20} color={t?.text?.muted} />}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* البنود الفرعية */}
+                      {isExpanded && (
+                        <div style={{ padding: '0 16px 16px' }}>
+                          {/* زر إضافة بند */}
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+                            <button 
+                              onClick={() => addNewWorkItem(catKey)}
+                              style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: t?.button?.gradient, color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit', boxShadow: `0 2px 6px ${t?.button?.primary}30` }}
+                            >
+                              <Plus size={16} />
+                              <span>إضافة بند</span>
+                            </button>
+                          </div>
+                          
+                          {cat.items.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: 24, color: t?.text?.muted, fontSize: 13, background: t?.bg?.tertiary, borderRadius: 8 }}>
+                              لا توجد بنود في هذا القسم
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                              {cat.items.map(item => {
+                                const isItemEnabled = isItemEnabledInPlace(programmingTab, catKey, item.id);
+                                const typeInfo = getTypeInfo(item.type);
+                                return (
+                                  <div key={item.id} style={{ display: 'flex', alignItems: 'center', padding: 14, background: t?.bg?.tertiary, borderRadius: 10, border: `1px solid ${typeInfo.color}30`, gap: 12, opacity: isItemEnabled ? 1 : 0.5, transition: 'all 0.2s' }}>
+                                    {/* زر تشغيل/إطفاء */}
+                                    <div 
+                                      onClick={() => toggleItemInPlace(programmingTab, catKey, item.id)}
+                                      style={{ 
+                                        width: 44, 
+                                        height: 24, 
+                                        borderRadius: 12, 
+                                        background: isItemEnabled ? typeInfo.color : t?.bg?.secondary, 
+                                        position: 'relative',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        border: `1px solid ${isItemEnabled ? typeInfo.color : t?.border?.primary}`,
+                                        flexShrink: 0
+                                      }}
+                                    >
+                                      <div style={{ 
+                                        width: 18, 
+                                        height: 18, 
+                                        borderRadius: '50%', 
+                                        background: '#fff', 
+                                        position: 'absolute', 
+                                        top: 2, 
+                                        right: isItemEnabled ? 2 : 22,
+                                        transition: 'all 0.2s',
+                                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                                      }} />
+                                    </div>
+                                    
+                                    {/* معلومات البند */}
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                                        <span style={{ fontSize: 14, fontWeight: 600, color: t?.text?.primary }}>{item.name}</span>
+                                      </div>
+                                      <div style={{ fontSize: 11, color: t?.text?.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.desc}</div>
+                                    </div>
+                                    
+                                    {/* نوع البند */}
+                                    <span style={{ 
+                                      fontSize: 10, 
+                                      padding: '4px 10px', 
+                                      borderRadius: 6, 
+                                      fontWeight: 600,
+                                      flexShrink: 0,
+                                      color: typeInfo.color, 
+                                      background: `${typeInfo.color}15`,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 4
+                                    }}>
+                                      {typeInfo.icon} {typeInfo.name}
+                                    </span>
+                                    
+                                    {/* السعر */}
+                                    <div style={{ textAlign: 'center', minWidth: 70, flexShrink: 0 }}>
+                                      <div style={{ fontSize: 14, fontWeight: 700, color: color.main }}>{formatNum(item.exec)}</div>
+                                      <div style={{ fontSize: 10, color: t?.text?.muted }}>ر.س/م²</div>
+                                    </div>
+                                    
+                                    {/* زر التحرير */}
+                                    <button 
+                                      onClick={() => setEditingItem({ catKey, item: { ...item } })}
+                                      style={{ width: 36, height: 36, borderRadius: 8, border: 'none', background: `${t?.button?.primary}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}
+                                    >
+                                      <Edit3 size={16} color={t?.button?.primary} />
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* نافذة تحرير البند */}
+      {editingItem && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: 20 }} onClick={() => setEditingItem(null)}>
+          <div style={{ background: t?.bg?.secondary, borderRadius: 16, padding: 24, width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto', border: `1px solid ${t?.border?.primary}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }} onClick={e => e.stopPropagation()}>
+            {/* الهيدر مع العنوان ورقم البند */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid ${t?.border?.primary}` }}>
+              <span style={{ fontSize: 20 }}>✏️</span>
+              <span style={{ fontSize: 17, fontWeight: 700, color: t?.text?.primary }}>تحرير البند</span>
+              <span style={{ fontSize: 12, color: t?.text?.muted, background: t?.bg?.tertiary, padding: '4px 10px', borderRadius: 6 }}>#{editingItem.item.id}</span>
+            </div>
+            
+            {/* القسم الرئيسي */}
+            <div style={{ marginBottom: 16, padding: 12, background: t?.bg?.tertiary, borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 20 }}>{workItems[editingItem.catKey]?.icon}</span>
+              <div>
+                <div style={{ fontSize: 11, color: t?.text?.muted }}>القسم الرئيسي</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: t?.text?.primary }}>{workItems[editingItem.catKey]?.name}</div>
+              </div>
+            </div>
+
+            {/* الكود والمجموعة */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>كود البند</div>
+                <input 
+                  type="text" 
+                  value={editingItem.item.code || ''} 
+                  onChange={(e) => setEditingItem({ ...editingItem, item: { ...editingItem.item, code: e.target.value.toUpperCase().slice(0, 4) } })} 
+                  onFocus={handleInputFocus} 
+                  placeholder="مثال: TF01"
+                  maxLength={4}
+                  style={{ ...inputStyle, fontFamily: 'monospace', textAlign: 'center', fontSize: 16, fontWeight: 700, letterSpacing: 2 }} 
+                />
+              </div>
+              <div>
+                <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>المجموعة</div>
+                <input 
+                  type="text" 
+                  value={editingItem.item.group || ''} 
+                  onChange={(e) => setEditingItem({ ...editingItem, item: { ...editingItem.item, group: e.target.value } })} 
+                  onFocus={handleInputFocus} 
+                  placeholder="مثال: تبليط"
+                  style={inputStyle} 
+                />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 16 }}><div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>اسم البند</div><input type="text" value={editingItem.item.name} onChange={(e) => setEditingItem({ ...editingItem, item: { ...editingItem.item, name: e.target.value } })} onFocus={handleInputFocus} style={inputStyle} /></div>
+            <div style={{ marginBottom: 16 }}><div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>وصف البند</div><input type="text" value={editingItem.item.desc} onChange={(e) => setEditingItem({ ...editingItem, item: { ...editingItem.item, desc: e.target.value } })} onFocus={handleInputFocus} style={inputStyle} /></div>
+            
+            {/* نوع البند (للعرض فقط) */}
+            <div style={{ marginBottom: 16, padding: 12, background: t?.bg?.tertiary, borderRadius: 10 }}>
+              <div style={{ fontSize: 11, color: t?.text?.muted, marginBottom: 6 }}>نوع البند</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 20 }}>{typeConfig[editingItem.item.type]?.icon}</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: typeConfig[editingItem.item.type]?.color }}>{typeConfig[editingItem.item.type]?.name}</span>
+                <span style={{ fontSize: 10, color: t?.text?.muted, fontFamily: 'monospace' }}>
+                  ({editingItem.item.type === 'wall' ? '(ط+ع)×2×ر' : 'ط × ع'})
+                </span>
+              </div>
+            </div>
+            
+            {/* تفعيل البند في أنواع المكان */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 8, fontWeight: 600 }}>تفعيل في أنواع المكان</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                {Object.entries(places).map(([key, place]) => {
+                  const isEnabled = isItemEnabledInPlace(key, editingItem.catKey, editingItem.item.id);
+                  return (
+                    <div 
+                      key={key}
+                      onClick={() => toggleItemInPlace(key, editingItem.catKey, editingItem.item.id)}
+                      style={{ 
+                        padding: '12px', 
+                        borderRadius: 10, 
+                        border: isEnabled ? `2px solid ${t?.status?.success?.text}` : `1px solid ${t?.border?.primary}`, 
+                        background: isEnabled ? t?.status?.success?.bg : 'transparent', 
+                        cursor: 'pointer',
+                        textAlign: 'center'
+                      }}
+                    >
+                      <div style={{ fontSize: 18, marginBottom: 4 }}>{place.icon}</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: isEnabled ? t?.status?.success?.text : t?.text?.muted }}>{place.name}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              <button 
+                onClick={() => { setEditingItem(null); setEditingWorkPlace(true); }}
+                style={{ marginTop: 10, width: '100%', padding: '10px', borderRadius: 8, border: `1px dashed ${t?.border?.primary}`, background: 'transparent', color: t?.text?.muted, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'inherit' }}
+              >
+                <Edit3 size={14} />
+                تحرير أماكن العمل (الصالة، الغرفة، ...)
+              </button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+              <div><div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>سعر التنفيذ</div><input type="number" value={editingItem.item.exec} onChange={(e) => setEditingItem({ ...editingItem, item: { ...editingItem.item, exec: parseFloat(e.target.value) || 0 } })} onFocus={handleInputFocus} style={{ ...inputStyle, borderColor: `${t?.status?.warning?.text}50`, background: `${t?.status?.warning?.text}10`, color: t?.status?.warning?.text, fontSize: 18, fontWeight: 700, textAlign: 'center' }} /></div>
+              <div><div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>سعر المقاول</div><input type="number" value={editingItem.item.cont} onChange={(e) => setEditingItem({ ...editingItem, item: { ...editingItem.item, cont: parseFloat(e.target.value) || 0 } })} onFocus={handleInputFocus} style={{ ...inputStyle, borderColor: `${t?.status?.info?.text}50`, background: `${t?.status?.info?.text}10`, color: t?.status?.info?.text, fontSize: 18, fontWeight: 700, textAlign: 'center' }} /></div>
+            </div>
+            <div style={{ padding: 14, borderRadius: 10, background: t?.status?.success?.bg, textAlign: 'center', marginBottom: 20 }}><div style={{ fontSize: 11, color: t?.text?.muted, marginBottom: 4 }}>صافي الربح</div><div style={{ fontSize: 24, fontWeight: 700, color: t?.status?.success?.text }}>{formatNum(editingItem.item.exec - editingItem.item.cont)} ر.س</div></div>
+            
+            {/* الأزرار في الأسفل */}
+            <div style={{ display: 'flex', gap: 10, paddingTop: 16, borderTop: `1px solid ${t?.border?.primary}` }}>
+              <button onClick={() => { deleteWorkItem(editingItem.catKey, editingItem.item.id); setEditingItem(null); }} style={{ padding: '12px 20px', borderRadius: 10, border: `1px solid ${t?.status?.danger?.border}`, background: 'transparent', color: t?.status?.danger?.text, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}><Trash2 size={16} /> حذف</button>
+              <button onClick={() => setEditingItem(null)} style={{ padding: '12px 20px', borderRadius: 10, border: `1px solid ${t?.border?.primary}`, background: 'transparent', color: t?.text?.muted, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>إلغاء</button>
+              <button onClick={() => { setWorkItems(prev => ({ ...prev, [editingItem.catKey]: { ...prev[editingItem.catKey], items: prev[editingItem.catKey].items.map(item => item.id === editingItem.item.id ? editingItem.item : item) } })); setEditingItem(null); }} style={{ flex: 1, padding: '12px 20px', borderRadius: 10, border: 'none', background: t?.button?.gradient, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✓ حفظ</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة تحرير القسم الرئيسي */}
+      {editingCategory && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: 20 }} onClick={() => setEditingCategory(null)}>
+          <div style={{ background: t?.bg?.secondary, borderRadius: 16, padding: 24, width: '100%', maxWidth: 450, maxHeight: '90vh', overflowY: 'auto', border: `1px solid ${t?.border?.primary}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }} onClick={e => e.stopPropagation()}>
+            {/* الهيدر مع العنوان ورقم القسم */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid ${t?.border?.primary}` }}>
+              <span style={{ fontSize: 20 }}>✏️</span>
+              <span style={{ fontSize: 17, fontWeight: 700, color: t?.text?.primary }}>تحرير القسم</span>
+              <span style={{ fontSize: 12, color: t?.text?.muted, background: t?.bg?.tertiary, padding: '4px 10px', borderRadius: 6 }}>#{editingCategory.catKey}</span>
+            </div>
+            
+            {/* أيقونة القسم */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 8, fontWeight: 600 }}>أيقونة القسم</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {['🔲', '🎨', '🏛️', '⚡', '🔧', '🪵', '🚪', '🪟', '💡', '❄️', '🔥', '🛁', '🪠', '🧱', '🏗️', '📦', '🪨', '🔄', '✨', '🏺'].map(icon => (
+                  <button 
+                    key={icon} 
+                    onClick={() => setEditingCategory({ ...editingCategory, icon })}
+                    style={{ 
+                      width: 44, 
+                      height: 44, 
+                      borderRadius: 10, 
+                      border: editingCategory.icon === icon ? `2px solid ${t?.button?.primary}` : `1px solid ${t?.border?.primary}`, 
+                      background: editingCategory.icon === icon ? `${t?.button?.primary}15` : t?.bg?.tertiary, 
+                      fontSize: 22, 
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {icon}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* اسم القسم */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>اسم القسم</div>
+              <input 
+                type="text" 
+                value={editingCategory.name} 
+                onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })} 
+                onFocus={handleInputFocus} 
+                style={inputStyle} 
+              />
+            </div>
+
+            {/* تفعيل القسم في أنواع المكان */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 8, fontWeight: 600 }}>تفعيل في أنواع المكان</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                {Object.entries(places).map(([key, place]) => {
+                  const isEnabled = isCategoryEnabledInPlace(key, editingCategory.catKey);
+                  return (
+                    <div 
+                      key={key}
+                      onClick={() => toggleCategoryInPlace(key, editingCategory.catKey)}
+                      style={{ 
+                        padding: '12px', 
+                        borderRadius: 10, 
+                        border: isEnabled ? `2px solid ${t?.status?.success?.text}` : `1px solid ${t?.border?.primary}`, 
+                        background: isEnabled ? t?.status?.success?.bg : 'transparent', 
+                        cursor: 'pointer',
+                        textAlign: 'center'
+                      }}
+                    >
+                      <div style={{ fontSize: 20, marginBottom: 4 }}>{place.icon}</div>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: isEnabled ? t?.status?.success?.text : t?.text?.muted }}>{place.name}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              <button 
+                onClick={() => { setEditingCategory(null); setEditingWorkPlace(true); }}
+                style={{ marginTop: 10, width: '100%', padding: '10px', borderRadius: 8, border: `1px dashed ${t?.border?.primary}`, background: 'transparent', color: t?.text?.muted, fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'inherit' }}
+              >
+                <Edit3 size={14} />
+                تحرير أماكن العمل (الصالة، الغرفة، ...)
+              </button>
+            </div>
+
+            {/* معاينة */}
+            <div style={{ padding: 16, borderRadius: 10, background: t?.bg?.tertiary, display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <span style={{ fontSize: 28 }}>{editingCategory.icon}</span>
+              <span style={{ fontSize: 16, fontWeight: 600, color: t?.text?.primary }}>{editingCategory.name}</span>
+            </div>
+
+            {/* الأزرار في الأسفل */}
+            <div style={{ display: 'flex', gap: 10, paddingTop: 16, borderTop: `1px solid ${t?.border?.primary}` }}>
+              <button onClick={() => deleteCategory(editingCategory.catKey)} style={{ padding: '12px 20px', borderRadius: 10, border: `1px solid ${t?.status?.danger?.border}`, background: 'transparent', color: t?.status?.danger?.text, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}><Trash2 size={16} /> حذف</button>
+              <button onClick={() => setEditingCategory(null)} style={{ padding: '12px 20px', borderRadius: 10, border: `1px solid ${t?.border?.primary}`, background: 'transparent', color: t?.text?.muted, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>إلغاء</button>
+              <button onClick={() => { updateCategoryName(editingCategory.catKey, editingCategory.name); updateCategoryIcon(editingCategory.catKey, editingCategory.icon); setEditingCategory(null); }} style={{ flex: 1, padding: '12px 20px', borderRadius: 10, border: 'none', background: t?.button?.gradient, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✓ حفظ</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة تحرير نوع المكان */}
+      {editingPlaceType && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: 20 }} onClick={() => setEditingPlaceType(null)}>
+          <div style={{ background: t?.bg?.secondary, borderRadius: 16, padding: 24, width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto', border: `1px solid ${t?.border?.primary}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }} onClick={e => e.stopPropagation()}>
+            {/* الهيدر مع العنوان ورقم النوع */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid ${t?.border?.primary}` }}>
+              <span style={{ fontSize: 20 }}>📍</span>
+              <span style={{ fontSize: 17, fontWeight: 700, color: t?.text?.primary }}>تحرير نوع المكان</span>
+              <span style={{ fontSize: 12, color: t?.text?.muted, background: t?.bg?.tertiary, padding: '4px 10px', borderRadius: 6 }}>#{editingPlaceType.key}</span>
+            </div>
+            
+            {/* أيقونة نوع المكان */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 8, fontWeight: 600 }}>الأيقونة</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {['🏠', '🚿', '🌳', '🏢', '🏬', '🏭', '🏗️', '🏛️', '🏥', '🏫', '🏪', '🏨', '🏰', '⛪', '🕌', '🛕'].map(icon => (
+                  <button 
+                    key={icon} 
+                    onClick={() => setEditingPlaceType({ ...editingPlaceType, icon })}
+                    style={{ 
+                      width: 44, 
+                      height: 44, 
+                      borderRadius: 10, 
+                      border: editingPlaceType.icon === icon ? `2px solid ${t?.button?.primary}` : `1px solid ${t?.border?.primary}`, 
+                      background: editingPlaceType.icon === icon ? `${t?.button?.primary}15` : t?.bg?.tertiary, 
+                      fontSize: 22, 
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {icon}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* اسم نوع المكان */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>اسم النوع</div>
+              <input 
+                type="text" 
+                value={editingPlaceType.name} 
+                onChange={(e) => setEditingPlaceType({ ...editingPlaceType, name: e.target.value })} 
+                onFocus={handleInputFocus} 
+                style={inputStyle} 
+              />
+            </div>
+
+            {/* الأماكن */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <div style={{ fontSize: 13, color: t?.text?.secondary, fontWeight: 600 }}>الأماكن ({editingPlaceType.places.length})</div>
+                <button 
+                  onClick={() => setEditingPlaceType({ ...editingPlaceType, places: [...editingPlaceType.places, `مكان ${editingPlaceType.places.length + 1}`] })}
+                  style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: t?.button?.gradient, color: '#fff', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'inherit' }}
+                >
+                  <Plus size={14} /> إضافة
+                </button>
+              </div>
+              <div style={{ background: t?.bg?.tertiary, borderRadius: 10, padding: 12, maxHeight: 200, overflowY: 'auto' }}>
+                {editingPlaceType.places.map((place, idx) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <input 
+                      type="text" 
+                      value={place} 
+                      onChange={(e) => {
+                        const newPlaces = [...editingPlaceType.places];
+                        newPlaces[idx] = e.target.value;
+                        setEditingPlaceType({ ...editingPlaceType, places: newPlaces });
+                      }}
+                      onFocus={handleInputFocus}
+                      style={{ ...inputStyle, flex: 1, marginBottom: 0 }}
+                    />
+                    <button 
+                      onClick={() => {
+                        if (editingPlaceType.places.length > 1) {
+                          const newPlaces = editingPlaceType.places.filter((_, i) => i !== idx);
+                          setEditingPlaceType({ ...editingPlaceType, places: newPlaces });
+                        }
+                      }}
+                      style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${t?.status?.danger?.border}`, background: 'transparent', color: t?.status?.danger?.text, cursor: editingPlaceType.places.length > 1 ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: editingPlaceType.places.length > 1 ? 1 : 0.5 }}
+                    >
+                      <X size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* معاينة */}
+            <div style={{ padding: 16, borderRadius: 10, background: t?.bg?.tertiary, display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+              <span style={{ fontSize: 32 }}>{editingPlaceType.icon}</span>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 600, color: t?.text?.primary }}>{editingPlaceType.name}</div>
+                <div style={{ fontSize: 12, color: t?.text?.muted }}>{editingPlaceType.places.length} مكان</div>
+              </div>
+            </div>
+
+            {/* الأزرار في الأسفل */}
+            <div style={{ display: 'flex', gap: 10, paddingTop: 16, borderTop: `1px solid ${t?.border?.primary}` }}>
+              {Object.keys(places).length > 1 && (
+                <button onClick={() => deletePlaceType(editingPlaceType.key)} style={{ padding: '12px 20px', borderRadius: 10, border: `1px solid ${t?.status?.danger?.border}`, background: 'transparent', color: t?.status?.danger?.text, fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit' }}><Trash2 size={16} /> حذف</button>
+              )}
+              <button onClick={() => setEditingPlaceType(null)} style={{ padding: '12px 20px', borderRadius: 10, border: `1px solid ${t?.border?.primary}`, background: 'transparent', color: t?.text?.muted, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>إلغاء</button>
+              <button onClick={() => { updatePlaceType(editingPlaceType.key, { name: editingPlaceType.name, icon: editingPlaceType.icon, places: editingPlaceType.places }); setEditingPlaceType(null); }} style={{ flex: 1, padding: '12px 20px', borderRadius: 10, border: 'none', background: t?.button?.gradient, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✓ حفظ</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة تحرير المشروع */}
+      {editingProject && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: 20 }} onClick={() => setEditingProject(null)}>
+          <div style={{ background: t?.bg?.secondary, borderRadius: 16, padding: 24, width: '100%', maxWidth: 500, maxHeight: '90vh', overflowY: 'auto', border: `1px solid ${t?.border?.primary}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid ${t?.border?.primary}` }}>
+              <span style={{ fontSize: 20 }}>📁</span>
+              <span style={{ fontSize: 17, fontWeight: 700, color: t?.text?.primary }}>{editingProject.isNew ? 'مشروع جديد' : 'تحرير المشروع'}</span>
+            </div>
+            
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>اسم المشروع *</div>
+              <input type="text" value={editingProject.name} onChange={(e) => setEditingProject({ ...editingProject, name: e.target.value })} onFocus={handleInputFocus} style={inputStyle} placeholder="أدخل اسم المشروع" />
+            </div>
+
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>وصف المشروع</div>
+              <textarea value={editingProject.description || ''} onChange={(e) => setEditingProject({ ...editingProject, description: e.target.value })} onFocus={handleInputFocus} style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }} placeholder="وصف مختصر للمشروع..." />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>اسم العميل</div>
+                <input type="text" value={editingProject.clientName || ''} onChange={(e) => setEditingProject({ ...editingProject, clientName: e.target.value })} onFocus={handleInputFocus} style={inputStyle} placeholder="اسم العميل" />
+              </div>
+              <div>
+                <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>رقم الجوال</div>
+                <input type="tel" value={editingProject.clientPhone || ''} onChange={(e) => setEditingProject({ ...editingProject, clientPhone: e.target.value })} onFocus={handleInputFocus} style={inputStyle} placeholder="05xxxxxxxx" />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 13, color: t?.text?.secondary, marginBottom: 6, fontWeight: 600 }}>موقع المشروع</div>
+              <input type="text" value={editingProject.location || ''} onChange={(e) => setEditingProject({ ...editingProject, location: e.target.value })} onFocus={handleInputFocus} style={inputStyle} placeholder="المدينة / الحي" />
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, paddingTop: 16, borderTop: `1px solid ${t?.border?.primary}` }}>
+              <button onClick={() => setEditingProject(null)} style={{ padding: '12px 20px', borderRadius: 10, border: `1px solid ${t?.border?.primary}`, background: 'transparent', color: t?.text?.muted, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>إلغاء</button>
+              <button 
+                onClick={() => saveProject(editingProject)} 
+                disabled={!editingProject.name.trim()}
+                style={{ flex: 1, padding: '12px 20px', borderRadius: 10, border: 'none', background: editingProject.name.trim() ? t?.button?.gradient : t?.bg?.tertiary, color: editingProject.name.trim() ? '#fff' : t?.text?.muted, fontSize: 14, fontWeight: 600, cursor: editingProject.name.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}
+              >
+                ✓ حفظ
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* نافذة تحرير مكان العمل */}
+      {editingWorkPlace && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: 20 }} onClick={() => setEditingWorkPlace(null)}>
+          <div style={{ background: t?.bg?.secondary, borderRadius: 16, padding: 24, width: '100%', maxWidth: 450, maxHeight: '90vh', overflowY: 'auto', border: `1px solid ${t?.border?.primary}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid ${t?.border?.primary}` }}>
+              <span style={{ fontSize: 20 }}>📍</span>
+              <span style={{ fontSize: 17, fontWeight: 700, color: t?.text?.primary }}>تحرير أماكن العمل</span>
+            </div>
+            
+            {/* قائمة أنواع المكان */}
+            {Object.entries(places).map(([typeKey, placeType], typeIdx) => {
+              const color = getCategoryColor(typeIdx);
+              return (
+                <div key={typeKey} style={{ marginBottom: 16, background: t?.bg?.tertiary, borderRadius: 10, padding: 14, border: `1px solid ${t?.border?.primary}` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                    <span style={{ fontSize: 20 }}>{placeType.icon}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: color.main }}>{placeType.name}</span>
+                    <span style={{ fontSize: 11, color: t?.text?.muted, background: t?.bg?.secondary, padding: '2px 8px', borderRadius: 4, marginRight: 'auto' }}>{placeType.places.length} مكان</span>
+                    <button 
+                      onClick={() => {
+                        const newPlace = prompt('أدخل اسم المكان الجديد:');
+                        if (newPlace?.trim()) {
+                          setPlaces(prev => ({
+                            ...prev,
+                            [typeKey]: {
+                              ...prev[typeKey],
+                              places: [...prev[typeKey].places, newPlace.trim()]
+                            }
+                          }));
+                        }
+                      }}
+                      style={{ padding: '4px 10px', borderRadius: 6, border: 'none', background: `${color.main}15`, color: color.main, fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'inherit' }}
+                    >
+                      <Plus size={12} /> إضافة
+                    </button>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {placeType.places.map((place, placeIdx) => (
+                      <div key={placeIdx} style={{ display: 'flex', alignItems: 'center', gap: 4, background: t?.bg?.secondary, padding: '6px 10px', borderRadius: 6, border: `1px solid ${t?.border?.primary}` }}>
+                        <span style={{ fontSize: 12, color: t?.text?.primary }}>{place}</span>
+                        <button 
+                          onClick={() => {
+                            const newName = prompt('تعديل اسم المكان:', place);
+                            if (newName?.trim() && newName !== place) {
+                              setPlaces(prev => ({
+                                ...prev,
+                                [typeKey]: {
+                                  ...prev[typeKey],
+                                  places: prev[typeKey].places.map((p, i) => i === placeIdx ? newName.trim() : p)
+                                }
+                              }));
+                            }
+                          }}
+                          style={{ background: 'none', border: 'none', color: t?.button?.primary, cursor: 'pointer', padding: 2 }}
+                        >
+                          <Edit3 size={12} />
+                        </button>
+                        <button 
+                          onClick={() => {
+                            if (placeType.places.length > 1 && window.confirm(`حذف "${place}"؟`)) {
+                              setPlaces(prev => ({
+                                ...prev,
+                                [typeKey]: {
+                                  ...prev[typeKey],
+                                  places: prev[typeKey].places.filter((_, i) => i !== placeIdx)
+                                }
+                              }));
+                            }
+                          }}
+                          style={{ background: 'none', border: 'none', color: t?.status?.danger?.text, cursor: 'pointer', padding: 2 }}
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+
+            <div style={{ display: 'flex', gap: 10, paddingTop: 16, borderTop: `1px solid ${t?.border?.primary}` }}>
+              <button onClick={() => setEditingWorkPlace(null)} style={{ flex: 1, padding: '12px 20px', borderRadius: 10, border: 'none', background: t?.button?.gradient, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>✓ تم</button>
+            </div>
+          </div>
+        </div>
+      )}
+        </>
+      )}
     </div>
   );
 };
